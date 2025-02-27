@@ -1,0 +1,41 @@
+{
+  "name": "letstube-be",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "tsc": "tsc",
+    "dev": "nodemon --watch 'src/**/*.ts' --exec 'ts-node' src/index.ts",
+    "watch": "./node_modules/nodemon/bin/nodemon.js -e ts  --exec \"npm run tsc && npm run start\"",
+    "dev-watch": "node_modules\\.bin\\nodemon -e ts --exec \"npm run tsc && npm run start\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@types/node": "^22.13.5",
+    "@types/node-cron": "^3.0.11",
+    "aws-sdk": "^2.1692.0",
+    "bcryptjs": "^3.0.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "expo-server-sdk": "^3.14.0",
+    "express": "^4.21.2",
+    "express-async-handler": "^1.2.0",
+    "joi": "^17.13.3",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.11.0",
+    "multer": "^1.4.5-lts.1",
+    "node-mailjet": "^6.0.6",
+    "socket.io": "^4.8.1"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/jsonwebtoken": "^9.0.9",
+    "@types/multer": "^1.4.12",
+    "nodemon": "^3.1.9",
+    "ts-node": "^10.9.2"
+  }
+}

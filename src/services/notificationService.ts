@@ -1,0 +1,64 @@
+
+import axios from 'axios';
+import mailjet from "../providers/mailjetProvider";
+import { MailOptions, SmsOptions } from '../lib/interfaces/notification.interface';
+
+const KNOWN_ERRORS = [
+    "messaging/invalid-argument",
+    "messaging/registration-token-not-registered",
+];
+
+class NotificationService {
+
+    public static async sendEmail(options: MailOptions) {
+
+        const request = mailjet.post('send', { version: 'v3.1' }).request({
+            Messages: [
+                {
+                    From: {
+                        Email: 'rosmonpro@gmail.com',
+                        Name: 'EcoRide'
+                    },
+                    To: [
+                        {
+                            Email: options.to,
+                            Name: options.to
+                        }
+                    ],
+                    Subject: options.subject,
+                    HTMLPart: options.body,
+                }
+            ]
+        });
+
+        try {
+            const result = await request;
+            console.log("success email", result.body);
+        } catch (err) {
+            console.log('sendEmail Error:', err);
+        }
+    };
+
+    public static async sendSms(options: SmsOptions) {
+
+        const requestParams = {
+            api_key: process.env.TERMII_API_KEY,
+            to: options.to,
+            sms: options.text,
+            from: process.env.TERMII_API_SENDER_ID,
+            type: "plain",
+            channel: "dnd",
+        }
+
+        try {
+            const request = await axios.post('https://v3.api.termii.com/api/sms/send', requestParams);
+            console.log("request sms", request);
+        } catch (err: any) {
+            console.log('sendSms Error:', err.response.data.message);
+        }
+    };
+
+}
+
+export default NotificationService
+
