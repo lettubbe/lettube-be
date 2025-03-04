@@ -14,6 +14,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const axios_1 = __importDefault(require("axios"));
 const mailjetProvider_1 = __importDefault(require("../providers/mailjetProvider"));
+const config_1 = __importDefault(require("../config"));
 const KNOWN_ERRORS = [
     "messaging/invalid-argument",
     "messaging/registration-token-not-registered",
@@ -50,6 +51,10 @@ class NotificationService {
     }
     static sendSms(options) {
         return __awaiter(this, void 0, void 0, function* () {
+            if (config_1.default.isDevelopment) {
+                console.log(`Skipping SMS send in development. Message: ${options.text}`);
+                return;
+            }
             const requestParams = {
                 api_key: process.env.TERMII_API_KEY,
                 to: options.to,

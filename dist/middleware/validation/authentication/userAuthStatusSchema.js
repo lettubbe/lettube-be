@@ -11,6 +11,16 @@ exports.validateUserAuthStatusRequestSchema = joi_1.default.object({
         "string.email": "Email must be a valid email address",
         "string.base": "Email must be a string",
     }),
+    phoneNumber: joi_1.default.string()
+        .pattern(/^\d{10,15}$/)
+        .messages({
+        "string.pattern.base": "Phone number must be between 10 to 15 digits",
+        "string.base": "Phone number must be a string",
+    }),
+})
+    .or("email", "phoneNumber")
+    .messages({
+    "object.missing": "Either email or phone number is required",
 });
 const validateUserAuthStatusRequest = (schema) => {
     return (req, res, next) => {

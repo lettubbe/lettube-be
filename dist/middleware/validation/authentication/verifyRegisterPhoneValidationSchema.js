@@ -10,10 +10,14 @@ exports.verifyOTpVerificationSchema = joi_1.default.object({
     phoneNumber: joi_1.default.string()
         .pattern(/^[0-9]+$/)
         .messages({
-        'string.pattern.base': 'Phone Number must contain only numbers',
+        "string.pattern.base": "Phone Number must contain only numbers",
+    }),
+    type: joi_1.default.string().required().messages({
+        "string.base": "Type must be a string",
+        "any.required": "Type is required",
     }),
 });
-const validateVerifyRegisterEmailRequest = (schema) => {
+const validateVerifyRegisterMobileNumberRequest = (schema) => {
     return (req, res, next) => {
         const { error } = schema.validate(req.body, { allowUnknown: true });
         if (error) {
@@ -22,4 +26,4 @@ const validateVerifyRegisterEmailRequest = (schema) => {
         next();
     };
 };
-exports.default = validateVerifyRegisterEmailRequest;
+exports.default = validateVerifyRegisterMobileNumberRequest;

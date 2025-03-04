@@ -7,19 +7,21 @@ exports.forgotPasswordSchema = void 0;
 const joi_1 = __importDefault(require("joi"));
 const ErrorResponse_1 = __importDefault(require("../../../messages/ErrorResponse"));
 exports.forgotPasswordSchema = joi_1.default.object({
-    email: joi_1.default.string()
-        .email()
-        .messages({
-        'string.email': 'Email must be a valid email address',
-        'any.required': 'Email is required'
+    email: joi_1.default.string().email().messages({
+        "string.email": "Email must be a valid email address",
+        "any.required": "Email is required",
     }),
-    phoneNumber: joi_1.default.string()
-        .messages({
-        'any.required': 'Phone Number is required'
-    })
-}).xor('email', 'phoneNumber')
+    phoneNumber: joi_1.default.string().messages({
+        "any.required": "Phone Number is required",
+    }),
+    type: joi_1.default.string().required().messages({
+        "string.base": "Type must be a string",
+        "any.required": "Type is required",
+    }),
+})
+    .xor("email", "phoneNumber")
     .messages({
-    'object.missing': 'Either email or phone number must be provided.'
+    "object.missing": "Either email or phone number must be provided.",
 });
 const validateForgotPasswordRequest = (schema) => {
     return (req, res, next) => {

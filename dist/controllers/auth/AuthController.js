@@ -12,24 +12,25 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.resetPassword = exports.forgetPassword = exports.verifyOTP = exports.getAuthVerificationStatus = exports.suggestUsername = exports.createUserDetails = exports.createRegisterPassword = exports.sendVerificationMobilePhoneRegister = exports.sendVerificationEmailRegister = exports.resendEmailOTP = exports.resendMobileOTP = exports.loginUser = void 0;
+exports.forgetPassword = exports.verifyOTP = exports.getAuthVerificationStatus = exports.suggestUsername = exports.createUserDetails = exports.createUserPassword = exports.sendVerificationMobilePhoneRegister = exports.sendVerificationEmailRegister = exports.resendEmailOTP = exports.resendMobileOTP = exports.loginUser = void 0;
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const ErrorResponse_1 = __importDefault(require("../../messages/ErrorResponse"));
 const notificationService_1 = __importDefault(require("../../services/notificationService"));
 const generate_1 = require("../../lib/utils/generate");
-const Auth_template_1 = require("../../lib/templates/Auth/Auth.template");
 const User_1 = __importDefault(require("../../models/User"));
 const Auth_1 = __importDefault(require("../../models/Auth"));
 const BaseResponseHandler_1 = __importDefault(require("../../messages/BaseResponseHandler"));
 const utils_1 = require("../../lib/utils/utils");
+const config_1 = __importDefault(require("../../config"));
+const RegisterationEnums_1 = require("../../constants/enums/RegisterationEnums");
 // @route   /api/v1/auth/register
 // @desc    Login A User
 // @access  Public
 exports.loginUser = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    const { email, password } = req.body;
+    const { email, phone, password } = req.body;
     // Find user by email or phone
     const user = yield User_1.default.findOne({
-        $or: [{ email: login }, { phone: login }],
+        $or: [{ email }, { phone }],
     });
     if (!email || !password) {
         return next(new ErrorResponse_1.default(`Please Provide Valid Credentials`, 404));
@@ -42,7 +43,13 @@ exports.loginUser = (0, express_async_handler_1.default)((req, res, next) => __a
         return next(new ErrorResponse_1.default(`Incorrect Login Details`, 404));
     }
     const token = (0, generate_1.generateToken)(user._id);
-    res.status(201).json({ success: true, data: user, token });
+    (0, BaseResponseHandler_1.default)({
+        res,
+        statusCode: 201,
+        success: true,
+        message: "User Logged In",
+        data: { user, token },
+    });
 }));
 // @route   /api/v1/auth/verify-email/resend
 // @desc    Resend OTP, verification
@@ -147,7 +154,7 @@ exports.sendVerificationMobilePhoneRegister = (0, express_async_handler_1.defaul
     const user = yield User_1.default.create({ phone });
     const authUser = yield Auth_1.default.create({ user: user._id, type });
     const token = (0, generate_1.generateVerificationCode)();
-    authUser.verificationCode = token;
+    authUser.verificationCode = config_1.default.isDevelopment ? "1234" : token;
     try {
         notificationService_1.default.sendSms({
             text: `Please Verify Phone Number, Please use the following code: ${token}`,
@@ -168,17 +175,16 @@ exports.sendVerificationMobilePhoneRegister = (0, express_async_handler_1.defaul
 // @route   /api/v1/auth/password
 // @desc    Create Password
 // @access  Public
-exports.createRegisterPassword = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    const { email, password } = req.body;
-    const user = yield User_1.default.findOne({ email }).select("-password");
+exports.createUserPassword = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const { email, phoneNumber, password } = req.body;
+    const user = yield User_1.default.findOne({ $or: [{ email }, { phoneNumber }] }).select("-password");
     if (!user) {
         return next(new ErrorResponse_1.default(`Email Not Found`, 404));
     }
     const hashedPassword = yield (0, generate_1.hashUserPassword)(password);
     user.password = hashedPassword;
     yield user.save();
-    const userData = user.toObject();
-    delete userData.password;
+    const userData = (0, utils_1.removeSensitiveFields)(user, ["password"]);
     (0, BaseResponseHandler_1.default)({
         res,
         statusCode: 200,
@@ -191,9 +197,9 @@ exports.createRegisterPassword = (0, express_async_handler_1.default)((req, res,
 // @desc    Create Password
 // @access  Public
 exports.createUserDetails = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    const { email, firstName, lastName, dob, age, username } = req.body;
+    const { email, firstName, lastName, phoneNumber, dob, age, username } = req.body;
     const user = yield User_1.default.findOne({
-        email,
+        $or: [{ email }, { phoneNumber }],
     });
     if (!user) {
         return next(new ErrorResponse_1.default(`User With The Provided Email Not Found`, 404));
@@ -233,7 +239,9 @@ exports.suggestUsername = (0, express_async_handler_1.default)((req, res, next) 
     if (!user) {
         return next(new ErrorResponse_1.default(`User with the provided email not found`, 404));
     }
-    let baseUsername = (user.firstName + user.lastName + Math.floor(Math.random() * 1000))
+    let baseUsername = (user.firstName +
+        user.lastName +
+        Math.floor(Math.random() * 1000))
         .toLowerCase()
         .replace(/\s+/g, "");
     let suggestedUsername = baseUsername;
@@ -255,9 +263,9 @@ exports.suggestUsername = (0, express_async_handler_1.default)((req, res, next) 
 // @desc    Verify User Registeration Status
 // @access  Public
 exports.getAuthVerificationStatus = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    const { email } = req.body;
+    const { email, phoneNumber } = req.query;
     const user = yield User_1.default.findOne({
-        email,
+        $or: [{ email }, { phoneNumber }],
     });
     if (!user) {
         return next(new ErrorResponse_1.default(`User With The Provided Email Not Found`, 404));
@@ -301,47 +309,41 @@ exports.verifyOTP = (0, express_async_handler_1.default)((req, res, next) => __a
 // @desc    Verify OTP
 // @access  Public
 exports.forgetPassword = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    const { email } = req.body;
-    const user = yield User_1.default.findOne({ email });
+    const { email, phoneNumber, type } = req.body;
+    const user = yield User_1.default.findOne({ $or: [{ email }, { phoneNumber }] });
     if (!user) {
-        return next(new ErrorResponse_1.default(`Email not Found`, 404));
+        return next(new ErrorResponse_1.default(`${type} not Found`, 404));
+    }
+    const authUser = yield Auth_1.default.findOne({ user: user._id });
+    if (!authUser) {
+        return next(new ErrorResponse_1.default(`${type} not Found`, 404));
     }
     const verificationCode = (0, generate_1.generateVerificationCode)();
-    const verificationTemplate = (0, Auth_template_1.verifyOtpTemplate)(user.firstName, verificationCode);
-    yield User_1.default.findOneAndUpdate({ _id: user._id }, { verificationCode: verificationCode }, {
-        new: true,
-    });
+    authUser.verificationCode = verificationCode;
+    yield authUser.save();
     try {
-        notificationService_1.default.sendEmail({
-            to: user.email,
-            subject: "Password Reset Request",
-            body: verificationTemplate,
-        });
+        if (type == RegisterationEnums_1.registerEnumType.PHONE) {
+            notificationService_1.default.sendSms({
+                text: `Your OTP is ${verificationCode}`,
+                to: phoneNumber,
+            });
+        }
+        if (type == RegisterationEnums_1.registerEnumType.EMAIL) {
+            notificationService_1.default.sendEmail({
+                to: user.email,
+                subject: "Password Reset Request",
+                body: `Your OTP is ${verificationCode}`,
+            });
+        }
     }
     catch (error) {
         return next(new ErrorResponse_1.default(`Email could not be sent`, 500));
     }
-    res.status(201).json({ success: true, data: "Verification code sent" });
-}));
-// @route   /api/v1/auth/resetPassword
-// @desc    Verify OTP
-// @access  Public
-exports.resetPassword = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    const { password, otp } = req.body;
-    console.log({ password, otp });
-    const user = yield User_1.default.findOne({ verificationCode: otp });
-    const authuser = yield Auth_1.default.findOne({ verificationCode: otp });
-    if (!user || !authuser) {
-        return next(new ErrorResponse_1.default(`Invalid OTP`, 400));
-    }
-    if (!password) {
-        return next(new ErrorResponse_1.default(`Password is required`, 400));
-    }
-    if (password.length < 8) {
-        return next(new ErrorResponse_1.default(`Password Must be at least eight characters`, 400));
-    }
-    user.password = password;
-    authuser.verificationCode = "";
-    yield user.save();
-    res.status(201).json({ success: true, data: "Password Reset Success" });
+    (0, BaseResponseHandler_1.default)({
+        message: `OTP Sent`,
+        res,
+        statusCode: 200,
+        success: true,
+        data: `OTP Sent to ${type}`,
+    });
 }));

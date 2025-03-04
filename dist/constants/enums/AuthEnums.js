@@ -6,6 +6,7 @@ var RegistrationType;
     RegistrationType["GMAIL"] = "gmail";
     RegistrationType["GOOGLE"] = "gmail";
     RegistrationType["FACEBOOK"] = "FACEBOOK";
+    RegistrationType["PHONE"] = "phone";
 })(RegistrationType || (exports.RegistrationType = RegistrationType = {}));
 ;
 var NotificationEnum;

@@ -13,6 +13,7 @@ import Auth from "../../models/Auth";
 import baseResponseHandler from "../../messages/BaseResponseHandler";
 import { removeSensitiveFields } from "../../lib/utils/utils";
 import config from "../../config";
+import { registerEnumType } from "../../constants/enums/RegisterationEnums";
 
 // @route   /api/v1/auth/register
 // @desc    Login A User
@@ -47,9 +48,8 @@ export const loginUser = asyncHandler(async (req, res, next) => {
     statusCode: 201,
     success: true,
     message: "User Logged In",
-    data: {user, token},
+    data: { user, token },
   });
-
 });
 
 // @route   /api/v1/auth/verify-email/resend
@@ -218,10 +218,12 @@ export const sendVerificationMobilePhoneRegister = asyncHandler(
 // @desc    Create Password
 // @access  Public
 
-export const createRegisterPassword = asyncHandler(async (req, res, next) => {
+export const createUserPassword = asyncHandler(async (req, res, next) => {
   const { email, phoneNumber, password } = req.body;
 
-  const user = await User.findOne({ $or: [ { email }, {  phoneNumber}  ] }).select("-password");
+  const user = await User.findOne({ $or: [{ email }, { phoneNumber }] }).select(
+    "-password"
+  );
 
   if (!user) {
     return next(new ErrorResponse(`Email Not Found`, 404));
@@ -233,8 +235,7 @@ export const createRegisterPassword = asyncHandler(async (req, res, next) => {
 
   await user.save();
 
-  const userData = user.toObject() as Record<string, any>;
-  delete userData.password;
+  const userData = removeSensitiveFields(user, ["password"]);
 
   baseResponseHandler({
     res,
@@ -250,7 +251,8 @@ export const createRegisterPassword = asyncHandler(async (req, res, next) => {
 // @access  Public
 
 export const createUserDetails = asyncHandler(async (req, res, next) => {
-  const { email, firstName, lastName, phoneNumber, dob, age, username } = req.body;
+  const { email, firstName, lastName, phoneNumber, dob, age, username } =
+    req.body;
 
   const user = await User.findOne({
     $or: [{ email }, { phoneNumber }],
@@ -336,7 +338,7 @@ export const suggestUsername = asyncHandler(async (req, res, next) => {
 
 export const getAuthVerificationStatus = asyncHandler(
   async (req, res, next) => {
-    const { email, phoneNumber } = req.body;
+    const { email, phoneNumber } = req.query;
 
     const user = await User.findOne({
       $or: [{ email }, { phoneNumber }],
@@ -401,72 +403,50 @@ export const verifyOTP = asyncHandler(async (req, res, next) => {
 // @access  Public
 
 export const forgetPassword = asyncHandler(async (req, res, next) => {
-  const { email } = req.body;
+  const { email, phoneNumber, type } = req.body;
 
-  const user = await User.findOne({ email });
+  const user = await User.findOne({ $or: [{ email }, { phoneNumber }] });
 
   if (!user) {
-    return next(new ErrorResponse(`Email not Found`, 404));
+    return next(new ErrorResponse(`${type} not Found`, 404));
+  }
+
+  const authUser = await Auth.findOne({ user: user._id });
+
+  if (!authUser) {
+    return next(new ErrorResponse(`${type} not Found`, 404));
   }
 
   const verificationCode = generateVerificationCode();
 
-  const verificationTemplate = verifyOtpTemplate(
-    user.firstName,
-    verificationCode
-  );
+  authUser.verificationCode = verificationCode;
 
-  await User.findOneAndUpdate(
-    { _id: user._id },
-    { verificationCode: verificationCode },
-    {
-      new: true,
-    }
-  );
+  await authUser.save();
 
   try {
-    NotificationService.sendEmail({
-      to: user.email,
-      subject: "Password Reset Request",
-      body: verificationTemplate,
-    });
+    if (type == registerEnumType.PHONE) {
+      NotificationService.sendSms({
+        text: `Your OTP is ${verificationCode}`,
+        to: phoneNumber,
+      });
+    }
+
+    if (type == registerEnumType.EMAIL) {
+      NotificationService.sendEmail({
+        to: user.email,
+        subject: "Password Reset Request",
+        body: `Your OTP is ${verificationCode}`,
+      });
+    }
   } catch (error) {
     return next(new ErrorResponse(`Email could not be sent`, 500));
   }
 
-  res.status(201).json({ success: true, data: "Verification code sent" });
-});
-
-// @route   /api/v1/auth/resetPassword
-// @desc    Verify OTP
-// @access  Public
-
-export const resetPassword = asyncHandler(async (req, res, next) => {
-  const { password, otp } = req.body;
-
-  console.log({ password, otp });
-
-  const user = await User.findOne({ verificationCode: otp });
-  const authuser = await Auth.findOne({ verificationCode: otp });
-
-  if (!user || !authuser) {
-    return next(new ErrorResponse(`Invalid OTP`, 400));
-  }
-
-  if (!password) {
-    return next(new ErrorResponse(`Password is required`, 400));
-  }
-
-  if (password.length < 8) {
-    return next(
-      new ErrorResponse(`Password Must be at least eight characters`, 400)
-    );
-  }
-
-  user.password = password;
-  authuser.verificationCode = "";
-
-  await user.save();
-
-  res.status(201).json({ success: true, data: "Password Reset Success" });
+  baseResponseHandler({
+    message: `OTP Sent`,
+    res,
+    statusCode: 200,
+    success: true,
+    data: `OTP Sent to ${type}`,
+  });
 });

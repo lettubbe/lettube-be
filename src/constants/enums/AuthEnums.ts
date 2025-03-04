@@ -1,7 +1,8 @@
 export enum RegistrationType {
     GMAIL = 'gmail',
     GOOGLE = 'gmail',
-    FACEBOOK = 'FACEBOOK'
+    FACEBOOK = 'FACEBOOK',
+    PHONE = 'phone'
 };
 
 export enum NotificationEnum {
