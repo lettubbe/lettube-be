@@ -45,6 +45,7 @@ const errors_1 = __importStar(require("./middleware/errors"));
 const app = (0, express_1.default)();
 app.use((0, cors_1.default)());
 app.use(express_1.default.json());
+app.use(express_1.default.urlencoded({ extended: true }));
 // Database Connection
 (0, db_1.default)();
 // Routes

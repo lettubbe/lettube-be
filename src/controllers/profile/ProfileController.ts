@@ -1,93 +1,76 @@
-// import asyncHandler from "express-async-handler";
-// import ErrorResponse from "../../messages/ErrorResponse";
-// import User from "../../models/User";
-// import { getAuthUser } from "../../lib/utils/utils";
+import asyncHandler from "express-async-handler";
+import ErrorResponse from "../../messages/ErrorResponse";
+import User from "../../models/User";
+import baseResponseHandler from "../../messages/BaseResponseHandler";
+import { uploadFile } from "../../lib/utils/fileUpload";
+import { Request, Response, NextFunction } from "express";
 
 
-// // @route   /api/v1/profile/upload/internationalPassport
-// // @desc    Upload International Passport
-// // @access  Private
+// @route   /api/v1/profile/upload/internationalPassport
+// @desc    Upload International Passport
+// @access  Private
 
-// export const updateUserProfile = asyncHandler(async (req, res, next) => {
-//     const userId = req.user.id;
-//     const { firstName, lastName } = req.body;
+export const updateUserProfile = asyncHandler(async (req, res, next) => {
 
-//     const user = await User.findOne({ _id: userId });
+    const { email, firstName, lastName } = req.body;
 
-//     if (!user) {
-//         return next(new ErrorResponse(`User Not Found`, 404));
-//     }
+    const user = await User.findOne({ email });
 
-//     // Update the fields
-//     if (firstName) {
-//         user.firstName = firstName;
-//     }
+    if (!user) {
+        return next(new ErrorResponse(`User Not Found`, 404));
+    }
 
-//     if (lastName) {
-//         user.lastName = lastName;
-//     }
+    // Update the fields
+    if (firstName) {
+        user.firstName = firstName;
+    }
 
-//     // // Save the updated user
-//     await user.save();
+    if (lastName) {
+        user.lastName = lastName;
+    }
 
-//     res.status(200).json({
-//         success: true,
-//         message: "Profile updated successfully",
-//         data: user,
-//     });
-// });
+    // // Save the updated user
+    await user.save();
 
-// // @route   /api/v1/profile/upload/internationalPassport
-// // @desc    Upload International Passport
-// // @access  Private
+    baseResponseHandler({
+        res,
+        statusCode: 200,
+        success: true,
+        message: "Profile updated successfully",
+        data: user,
+    });
+});
 
-// export const updatePhoneNumber = asyncHandler(async (req, res, next) => {
-//     const user = getAuthUser(req, next); 
-//     const { phoneNumber } = req.body;
+// @route   /api/v1/profile/upload/profilePhoto
+// @desc    Upload Profile Picture
+// @access  Private/public
 
-//     // Find the user by email
-//     const user = await User.findOne({ _id: user._id });
+export const updateProfilePhoto = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+   
+    const { email } = req.body;
 
-//     if (!user) {
-//         return next(new ErrorResponse(`User Not Found`, 404));
-//     }
+    const user = await User.findOne({ email });
 
-//     // Update the phoneNumber field
-//     user.phoneNumber = phoneNumber;
+    if(!user){
+        return next(new ErrorResponse(`User Not Found`, 404));
+    }
 
-//     // Save the updated user
-//     await user.save();
+    const picture = await uploadFile(req, next, "profilePicture");
 
-//     res.status(200).json({
-//         message: "Phone number updated successfully",
-//         data: {
-//             phoneNumber: user.phoneNumber,
-//         },
-//     });
-// });
-
-// // @route   /api/v1/profile/upload/profilePhoto
-// // @desc    Upload International Passport
-// // @access  Private
-
-// export const updateProfilePhoto = asyncHandler(async (req, res, next) => {
-//     const file = req.file;
-//     const userId = req.user.id;
-
-//     console.log("file", file);
-
-//     const user = await User.findById(userId);
-
-//     if(!user){
-//         return next(new ErrorResponse(`User Not Found`, 404));
-//     }
-
-//     const picture = await cloudinary.uploader.upload((req.file as any).path);
-
+    if (!picture) {
+        return next(new ErrorResponse(`Failed to upload profile picture`, 500));
+    }
     
-//     user.profilePicture = picture.secure_url; 
+    user.profilePicture = picture; 
     
-//     await user.save(); 
+    await user.save(); 
 
-//     res.status(200).json({ success: true, data: user });
-// });
+    baseResponseHandler({
+        res,
+        statusCode: 200,
+        message: `Profile Picture Uploaded Successfully`,
+        success: true,
+        data: user
+    });
+
+});

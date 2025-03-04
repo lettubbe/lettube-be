@@ -1,10 +1,3 @@
-/**
- * Get the authenticated user based on their ID.
- * @param {string} userId - The ID of the user to find.
- * @returns {Promise<[Object]>} - Returns an array with the user object.
- * @throws Will throw an error if the user is not found.
- */
-
 import { NextFunction } from "express";
 import ErrorResponse from "../../messages/ErrorResponse";
 import User from "../../models/User";
@@ -25,15 +18,13 @@ export const getAuthUser = async (req: any, next: NextFunction): Promise<any> =>
   return user;
 };
 
-export const getDeviceToken =  async (req: any, next: NextFunction) => {
-  const device = req.deviceToken;
-
-  if(!device){
-    return next(new ErrorResponse(`Please Enable Ecoride to send you push notifications`, 400));
-  }
-
-}
-
 export const formatCurrency = (amount: number): string => {
   return `NGN${amount.toLocaleString("en-NG")}`;
 };
+
+export const removeSensitiveFields = <T extends Record<string, any>>(user: T, fields: string[] = ["password"]): Omit<T, "password"> => {
+  const userData = { ...user.toObject() }; 
+  fields.forEach((field) => delete userData[field]); 
+  return userData;
+};
+

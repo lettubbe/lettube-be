@@ -1,13 +1,23 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.generateToken = exports.generateHash = exports.generateVerificationCode = void 0;
+exports.hashUserPassword = exports.generateResetPasswordToken = exports.comparePassword = exports.generateToken = exports.generateHash = exports.generateVerificationCode = void 0;
 exports.generateRandomChar = generateRandomChar;
 exports.generatePaymentReference = generatePaymentReference;
 const crypto_1 = __importDefault(require("crypto"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const generateVerificationCode = () => {
     return Math.floor(1000 + Math.random() * 9000).toString();
 };
@@ -24,19 +34,19 @@ const generateToken = (id) => {
     return tokenGen;
 };
 exports.generateToken = generateToken;
-// export function generateRandomChar(length: number = 6) {
-//   const characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ123456789';
-//   let result = '';
-//   const charactersLength = characters.length;
-//   for (let i = 0; i < length; i++) {
-//     result += characters.charAt(Math.floor(Math.random() * charactersLength));
-//   }
-//   return result;
-// }
-// export function generatePaymentReference() {
-//   const uniqueCode = generateRandomChar(12);
-//   return `ECORIDE_REF_${uniqueCode}`
-// }
+const comparePassword = (enteredPassword, hashedPassword) => __awaiter(void 0, void 0, void 0, function* () {
+    return yield bcryptjs_1.default.compare(enteredPassword, hashedPassword);
+});
+exports.comparePassword = comparePassword;
+const generateResetPasswordToken = () => {
+    return crypto_1.default.randomBytes(20).toString('hex');
+};
+exports.generateResetPasswordToken = generateResetPasswordToken;
+const hashUserPassword = (password) => __awaiter(void 0, void 0, void 0, function* () {
+    yield bcryptjs_1.default.genSalt(10);
+    return yield bcryptjs_1.default.hash('password', 10);
+});
+exports.hashUserPassword = hashUserPassword;
 function generateRandomChar(length = 6) {
     const characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ123456789';
     let result = '';
@@ -49,5 +59,5 @@ function generateRandomChar(length = 6) {
 function generatePaymentReference() {
     const uniqueCode = generateRandomChar(12);
     // Use only allowed characters
-    return `ECORIDE-REF-${uniqueCode}`;
+    return `LETTUBE-REF-${uniqueCode}`;
 }

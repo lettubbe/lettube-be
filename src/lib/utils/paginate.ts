@@ -7,8 +7,6 @@ export const getPaginateOptions = (page: any, limit: any, options?: any) => {
     };
 };
 
-
-
 export const transformPaginateResponse = (data: any) => {
     return {
         data: data.docs,

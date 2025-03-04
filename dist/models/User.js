@@ -18,11 +18,18 @@ const mongoose_1 = require("mongoose");
 const UserSchema = new mongoose_1.Schema({
     firstName: {
         type: String,
-        required: [true, "First Name is required"],
     },
     lastName: {
         type: String,
-        required: [true, "Last Name is required"],
+    },
+    username: {
+        type: String,
+    },
+    dob: {
+        type: String,
+    },
+    age: {
+        type: String,
     },
     email: {
         type: String,
@@ -35,44 +42,16 @@ const UserSchema = new mongoose_1.Schema({
     },
     phoneNumber: {
         type: String,
-        required: [true, "A Phone Number is Required"],
     },
     password: {
         type: String,
-        required: [true, "Password is Required"],
-        minlength: [8, "password must be atleast Eight characters"],
     },
     gender: {
         type: String,
-        required: [true, "Gender is Required"],
+        enum: ["Male", "Female"]
     },
     referalCode: String,
-    emailVerified: {
-        type: Boolean,
-        default: false,
-    },
-    phoneVerified: {
-        type: Boolean,
-        default: false,
-    },
-    verificationCode: {
-        type: String,
-    },
     profilePicture: {
-        type: String,
-    },
-    location: {
-        type: {
-            type: String,
-            enum: ["Point"],
-            default: "Point",
-        },
-        coordinates: {
-            type: [Number], // [longitude, latitude]
-            // required: true,
-        },
-    },
-    locationAddress: {
         type: String,
     },
     emailVerificationToken: String,
@@ -90,39 +69,19 @@ const UserSchema = new mongoose_1.Schema({
         default: Date.now(),
     },
 });
-UserSchema.pre("save", function (next) {
-    return __awaiter(this, void 0, void 0, function* () {
-        if (!this.isModified("password")) {
-            next();
-        }
-        const hash = yield bcryptjs_1.default.genSalt(10);
-        this.password = yield bcryptjs_1.default.hash(this.password, hash);
-        next();
-    });
-});
 UserSchema.pre(/^find/, function (next) {
     // Use correct typing for `this`
     const query = this;
     query.where({ isDeleted: { $ne: true } });
     next();
 });
-// UserSchema.pre(/^find/, function (next) {
-//   this.where({ isDeleted: { $ne: true } });
-//   next();
-// });
-// UserSchema.pre("save", async function (next: any) {
-//   const token = Math.floor(1000 + Math.random() * 9000).toString();
-//   console.log("verification code token", token);
-//   this.verificationCode = token.toString();
-//   next();
-// });
 UserSchema.pre("save", function (next) {
     return __awaiter(this, void 0, void 0, function* () {
         var _a, _b;
         const firstName = ((_a = this.firstName) === null || _a === void 0 ? void 0 : _a.toLowerCase().replace(/\s+/g, '')) || '';
         const lastName = ((_b = this.lastName) === null || _b === void 0 ? void 0 : _b.toLowerCase().replace(/\s+/g, '')) || '';
         const randomNumber = Math.floor(1000 + Math.random() * 9000).toString();
-        this.referalCode = `@${firstName.toLowerCase()}${lastName.toLowerCase()}${randomNumber}/ecoride`;
+        this.referalCode = `@${firstName.toLowerCase()}${lastName.toLowerCase()}${randomNumber}/lettube`;
         next();
     });
 });

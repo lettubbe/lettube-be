@@ -12,28 +12,28 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.removeSensitiveFields = exports.formatCurrency = exports.getAuthUser = void 0;
+exports.uploadFile = void 0;
+const uuid_1 = require("uuid");
 const ErrorResponse_1 = __importDefault(require("../../messages/ErrorResponse"));
-const User_1 = __importDefault(require("../../models/User"));
-const getAuthUser = (req, next) => __awaiter(void 0, void 0, void 0, function* () {
-    const userId = req.user.id;
-    if (!userId) {
-        return next(new ErrorResponse_1.default(`User Id is required`, 400));
+const s3_1 = require("./s3");
+const uploadFile = (req, next, folder) => __awaiter(void 0, void 0, void 0, function* () {
+    const file = req.file;
+    if (!file) {
+        return next(new ErrorResponse_1.default("No file uploaded", 400));
     }
-    const user = yield User_1.default.findOne({ _id: userId });
-    if (!user) {
-        return next(new ErrorResponse_1.default(`User Id is required`, 400));
+    const fileExtension = file.originalname.split(".").pop();
+    const s3Params = {
+        Bucket: process.env.S3_BUCKET_NAME,
+        Key: `${folder}/${Math.random()}${(0, uuid_1.v4)()}.${fileExtension}`,
+        Body: file.buffer,
+        ContentType: file.mimetype,
+    };
+    try {
+        const uploadResult = yield s3_1.s3.upload(s3Params).promise();
+        return uploadResult.Location;
     }
-    return user;
+    catch (error) {
+        next(new ErrorResponse_1.default("Error uploading file", 500));
+    }
 });
-exports.getAuthUser = getAuthUser;
-const formatCurrency = (amount) => {
-    return `NGN${amount.toLocaleString("en-NG")}`;
-};
-exports.formatCurrency = formatCurrency;
-const removeSensitiveFields = (user, fields = ["password"]) => {
-    const userData = Object.assign({}, user.toObject());
-    fields.forEach((field) => delete userData[field]);
-    return userData;
-};
-exports.removeSensitiveFields = removeSensitiveFields;
+exports.uploadFile = uploadFile;

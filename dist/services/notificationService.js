@@ -21,34 +21,33 @@ const KNOWN_ERRORS = [
 class NotificationService {
     static sendEmail(options) {
         return __awaiter(this, void 0, void 0, function* () {
-            const request = mailjetProvider_1.default.post('send', { version: 'v3.1' }).request({
+            const request = mailjetProvider_1.default.post("send", { version: "v3.1" }).request({
                 Messages: [
                     {
                         From: {
-                            Email: 'rosmonpro@gmail.com',
-                            Name: 'EcoRide'
+                            Email: "lwsrehearsal@gmail.com",
+                            Name: "lettube",
                         },
                         To: [
                             {
                                 Email: options.to,
-                                Name: options.to
-                            }
+                                Name: options.to,
+                            },
                         ],
                         Subject: options.subject,
                         HTMLPart: options.body,
-                    }
-                ]
+                    },
+                ],
             });
             try {
                 const result = yield request;
                 console.log("success email", result.body);
             }
             catch (err) {
-                console.log('sendEmail Error:', err);
+                console.log("sendEmail Error:", err);
             }
         });
     }
-    ;
     static sendSms(options) {
         return __awaiter(this, void 0, void 0, function* () {
             const requestParams = {
@@ -60,14 +59,13 @@ class NotificationService {
                 channel: "dnd",
             };
             try {
-                const request = yield axios_1.default.post('https://v3.api.termii.com/api/sms/send', requestParams);
+                const request = yield axios_1.default.post("https://v3.api.termii.com/api/sms/send", requestParams);
                 console.log("request sms", request);
             }
             catch (err) {
-                console.log('sendSms Error:', err.response.data.message);
+                console.log("sendSms Error:", err.response.data.message);
             }
         });
     }
-    ;
 }
 exports.default = NotificationService;
