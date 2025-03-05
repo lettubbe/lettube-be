@@ -4,8 +4,8 @@ exports.NotificationEnum = exports.RegistrationType = void 0;
 var RegistrationType;
 (function (RegistrationType) {
     RegistrationType["GMAIL"] = "gmail";
-    RegistrationType["GOOGLE"] = "gmail";
-    RegistrationType["FACEBOOK"] = "FACEBOOK";
+    RegistrationType["GOOGLE"] = "google";
+    RegistrationType["FACEBOOK"] = "facebook";
     RegistrationType["PHONE"] = "phone";
 })(RegistrationType || (exports.RegistrationType = RegistrationType = {}));
 ;

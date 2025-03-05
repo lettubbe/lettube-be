@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.removeSensitiveFields = exports.formatCurrency = exports.getAuthUser = void 0;
+exports.buildUserAuthTypeQuery = exports.removeSensitiveFields = exports.formatCurrency = exports.getAuthUser = void 0;
 const ErrorResponse_1 = __importDefault(require("../../messages/ErrorResponse"));
 const User_1 = __importDefault(require("../../models/User"));
 const getAuthUser = (req, next) => __awaiter(void 0, void 0, void 0, function* () {
@@ -37,3 +37,12 @@ const removeSensitiveFields = (user, fields = ["password"]) => {
     return userData;
 };
 exports.removeSensitiveFields = removeSensitiveFields;
+const buildUserAuthTypeQuery = (email, phoneNumber) => {
+    const query = {};
+    if (email)
+        query.email = email.toLowerCase();
+    if (phoneNumber)
+        query.phoneNumber = phoneNumber;
+    return query;
+};
+exports.buildUserAuthTypeQuery = buildUserAuthTypeQuery;

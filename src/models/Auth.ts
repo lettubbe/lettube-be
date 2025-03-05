@@ -16,6 +16,7 @@ const authSchema = new Schema(
     verificationCode: {
       type: String,
     },
+    verificationExpires: { type: Date }, 
     isPhoneVerified: {
       type: Boolean,
       default: false,
@@ -29,9 +30,12 @@ const authSchema = new Schema(
 );
 
 export interface IAuth extends Document {
-  emailVerified: boolean;
-  phoneVerified: boolean;
+  isEmailVerified: boolean;
+  isPhoneVerified: boolean;
   verificationCode: string;
+  type: string;
+  user: string;
+  verificationExpires: Date;
 }
 
 const Auth = model<IAuth>("auth", authSchema);

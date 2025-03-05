@@ -1,7 +1,7 @@
 export enum RegistrationType {
     GMAIL = 'gmail',
-    GOOGLE = 'gmail',
-    FACEBOOK = 'FACEBOOK',
+    GOOGLE = 'google',
+    FACEBOOK = 'facebook',
     PHONE = 'phone'
 };
 

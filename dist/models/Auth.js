@@ -16,6 +16,7 @@ const authSchema = new mongoose_1.Schema({
     verificationCode: {
         type: String,
     },
+    verificationExpires: { type: Date },
     isPhoneVerified: {
         type: Boolean,
         default: false,

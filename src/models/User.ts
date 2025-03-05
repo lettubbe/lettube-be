@@ -35,7 +35,7 @@ const UserSchema = new Schema({
   },
   gender: {
     type: String,
-    enum: ["Male", "Female"]
+    enum: ["Male", "Female"],
   },
   referalCode: String,
   profilePicture: {
@@ -45,7 +45,7 @@ const UserSchema = new Schema({
   resetPasswordToken: String,
   resetPasswordExpire: Date,
   markedForDeletionDate: {
-    type: Date
+    type: Date,
   },
   isDeleted: {
     type: Boolean,
@@ -59,23 +59,23 @@ const UserSchema = new Schema({
 
 UserSchema.pre(/^find/, function (next) {
   // Use correct typing for `this`
-  const query = this as Query<any, any>; 
+  const query = this as Query<any, any>;
   query.where({ isDeleted: { $ne: true } });
   next();
 });
 
-UserSchema.pre("save", async function (next: any) {
-  
-  const firstName = this.firstName?.toLowerCase().replace(/\s+/g, '') || '';
-  const lastName = this.lastName?.toLowerCase().replace(/\s+/g, '') || '';
-  
-  const randomNumber = Math.floor(1000 + Math.random() * 9000).toString();
-  
-  this.referalCode = `@${firstName.toLowerCase()}${lastName.toLowerCase()}${randomNumber}/lettube`;
+// UserSchema.pre("save", async function (next: any) {
+//   if (!this.isModified("password") && !this.isNew) return next();
 
-  next();
-});
+//   const firstName = this.firstName?.toLowerCase().replace(/\s+/g, "") || "";
+//   const lastName = this.lastName?.toLowerCase().replace(/\s+/g, "") || "";
 
+//   const randomNumber = Math.floor(1000 + Math.random() * 9000).toString();
+
+//   this.referalCode = `@${firstName.toLowerCase()}${lastName.toLowerCase()}${randomNumber}/lettube`;
+
+//   next();
+// });
 
 UserSchema.methods.matchPassword = async function (password: any) {
   return await bcrypt.compare(password, this.password);

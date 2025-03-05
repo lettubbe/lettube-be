@@ -3,10 +3,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.verifyEmailRegisterVerificationSchema = void 0;
+exports.verifyAuthenticationTypeSchema = void 0;
 const joi_1 = __importDefault(require("joi"));
 const ErrorResponse_1 = __importDefault(require("../../../messages/ErrorResponse"));
-exports.verifyEmailRegisterVerificationSchema = joi_1.default.object({
+exports.verifyAuthenticationTypeSchema = joi_1.default.object({
     email: joi_1.default.string().email().messages({
         "string.email": "Email must be a valid email address",
         "string.base": "Email must be a string",
@@ -15,8 +15,12 @@ exports.verifyEmailRegisterVerificationSchema = joi_1.default.object({
         "string.base": "Type must be a string",
         "any.required": "Type is required",
     }),
+})
+    .or("email", "phoneNumber")
+    .messages({
+    "object.missing": "Either email or phone number is required",
 });
-const validateVerifyRegisterEmailRequest = (schema) => {
+const validateVerifyAuthenticationRequest = (schema) => {
     return (req, res, next) => {
         const { error } = schema.validate(req.body, { allowUnknown: true });
         if (error) {
@@ -25,4 +29,4 @@ const validateVerifyRegisterEmailRequest = (schema) => {
         next();
     };
 };
-exports.default = validateVerifyRegisterEmailRequest;
+exports.default = validateVerifyAuthenticationRequest;

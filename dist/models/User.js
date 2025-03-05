@@ -48,7 +48,7 @@ const UserSchema = new mongoose_1.Schema({
     },
     gender: {
         type: String,
-        enum: ["Male", "Female"]
+        enum: ["Male", "Female"],
     },
     referalCode: String,
     profilePicture: {
@@ -58,7 +58,7 @@ const UserSchema = new mongoose_1.Schema({
     resetPasswordToken: String,
     resetPasswordExpire: Date,
     markedForDeletionDate: {
-        type: Date
+        type: Date,
     },
     isDeleted: {
         type: Boolean,
@@ -75,16 +75,14 @@ UserSchema.pre(/^find/, function (next) {
     query.where({ isDeleted: { $ne: true } });
     next();
 });
-UserSchema.pre("save", function (next) {
-    return __awaiter(this, void 0, void 0, function* () {
-        var _a, _b;
-        const firstName = ((_a = this.firstName) === null || _a === void 0 ? void 0 : _a.toLowerCase().replace(/\s+/g, '')) || '';
-        const lastName = ((_b = this.lastName) === null || _b === void 0 ? void 0 : _b.toLowerCase().replace(/\s+/g, '')) || '';
-        const randomNumber = Math.floor(1000 + Math.random() * 9000).toString();
-        this.referalCode = `@${firstName.toLowerCase()}${lastName.toLowerCase()}${randomNumber}/lettube`;
-        next();
-    });
-});
+// UserSchema.pre("save", async function (next: any) {
+//   if (!this.isModified("password") && !this.isNew) return next();
+//   const firstName = this.firstName?.toLowerCase().replace(/\s+/g, "") || "";
+//   const lastName = this.lastName?.toLowerCase().replace(/\s+/g, "") || "";
+//   const randomNumber = Math.floor(1000 + Math.random() * 9000).toString();
+//   this.referalCode = `@${firstName.toLowerCase()}${lastName.toLowerCase()}${randomNumber}/lettube`;
+//   next();
+// });
 UserSchema.methods.matchPassword = function (password) {
     return __awaiter(this, void 0, void 0, function* () {
         return yield bcryptjs_1.default.compare(password, this.password);

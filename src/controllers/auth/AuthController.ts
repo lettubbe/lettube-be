@@ -3,15 +3,20 @@ import ErrorResponse from "../../messages/ErrorResponse";
 import NotificationService from "../../services/notificationService";
 import {
   comparePassword,
+  generateReferalCode,
   generateToken,
   generateVerificationCode,
   hashUserPassword,
+  otpTokenExpiry,
 } from "../../lib/utils/generate";
 import { verifyOtpTemplate } from "../../lib/templates/Auth/Auth.template";
 import User from "../../models/User";
 import Auth from "../../models/Auth";
 import baseResponseHandler from "../../messages/BaseResponseHandler";
-import { removeSensitiveFields } from "../../lib/utils/utils";
+import {
+  buildUserAuthTypeQuery,
+  removeSensitiveFields,
+} from "../../lib/utils/utils";
 import config from "../../config";
 import { registerEnumType } from "../../constants/enums/RegisterationEnums";
 
@@ -131,102 +136,81 @@ export const resendEmailOTP = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @route   /api/v1/auth/verifyEmailRegisteration
-// @desc    Verify OTP
+// @route   /api/v1/auth/verify/register
+// @desc    Send OTP to email/phone
 // @access  Public
 
-export const sendVerificationEmailRegister = asyncHandler(
-  async (req, res, next) => {
-    const { email, type } = req.body;
+export const sendVerificationEmail = asyncHandler(async (req, res, next) => {
+  const { email, phoneNumber, type } = req.body;
 
-    const emailExists = await User.findOne({ email });
+  const emailExists = await User.findOne({ email });
 
-    if (emailExists) {
-      return next(new ErrorResponse(`Email Already Exists`, 400));
-    }
+  if (email && emailExists) {
+    return next(new ErrorResponse(`Email Already Exists`, 400));
+  }
 
-    const user = await User.create({ email });
+  const phoneNumberExists = await User.findOne({ phoneNumber });
 
-    const authUser = await Auth.create({ user: user._id, type });
+  if (phoneNumber && phoneNumberExists) {
+    return next(new ErrorResponse(`Phone Number Already Exists`, 400));
+  }
 
-    const token = generateVerificationCode();
+  const user = await User.create({ email });
 
-    authUser.verificationCode = token;
+  const authUser = await Auth.create({ user: user._id, type });
 
-    try {
+  const token = generateVerificationCode();
+  const expiresAt = new Date(otpTokenExpiry(5 * 60) * 1000); // Convert UNIX timestamp to Date (5 mintues)
+
+  authUser.verificationCode = token;
+  authUser.verificationExpires = expiresAt;
+
+  user.referalCode = generateReferalCode(user.firstName, user.lastName);
+
+  authUser.save();
+  user.save();
+
+  try {
+    if (type === registerEnumType.EMAIL) {
       NotificationService.sendEmail({
         to: email,
         subject: "Lettube Register Email Verification",
         body: `Please Verify Email Address, Please use the following code: ${token}`,
       });
-    } catch (error) {
-      return next(new ErrorResponse(`Email could not be sent`, 500));
     }
 
-    baseResponseHandler({
-      res,
-      statusCode: 200,
-      success: true,
-      message: "Verification Email Sent",
-      data: email,
-    });
-  }
-);
-
-// @route   /api/v1/auth/verifyEmailRegisteration
-// @desc    Verify OTP
-// @access  Public
-
-export const sendVerificationMobilePhoneRegister = asyncHandler(
-  async (req, res, next) => {
-    const { phone, type } = req.body;
-
-    const phoneNumberExists = await User.findOne({ phone });
-
-    if (phoneNumberExists) {
-      return next(new ErrorResponse(`Phone Number Already Exists`, 400));
-    }
-
-    const user = await User.create({ phone });
-
-    const authUser = await Auth.create({ user: user._id, type });
-
-    const token = generateVerificationCode();
-
-    authUser.verificationCode = config.isDevelopment ? "1234" : token;
-
-    try {
+    if (type === registerEnumType.PHONE) {
       NotificationService.sendSms({
         text: `Please Verify Phone Number, Please use the following code: ${token}`,
-        to: phone,
+        to: phoneNumber,
       });
-    } catch (error) {
-      return next(new ErrorResponse(`Email could not be sent`, 500));
     }
-
-    baseResponseHandler({
-      res,
-      statusCode: 200,
-      success: true,
-      message: "Verification Email Sent",
-      data: phone,
-    });
+  } catch (error) {
+    return next(new ErrorResponse(`Email could not be sent`, 500));
   }
-);
+
+  baseResponseHandler({
+    res,
+    statusCode: 200,
+    success: true,
+    message: "Verification Email Sent",
+    data: authUser,
+  });
+});
 
 // @route   /api/v1/auth/password
 // @desc    Create Password
 // @access  Public
 
 export const createUserPassword = asyncHandler(async (req, res, next) => {
-  const { email, phoneNumber, password } = req.body;
+  const { email, phoneNumber, type, password } = req.body;
 
-  const user = await User.findOne({ $or: [{ email }, { phoneNumber }] }).select(
-    "-password"
-  );
+  const query = buildUserAuthTypeQuery(email, phoneNumber);
+
+  const user = await User.findOne(query).select("-password");
 
   if (!user) {
-    return next(new ErrorResponse(`Email Not Found`, 404));
+    return next(new ErrorResponse(`${type} Not Found`, 404));
   }
 
   const hashedPassword = await hashUserPassword(password);
@@ -235,7 +219,9 @@ export const createUserPassword = asyncHandler(async (req, res, next) => {
 
   await user.save();
 
-  const userData = removeSensitiveFields(user, ["password"]);
+  const userData: Partial<typeof user> = removeSensitiveFields(user, [
+    "password",
+  ]);
 
   baseResponseHandler({
     res,
@@ -254,9 +240,9 @@ export const createUserDetails = asyncHandler(async (req, res, next) => {
   const { email, firstName, lastName, phoneNumber, dob, age, username } =
     req.body;
 
-  const user = await User.findOne({
-    $or: [{ email }, { phoneNumber }],
-  });
+  const query = buildUserAuthTypeQuery(email, phoneNumber);
+
+  const user = await User.findOne(query);
 
   if (!user) {
     return next(
@@ -295,13 +281,15 @@ export const createUserDetails = asyncHandler(async (req, res, next) => {
 // @desc    Suggest Unique Username
 // @access  Public
 export const suggestUsername = asyncHandler(async (req, res, next) => {
-  const { email } = req.body;
+  const { email, phoneNumber } = req.query;
 
-  const user = await User.findOne({ email });
+  const query = buildUserAuthTypeQuery(email as string, phoneNumber as string);
+
+  const user = await User.findOne(query);
 
   if (!user) {
     return next(
-      new ErrorResponse(`User with the provided email not found`, 404)
+      new ErrorResponse(`Provided User with the was not found`, 404)
     );
   }
 
@@ -336,17 +324,16 @@ export const suggestUsername = asyncHandler(async (req, res, next) => {
 // @desc    Verify User Registeration Status
 // @access  Public
 
-export const getAuthVerificationStatus = asyncHandler(
-  async (req, res, next) => {
-    const { email, phoneNumber } = req.query;
+export const getAuthVerificationStatus = asyncHandler(async (req, res, next) => {
+    const { email, phoneNumber, type } = req.query;
 
-    const user = await User.findOne({
-      $or: [{ email }, { phoneNumber }],
-    });
+    const query = buildUserAuthTypeQuery(email as string, phoneNumber as string);
+
+    const user = await User.findOne(query);
 
     if (!user) {
       return next(
-        new ErrorResponse(`User With The Provided Email Not Found`, 404)
+        new ErrorResponse(`User With The Provided ${type} Not Found`, 404)
       );
     }
 
@@ -364,8 +351,8 @@ export const getAuthVerificationStatus = asyncHandler(
       success: true,
       message: "User Verification Status",
       data: {
-        emailVerified: authUser.emailVerified,
-        phoneVerified: authUser.phoneVerified,
+        emailVerified: authUser.isEmailVerified,
+        phoneVerified: authUser.isPhoneVerified,
         authUser,
       },
     });
@@ -385,10 +372,14 @@ export const verifyOTP = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse(`Invalid OTP`, 404));
   }
 
+  if (user.verificationExpires < new Date()) {
+    return next(new ErrorResponse("Verification code expired", 400));
+  }
+
   if (type && type === "email") {
-    user.emailVerified = true;
+    user.isEmailVerified = true;
   } else {
-    user.phoneVerified = true;
+    user.isPhoneVerified = true;
   }
 
   user.verificationCode = "";

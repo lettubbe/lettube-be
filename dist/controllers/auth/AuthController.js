@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.forgetPassword = exports.verifyOTP = exports.getAuthVerificationStatus = exports.suggestUsername = exports.createUserDetails = exports.createUserPassword = exports.sendVerificationMobilePhoneRegister = exports.sendVerificationEmailRegister = exports.resendEmailOTP = exports.resendMobileOTP = exports.loginUser = void 0;
+exports.forgetPassword = exports.verifyOTP = exports.getAuthVerificationStatus = exports.suggestUsername = exports.createUserDetails = exports.createUserPassword = exports.sendVerificationEmail = exports.resendEmailOTP = exports.resendMobileOTP = exports.loginUser = void 0;
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const ErrorResponse_1 = __importDefault(require("../../messages/ErrorResponse"));
 const notificationService_1 = __importDefault(require("../../services/notificationService"));
@@ -21,7 +21,6 @@ const User_1 = __importDefault(require("../../models/User"));
 const Auth_1 = __importDefault(require("../../models/Auth"));
 const BaseResponseHandler_1 = __importDefault(require("../../messages/BaseResponseHandler"));
 const utils_1 = require("../../lib/utils/utils");
-const config_1 = __importDefault(require("../../config"));
 const RegisterationEnums_1 = require("../../constants/enums/RegisterationEnums");
 // @route   /api/v1/auth/register
 // @desc    Login A User
@@ -111,25 +110,42 @@ exports.resendEmailOTP = (0, express_async_handler_1.default)((req, res, next) =
         data: "Verification code Resent",
     });
 }));
-// @route   /api/v1/auth/verifyEmailRegisteration
-// @desc    Verify OTP
+// @route   /api/v1/auth/verify/register
+// @desc    Send OTP to email/phone
 // @access  Public
-exports.sendVerificationEmailRegister = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    const { email, type } = req.body;
+exports.sendVerificationEmail = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const { email, phoneNumber, type } = req.body;
     const emailExists = yield User_1.default.findOne({ email });
-    if (emailExists) {
+    if (email && emailExists) {
         return next(new ErrorResponse_1.default(`Email Already Exists`, 400));
+    }
+    const phoneNumberExists = yield User_1.default.findOne({ phoneNumber });
+    if (phoneNumber && phoneNumberExists) {
+        return next(new ErrorResponse_1.default(`Phone Number Already Exists`, 400));
     }
     const user = yield User_1.default.create({ email });
     const authUser = yield Auth_1.default.create({ user: user._id, type });
     const token = (0, generate_1.generateVerificationCode)();
+    const expiresAt = new Date((0, generate_1.otpTokenExpiry)(5 * 60) * 1000); // Convert UNIX timestamp to Date (5 mintues)
     authUser.verificationCode = token;
+    authUser.verificationExpires = expiresAt;
+    user.referalCode = (0, generate_1.generateReferalCode)(user.firstName, user.lastName);
+    authUser.save();
+    user.save();
     try {
-        notificationService_1.default.sendEmail({
-            to: email,
-            subject: "Lettube Register Email Verification",
-            body: `Please Verify Email Address, Please use the following code: ${token}`,
-        });
+        if (type === RegisterationEnums_1.registerEnumType.EMAIL) {
+            notificationService_1.default.sendEmail({
+                to: email,
+                subject: "Lettube Register Email Verification",
+                body: `Please Verify Email Address, Please use the following code: ${token}`,
+            });
+        }
+        if (type === RegisterationEnums_1.registerEnumType.PHONE) {
+            notificationService_1.default.sendSms({
+                text: `Please Verify Phone Number, Please use the following code: ${token}`,
+                to: phoneNumber,
+            });
+        }
     }
     catch (error) {
         return next(new ErrorResponse_1.default(`Email could not be sent`, 500));
@@ -139,52 +155,25 @@ exports.sendVerificationEmailRegister = (0, express_async_handler_1.default)((re
         statusCode: 200,
         success: true,
         message: "Verification Email Sent",
-        data: email,
-    });
-}));
-// @route   /api/v1/auth/verifyEmailRegisteration
-// @desc    Verify OTP
-// @access  Public
-exports.sendVerificationMobilePhoneRegister = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    const { phone, type } = req.body;
-    const phoneNumberExists = yield User_1.default.findOne({ phone });
-    if (phoneNumberExists) {
-        return next(new ErrorResponse_1.default(`Phone Number Already Exists`, 400));
-    }
-    const user = yield User_1.default.create({ phone });
-    const authUser = yield Auth_1.default.create({ user: user._id, type });
-    const token = (0, generate_1.generateVerificationCode)();
-    authUser.verificationCode = config_1.default.isDevelopment ? "1234" : token;
-    try {
-        notificationService_1.default.sendSms({
-            text: `Please Verify Phone Number, Please use the following code: ${token}`,
-            to: phone,
-        });
-    }
-    catch (error) {
-        return next(new ErrorResponse_1.default(`Email could not be sent`, 500));
-    }
-    (0, BaseResponseHandler_1.default)({
-        res,
-        statusCode: 200,
-        success: true,
-        message: "Verification Email Sent",
-        data: phone,
+        data: authUser,
     });
 }));
 // @route   /api/v1/auth/password
 // @desc    Create Password
 // @access  Public
 exports.createUserPassword = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    const { email, phoneNumber, password } = req.body;
-    const user = yield User_1.default.findOne({ $or: [{ email }, { phoneNumber }] }).select("-password");
+    const { email, phoneNumber, type, password } = req.body;
+    const query = (0, utils_1.buildUserAuthTypeQuery)(email, phoneNumber);
+    const user = yield User_1.default.findOne(query).select("-password");
     if (!user) {
-        return next(new ErrorResponse_1.default(`Email Not Found`, 404));
+        return next(new ErrorResponse_1.default(`${type} Not Found`, 404));
     }
     const hashedPassword = yield (0, generate_1.hashUserPassword)(password);
     user.password = hashedPassword;
     yield user.save();
-    const userData = (0, utils_1.removeSensitiveFields)(user, ["password"]);
+    const userData = (0, utils_1.removeSensitiveFields)(user, [
+        "password",
+    ]);
     (0, BaseResponseHandler_1.default)({
         res,
         statusCode: 200,
@@ -198,9 +187,8 @@ exports.createUserPassword = (0, express_async_handler_1.default)((req, res, nex
 // @access  Public
 exports.createUserDetails = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { email, firstName, lastName, phoneNumber, dob, age, username } = req.body;
-    const user = yield User_1.default.findOne({
-        $or: [{ email }, { phoneNumber }],
-    });
+    const query = (0, utils_1.buildUserAuthTypeQuery)(email, phoneNumber);
+    const user = yield User_1.default.findOne(query);
     if (!user) {
         return next(new ErrorResponse_1.default(`User With The Provided Email Not Found`, 404));
     }
@@ -234,10 +222,11 @@ exports.createUserDetails = (0, express_async_handler_1.default)((req, res, next
 // @desc    Suggest Unique Username
 // @access  Public
 exports.suggestUsername = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    const { email } = req.body;
-    const user = yield User_1.default.findOne({ email });
+    const { email, phoneNumber } = req.query;
+    const query = (0, utils_1.buildUserAuthTypeQuery)(email, phoneNumber);
+    const user = yield User_1.default.findOne(query);
     if (!user) {
-        return next(new ErrorResponse_1.default(`User with the provided email not found`, 404));
+        return next(new ErrorResponse_1.default(`Provided User with the was not found`, 404));
     }
     let baseUsername = (user.firstName +
         user.lastName +
@@ -263,12 +252,11 @@ exports.suggestUsername = (0, express_async_handler_1.default)((req, res, next) 
 // @desc    Verify User Registeration Status
 // @access  Public
 exports.getAuthVerificationStatus = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    const { email, phoneNumber } = req.query;
-    const user = yield User_1.default.findOne({
-        $or: [{ email }, { phoneNumber }],
-    });
+    const { email, phoneNumber, type } = req.query;
+    const query = (0, utils_1.buildUserAuthTypeQuery)(email, phoneNumber);
+    const user = yield User_1.default.findOne(query);
     if (!user) {
-        return next(new ErrorResponse_1.default(`User With The Provided Email Not Found`, 404));
+        return next(new ErrorResponse_1.default(`User With The Provided ${type} Not Found`, 404));
     }
     const authUser = yield Auth_1.default.findOne({ user: user._id });
     if (!authUser) {
@@ -280,8 +268,8 @@ exports.getAuthVerificationStatus = (0, express_async_handler_1.default)((req, r
         success: true,
         message: "User Verification Status",
         data: {
-            emailVerified: authUser.emailVerified,
-            phoneVerified: authUser.phoneVerified,
+            emailVerified: authUser.isEmailVerified,
+            phoneVerified: authUser.isPhoneVerified,
             authUser,
         },
     });
@@ -295,11 +283,14 @@ exports.verifyOTP = (0, express_async_handler_1.default)((req, res, next) => __a
     if (!user) {
         return next(new ErrorResponse_1.default(`Invalid OTP`, 404));
     }
+    if (user.verificationExpires < new Date()) {
+        return next(new ErrorResponse_1.default("Verification code expired", 400));
+    }
     if (type && type === "email") {
-        user.emailVerified = true;
+        user.isEmailVerified = true;
     }
     else {
-        user.phoneVerified = true;
+        user.isPhoneVerified = true;
     }
     user.verificationCode = "";
     yield user.save();

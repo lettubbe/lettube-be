@@ -28,3 +28,11 @@ export const removeSensitiveFields = <T extends Record<string, any>>(user: T, fi
   return userData;
 };
 
+export const buildUserAuthTypeQuery = (email?: string, phoneNumber?: string) => {
+  const query: Partial<{ email: string; phoneNumber: string }> = {};
+
+  if (email) query.email = email.toLowerCase();
+  if (phoneNumber) query.phoneNumber = phoneNumber;
+
+  return query;
+};
