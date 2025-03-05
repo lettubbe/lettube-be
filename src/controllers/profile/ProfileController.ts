@@ -19,7 +19,7 @@ export const updateUserProfile = asyncHandler(async (req, res, next) => {
 
   const authuser = await getAuthUser(req, next);
 
-  const user = await User.findById(authuser._id);
+  const user = await User.findById(authuser.user);
 
   if (!user) {
     return next(new ErrorResponse(`User Not Found`, 404));

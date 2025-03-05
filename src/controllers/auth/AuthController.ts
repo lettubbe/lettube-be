@@ -397,51 +397,51 @@ export const verifyOTP = asyncHandler(async (req, res, next) => {
 // @desc    Verify OTP
 // @access  Public
 
-export const forgetPassword = asyncHandler(async (req, res, next) => {
-  const { email, phoneNumber, type } = req.body;
+// export const forgetPassword = asyncHandler(async (req, res, next) => {
+//   const { email, phoneNumber, type } = req.body;
 
-  const user = await User.findOne({ $or: [{ email }, { phoneNumber }] });
+//   const user = await User.findOne({ $or: [{ email }, { phoneNumber }] });
 
-  if (!user) {
-    return next(new ErrorResponse(`${type} not Found`, 404));
-  }
+//   if (!user) {
+//     return next(new ErrorResponse(`${type} not Found`, 404));
+//   }
 
-  const authUser = await Auth.findOne({ user: user._id });
+//   const authUser = await Auth.findOne({ user: user._id });
 
-  if (!authUser) {
-    return next(new ErrorResponse(`${type} not Found`, 404));
-  }
+//   if (!authUser) {
+//     return next(new ErrorResponse(`${type} not Found`, 404));
+//   }
 
-  const verificationCode = generateVerificationCode();
+//   const verificationCode = generateVerificationCode();
 
-  authUser.verificationCode = verificationCode;
+//   authUser.verificationCode = verificationCode;
 
-  await authUser.save();
+//   await authUser.save();
 
-  try {
-    if (type == registerEnumType.PHONE) {
-      NotificationService.sendSms({
-        text: `Your OTP is ${verificationCode}`,
-        to: phoneNumber,
-      });
-    }
+//   try {
+//     if (type == registerEnumType.PHONE) {
+//       NotificationService.sendSms({
+//         text: `Your OTP is ${verificationCode}`,
+//         to: phoneNumber,
+//       });
+//     }
 
-    if (type == registerEnumType.EMAIL) {
-      NotificationService.sendEmail({
-        to: user.email,
-        subject: "Password Reset Request",
-        body: `Your OTP is ${verificationCode}`,
-      });
-    }
-  } catch (error) {
-    return next(new ErrorResponse(`Email could not be sent`, 500));
-  }
+//     if (type == registerEnumType.EMAIL) {
+//       NotificationService.sendEmail({
+//         to: user.email,
+//         subject: "Password Reset Request",
+//         body: `Your OTP is ${verificationCode}`,
+//       });
+//     }
+//   } catch (error) {
+//     return next(new ErrorResponse(`Email could not be sent`, 500));
+//   }
 
-  baseResponseHandler({
-    message: `OTP Sent`,
-    res,
-    statusCode: 200,
-    success: true,
-    data: `OTP Sent to ${type}`,
-  });
-});
+//   baseResponseHandler({
+//     message: `OTP Sent`,
+//     res,
+//     statusCode: 200,
+//     success: true,
+//     data: `OTP Sent to ${type}`,
+//   });
+// });
