@@ -8,11 +8,12 @@ import validateForgotPasswordRequest, { forgotPasswordSchema } from "../middlewa
 import validateVerifyAuthenticationRequest from "../middleware/validation/authentication/verifyRegisterEmailValidationSchema";
 import validateUserAuthStatusRequest, { validateUserAuthStatusRequestSchema } from "../middleware/validation/authentication/userAuthStatusSchema";
 import validateUserSuggestUsernameRequest, { validateSuggestUsernameRequestSchema } from "../middleware/validation/authentication/suggestUsernameValidationSchema";
+import validateLoginRequest, { loginUserSchema } from "../middleware/validation/authentication/loginValidationSchemas";
 
 const router = express.Router();
 
 
-router.post("/login", loginUser);
+router.post("/login", validateLoginRequest(loginUserSchema), loginUser);
 router.get("/verify-email/resend", resendEmailOTP);
 router.get("/verifyUserRegisteration", validateUserAuthStatusRequest(validateUserAuthStatusRequestSchema), getAuthVerificationStatus);
 router.post("/forgotPassword", validateForgotPasswordRequest(forgotPasswordSchema), forgetPassword);

@@ -25,16 +25,12 @@ import { registerEnumType } from "../../constants/enums/RegisterationEnums";
 // @access  Public
 
 export const loginUser = asyncHandler(async (req, res, next) => {
-  const { email, phone, password } = req.body;
+  const { email, phoneNumber, password } = req.body;
+
+  const query = buildUserAuthTypeQuery(email, phoneNumber);
 
   // Find user by email or phone
-  const user = await User.findOne({
-    $or: [{ email }, { phone }],
-  });
-
-  if (!email || !password) {
-    return next(new ErrorResponse(`Please Provide Valid Credentials`, 404));
-  }
+  const user = await User.findOne(query);
 
   if (!user) {
     return next(new ErrorResponse(`Incorrect Login Details`, 404));
@@ -43,17 +39,23 @@ export const loginUser = asyncHandler(async (req, res, next) => {
   const passwordMatch = await comparePassword(password, user.password);
 
   if (!passwordMatch) {
-    return next(new ErrorResponse(`Incorrect Login Details`, 404));
+    return next(
+      new ErrorResponse(`Incorrect Login Details`, 404)
+    );
   }
 
   const token = generateToken(user._id);
+
+  const userData: Partial<typeof user> = removeSensitiveFields(user, [
+    "password",
+  ]);
 
   baseResponseHandler({
     res,
     statusCode: 201,
     success: true,
     message: "User Logged In",
-    data: { user, token },
+    data: { userData, token },
   });
 });
 
@@ -207,10 +209,10 @@ export const createUserPassword = asyncHandler(async (req, res, next) => {
 
   const query = buildUserAuthTypeQuery(email, phoneNumber);
 
-  const user = await User.findOne(query).select("-password");
+  const user = await User.findOne(query);
 
   if (!user) {
-    return next(new ErrorResponse(`${type} Not Found`, 404));
+    return next(new ErrorResponse(`${type ? type : "User"} Not Found`, 404));
   }
 
   const hashedPassword = await hashUserPassword(password);
@@ -288,9 +290,7 @@ export const suggestUsername = asyncHandler(async (req, res, next) => {
   const user = await User.findOne(query);
 
   if (!user) {
-    return next(
-      new ErrorResponse(`Provided User with the was not found`, 404)
-    );
+    return next(new ErrorResponse(`Provided User with the was not found`, 404));
   }
 
   let baseUsername = (
@@ -324,10 +324,14 @@ export const suggestUsername = asyncHandler(async (req, res, next) => {
 // @desc    Verify User Registeration Status
 // @access  Public
 
-export const getAuthVerificationStatus = asyncHandler(async (req, res, next) => {
+export const getAuthVerificationStatus = asyncHandler(
+  async (req, res, next) => {
     const { email, phoneNumber, type } = req.query;
 
-    const query = buildUserAuthTypeQuery(email as string, phoneNumber as string);
+    const query = buildUserAuthTypeQuery(
+      email as string,
+      phoneNumber as string
+    );
 
     const user = await User.findOne(query);
 

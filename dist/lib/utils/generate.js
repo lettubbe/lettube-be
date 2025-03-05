@@ -55,7 +55,7 @@ const generateResetPasswordToken = () => {
 exports.generateResetPasswordToken = generateResetPasswordToken;
 const hashUserPassword = (password) => __awaiter(void 0, void 0, void 0, function* () {
     yield bcryptjs_1.default.genSalt(10);
-    return yield bcryptjs_1.default.hash("password", 10);
+    return yield bcryptjs_1.default.hash(password, 10);
 });
 exports.hashUserPassword = hashUserPassword;
 function generateRandomChar(length = 6) {

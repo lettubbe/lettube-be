@@ -18,12 +18,14 @@ const ErrorResponse_1 = __importDefault(require("../../messages/ErrorResponse"))
 const User_1 = __importDefault(require("../../models/User"));
 const BaseResponseHandler_1 = __importDefault(require("../../messages/BaseResponseHandler"));
 const fileUpload_1 = require("../../lib/utils/fileUpload");
+const utils_1 = require("../../lib/utils/utils");
 // @route   /api/v1/profile/upload/internationalPassport
 // @desc    Upload International Passport
 // @access  Private
 exports.updateUserProfile = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { email, firstName, lastName } = req.body;
-    const user = yield User_1.default.findOne({ email });
+    const authuser = yield (0, utils_1.getAuthUser)(req, next);
+    const user = yield User_1.default.findById(authuser._id);
     if (!user) {
         return next(new ErrorResponse_1.default(`User Not Found`, 404));
     }
@@ -48,22 +50,26 @@ exports.updateUserProfile = (0, express_async_handler_1.default)((req, res, next
 // @desc    Upload Profile Picture
 // @access  Private/public
 exports.updateProfilePhoto = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    const { email } = req.body;
-    const user = yield User_1.default.findOne({ email });
+    const { email, phoneNumber } = req.body;
+    const query = (0, utils_1.buildUserAuthTypeQuery)(email, phoneNumber);
+    const user = yield User_1.default.findOne(query);
     if (!user) {
         return next(new ErrorResponse_1.default(`User Not Found`, 404));
     }
-    const picture = yield (0, fileUpload_1.uploadFile)(req, next, "profilePicture");
+    const picture = yield (0, fileUpload_1.uploadFile)(req, next, `profilePicture/${user._id}`);
     if (!picture) {
         return next(new ErrorResponse_1.default(`Failed to upload profile picture`, 500));
     }
     user.profilePicture = picture;
     yield user.save();
+    const userData = (0, utils_1.removeSensitiveFields)(user, [
+        "password",
+    ]);
     (0, BaseResponseHandler_1.default)({
         res,
         statusCode: 200,
         message: `Profile Picture Uploaded Successfully`,
         success: true,
-        data: user
+        data: userData,
     });
 }));

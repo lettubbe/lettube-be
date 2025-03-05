@@ -7,7 +7,6 @@ export const validateUserAuthStatusRequestSchema = Joi.object({
     "string.email": "Email must be a valid email address",
     "string.base": "Email must be a string",
   }),
-
   phoneNumber: Joi.string()
     .pattern(/^\d{10,15}$/)
     .messages({

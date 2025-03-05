@@ -14,6 +14,8 @@ export const uploadFile = async (req: FileRequest, next: NextFunction, folder: s
         return next(new ErrorResponse("No file uploaded", 400));
     }
 
+    console.log("file", file);
+
     const fileExtension = file.originalname.split(".").pop();
 
     const s3Params: any = {
@@ -27,6 +29,7 @@ export const uploadFile = async (req: FileRequest, next: NextFunction, folder: s
         const uploadResult = await s3.upload(s3Params).promise();
         return uploadResult.Location;
     } catch (error) {
+        console.log("error uploading profile picture", error);
         next(new ErrorResponse("Error uploading file", 500));
     }
 };

@@ -21,6 +21,7 @@ const uploadFile = (req, next, folder) => __awaiter(void 0, void 0, void 0, func
     if (!file) {
         return next(new ErrorResponse_1.default("No file uploaded", 400));
     }
+    console.log("file", file);
     const fileExtension = file.originalname.split(".").pop();
     const s3Params = {
         Bucket: process.env.S3_BUCKET_NAME,
@@ -33,6 +34,7 @@ const uploadFile = (req, next, folder) => __awaiter(void 0, void 0, void 0, func
         return uploadResult.Location;
     }
     catch (error) {
+        console.log("error uploading profile picture", error);
         next(new ErrorResponse_1.default("Error uploading file", 500));
     }
 });

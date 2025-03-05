@@ -46,7 +46,7 @@ export const generateResetPasswordToken = () => {
 
 export const hashUserPassword = async (password: string) => {
   await bcryt.genSalt(10);
-  return await bcryt.hash("password", 10);
+  return await bcryt.hash(password, 10);
 };
 
 export function generateRandomChar(length: number = 6) {

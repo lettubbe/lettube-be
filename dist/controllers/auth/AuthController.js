@@ -26,14 +26,10 @@ const RegisterationEnums_1 = require("../../constants/enums/RegisterationEnums")
 // @desc    Login A User
 // @access  Public
 exports.loginUser = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    const { email, phone, password } = req.body;
+    const { email, phoneNumber, password } = req.body;
+    const query = (0, utils_1.buildUserAuthTypeQuery)(email, phoneNumber);
     // Find user by email or phone
-    const user = yield User_1.default.findOne({
-        $or: [{ email }, { phone }],
-    });
-    if (!email || !password) {
-        return next(new ErrorResponse_1.default(`Please Provide Valid Credentials`, 404));
-    }
+    const user = yield User_1.default.findOne(query);
     if (!user) {
         return next(new ErrorResponse_1.default(`Incorrect Login Details`, 404));
     }
@@ -42,12 +38,15 @@ exports.loginUser = (0, express_async_handler_1.default)((req, res, next) => __a
         return next(new ErrorResponse_1.default(`Incorrect Login Details`, 404));
     }
     const token = (0, generate_1.generateToken)(user._id);
+    const userData = (0, utils_1.removeSensitiveFields)(user, [
+        "password",
+    ]);
     (0, BaseResponseHandler_1.default)({
         res,
         statusCode: 201,
         success: true,
         message: "User Logged In",
-        data: { user, token },
+        data: { userData, token },
     });
 }));
 // @route   /api/v1/auth/verify-email/resend
@@ -164,9 +163,9 @@ exports.sendVerificationEmail = (0, express_async_handler_1.default)((req, res, 
 exports.createUserPassword = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { email, phoneNumber, type, password } = req.body;
     const query = (0, utils_1.buildUserAuthTypeQuery)(email, phoneNumber);
-    const user = yield User_1.default.findOne(query).select("-password");
+    const user = yield User_1.default.findOne(query);
     if (!user) {
-        return next(new ErrorResponse_1.default(`${type} Not Found`, 404));
+        return next(new ErrorResponse_1.default(`${type ? type : "User"} Not Found`, 404));
     }
     const hashedPassword = yield (0, generate_1.hashUserPassword)(password);
     user.password = hashedPassword;
