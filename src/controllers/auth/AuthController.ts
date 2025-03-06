@@ -148,7 +148,7 @@ export const sendVerificationEmail = asyncHandler(async (req, res, next) => {
   const emailExists = await User.findOne({ email });
 
   if (email && emailExists) {
-    // return next(new ErrorResponse(`Email Already Exists`, 400));
+   
 
     const authUser = await Auth.findOne({ user: emailExists._id });
 
@@ -167,7 +167,7 @@ export const sendVerificationEmail = asyncHandler(async (req, res, next) => {
   const phoneNumberExists = await User.findOne({ phoneNumber });
 
   if (phoneNumber && phoneNumberExists) {
-    // return next(new ErrorResponse(`Phone Number Already Exists`, 400));
+    
 
     const authUser = await Auth.findOne({ user: phoneNumberExists._id });
 

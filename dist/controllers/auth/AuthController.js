@@ -124,6 +124,7 @@ exports.sendVerificationEmail = (0, express_async_handler_1.default)((req, res, 
             authUser.verificationCode = token;
             authUser.verificationExpires = expiresAt;
         }
+        return;
     }
     const phoneNumberExists = yield User_1.default.findOne({ phoneNumber });
     if (phoneNumber && phoneNumberExists) {
@@ -135,6 +136,7 @@ exports.sendVerificationEmail = (0, express_async_handler_1.default)((req, res, 
             authUser.verificationCode = token;
             authUser.verificationExpires = expiresAt;
         }
+        return;
     }
     const emailLowercase = email.toLowerCase();
     const user = yield User_1.default.create({ email: emailLowercase });
