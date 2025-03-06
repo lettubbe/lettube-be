@@ -147,15 +147,37 @@ export const sendVerificationEmail = asyncHandler(async (req, res, next) => {
 
   const emailExists = await User.findOne({ email });
 
-  // if (email && emailExists) {
-  //   return next(new ErrorResponse(`Email Already Exists`, 400));
-  // }
+  if (email && emailExists) {
+    // return next(new ErrorResponse(`Email Already Exists`, 400));
+
+    const authUser = await Auth.findOne({ user: emailExists._id });
+
+    if(authUser){
+      const token = generateVerificationCode();
+      const expiresAt = new Date(otpTokenExpiry(5 * 60) * 1000); 
+    
+      authUser.verificationCode = token;
+      authUser.verificationExpires = expiresAt;
+    }
+
+  }
 
   const phoneNumberExists = await User.findOne({ phoneNumber });
 
-  // if (phoneNumber && phoneNumberExists) {
-  //   return next(new ErrorResponse(`Phone Number Already Exists`, 400));
-  // }
+  if (phoneNumber && phoneNumberExists) {
+    // return next(new ErrorResponse(`Phone Number Already Exists`, 400));
+
+    const authUser = await Auth.findOne({ user: phoneNumberExists._id });
+
+    if(authUser){
+      const token = generateVerificationCode();
+      const expiresAt = new Date(otpTokenExpiry(5 * 60) * 1000); // Convert UNIX timestamp to Date (5 mintues)
+    
+      authUser.verificationCode = token;
+      authUser.verificationExpires = expiresAt;
+    }
+
+  }
 
   const emailLowercase = email.toLowerCase();
 
