@@ -157,7 +157,9 @@ export const sendVerificationEmail = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse(`Phone Number Already Exists`, 400));
   }
 
-  const user = await User.create({ email });
+  const emailLowercase = email.toLowerCase();
+
+  const user = await User.create({ email: emailLowercase });
 
   const authUser = await Auth.create({ user: user._id, type });
 
