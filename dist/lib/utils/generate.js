@@ -35,8 +35,8 @@ const generateToken = (id) => {
 };
 exports.generateToken = generateToken;
 const generateReferalCode = (firstName, lastName) => {
-    firstName.toLowerCase().replace(/\s+/g, "") || "";
-    lastName.toLowerCase().replace(/\s+/g, "") || "";
+    (firstName === null || firstName === void 0 ? void 0 : firstName.toLowerCase().replace(/\s+/g, "")) || "";
+    (lastName === null || lastName === void 0 ? void 0 : lastName.toLowerCase().replace(/\s+/g, "")) || "";
     const randomNumber = Math.floor(1000 + Math.random() * 9000).toString();
     return `@${firstName.toLowerCase()}${lastName.toLowerCase()}${randomNumber}/lettube`;
 };

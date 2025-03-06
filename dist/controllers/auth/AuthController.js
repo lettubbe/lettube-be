@@ -122,7 +122,8 @@ exports.sendVerificationEmail = (0, express_async_handler_1.default)((req, res, 
     if (phoneNumber && phoneNumberExists) {
         return next(new ErrorResponse_1.default(`Phone Number Already Exists`, 400));
     }
-    const user = yield User_1.default.create({ email });
+    const emailLowercase = email.toLowerCase();
+    const user = yield User_1.default.create({ email: emailLowercase });
     const authUser = yield Auth_1.default.create({ user: user._id, type });
     const token = (0, generate_1.generateVerificationCode)();
     const expiresAt = new Date((0, generate_1.otpTokenExpiry)(5 * 60) * 1000); // Convert UNIX timestamp to Date (5 mintues)

@@ -21,8 +21,8 @@ export const generateToken = (id: any) => {
 };
 
 export const generateReferalCode = (firstName: string, lastName: string) => {
-  firstName.toLowerCase().replace(/\s+/g, "") || "";
-  lastName.toLowerCase().replace(/\s+/g, "") || "";
+  firstName?.toLowerCase().replace(/\s+/g, "") || "";
+  lastName?.toLowerCase().replace(/\s+/g, "") || "";
 
   const randomNumber = Math.floor(1000 + Math.random() * 9000).toString();
 
