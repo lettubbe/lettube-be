@@ -169,7 +169,7 @@ export const sendVerificationEmail = asyncHandler(async (req, res, next) => {
   authUser.verificationCode = token;
   authUser.verificationExpires = expiresAt;
 
-  user.referalCode = generateReferalCode(user.firstName, user.lastName);
+  // user.referalCode = generateReferalCode(user.firstName, user.lastName);
 
   authUser.save();
   user.save();
