@@ -145,6 +145,8 @@ export const resendEmailOTP = asyncHandler(async (req, res, next) => {
 export const sendVerificationEmail = asyncHandler(async (req, res, next) => {
   const { email, phoneNumber, type } = req.body;
 
+  // const query = buildUserAuthTypeQuery(email, phoneNumber);
+
   const emailExists = await User.findOne({ email });
 
   if (email && emailExists) {

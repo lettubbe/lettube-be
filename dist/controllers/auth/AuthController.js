@@ -114,6 +114,7 @@ exports.resendEmailOTP = (0, express_async_handler_1.default)((req, res, next) =
 // @access  Public
 exports.sendVerificationEmail = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { email, phoneNumber, type } = req.body;
+    // const query = buildUserAuthTypeQuery(email, phoneNumber);
     const emailExists = yield User_1.default.findOne({ email });
     if (email && emailExists) {
         const authUser = yield Auth_1.default.findOne({ user: emailExists._id });
@@ -122,9 +123,8 @@ exports.sendVerificationEmail = (0, express_async_handler_1.default)((req, res, 
             const expiresAt = new Date((0, generate_1.otpTokenExpiry)(5 * 60) * 1000);
             authUser.verificationCode = token;
             authUser.verificationExpires = expiresAt;
+            authUser.save();
         }
-        authUser.save();
-        user.save();
         (0, BaseResponseHandler_1.default)({
             res,
             statusCode: 200,
@@ -142,6 +142,7 @@ exports.sendVerificationEmail = (0, express_async_handler_1.default)((req, res, 
             const expiresAt = new Date((0, generate_1.otpTokenExpiry)(5 * 60) * 1000); // Convert UNIX timestamp to Date (5 mintues)
             authUser.verificationCode = token;
             authUser.verificationExpires = expiresAt;
+            authUser.save();
         }
         (0, BaseResponseHandler_1.default)({
             res,
