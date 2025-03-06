@@ -115,13 +115,13 @@ exports.resendEmailOTP = (0, express_async_handler_1.default)((req, res, next) =
 exports.sendVerificationEmail = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { email, phoneNumber, type } = req.body;
     const emailExists = yield User_1.default.findOne({ email });
-    if (email && emailExists) {
-        return next(new ErrorResponse_1.default(`Email Already Exists`, 400));
-    }
+    // if (email && emailExists) {
+    //   return next(new ErrorResponse(`Email Already Exists`, 400));
+    // }
     const phoneNumberExists = yield User_1.default.findOne({ phoneNumber });
-    if (phoneNumber && phoneNumberExists) {
-        return next(new ErrorResponse_1.default(`Phone Number Already Exists`, 400));
-    }
+    // if (phoneNumber && phoneNumberExists) {
+    //   return next(new ErrorResponse(`Phone Number Already Exists`, 400));
+    // }
     const emailLowercase = email.toLowerCase();
     const user = yield User_1.default.create({ email: emailLowercase });
     const authUser = yield Auth_1.default.create({ user: user._id, type });
