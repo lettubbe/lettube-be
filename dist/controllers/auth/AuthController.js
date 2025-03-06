@@ -129,7 +129,7 @@ exports.sendVerificationEmail = (0, express_async_handler_1.default)((req, res, 
     const expiresAt = new Date((0, generate_1.otpTokenExpiry)(5 * 60) * 1000); // Convert UNIX timestamp to Date (5 mintues)
     authUser.verificationCode = token;
     authUser.verificationExpires = expiresAt;
-    user.referalCode = (0, generate_1.generateReferalCode)(user.firstName, user.lastName);
+    // user.referalCode = generateReferalCode(user.firstName, user.lastName);
     authUser.save();
     user.save();
     try {

@@ -147,15 +147,15 @@ export const sendVerificationEmail = asyncHandler(async (req, res, next) => {
 
   const emailExists = await User.findOne({ email });
 
-  if (email && emailExists) {
-    return next(new ErrorResponse(`Email Already Exists`, 400));
-  }
+  // if (email && emailExists) {
+  //   return next(new ErrorResponse(`Email Already Exists`, 400));
+  // }
 
   const phoneNumberExists = await User.findOne({ phoneNumber });
 
-  if (phoneNumber && phoneNumberExists) {
-    return next(new ErrorResponse(`Phone Number Already Exists`, 400));
-  }
+  // if (phoneNumber && phoneNumberExists) {
+  //   return next(new ErrorResponse(`Phone Number Already Exists`, 400));
+  // }
 
   const emailLowercase = email.toLowerCase();
 
