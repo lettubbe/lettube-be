@@ -324,8 +324,7 @@ export const suggestUsername = asyncHandler(async (req, res, next) => {
 // @desc    Verify User Registeration Status
 // @access  Public
 
-export const getAuthVerificationStatus = asyncHandler(
-  async (req, res, next) => {
+export const getAuthVerificationStatus = asyncHandler(async (req, res, next) => {
     const { email, phoneNumber, type } = req.query;
 
     const query = buildUserAuthTypeQuery(

@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.forgetPassword = exports.verifyOTP = exports.getAuthVerificationStatus = exports.suggestUsername = exports.createUserDetails = exports.createUserPassword = exports.sendVerificationEmail = exports.resendEmailOTP = exports.resendMobileOTP = exports.loginUser = void 0;
+exports.verifyOTP = exports.getAuthVerificationStatus = exports.suggestUsername = exports.createUserDetails = exports.createUserPassword = exports.sendVerificationEmail = exports.resendEmailOTP = exports.resendMobileOTP = exports.loginUser = void 0;
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const ErrorResponse_1 = __importDefault(require("../../messages/ErrorResponse"));
 const notificationService_1 = __importDefault(require("../../services/notificationService"));
@@ -298,42 +298,41 @@ exports.verifyOTP = (0, express_async_handler_1.default)((req, res, next) => __a
 // @route   /api/v1/auth/forgotPassword
 // @desc    Verify OTP
 // @access  Public
-exports.forgetPassword = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    const { email, phoneNumber, type } = req.body;
-    const user = yield User_1.default.findOne({ $or: [{ email }, { phoneNumber }] });
-    if (!user) {
-        return next(new ErrorResponse_1.default(`${type} not Found`, 404));
-    }
-    const authUser = yield Auth_1.default.findOne({ user: user._id });
-    if (!authUser) {
-        return next(new ErrorResponse_1.default(`${type} not Found`, 404));
-    }
-    const verificationCode = (0, generate_1.generateVerificationCode)();
-    authUser.verificationCode = verificationCode;
-    yield authUser.save();
-    try {
-        if (type == RegisterationEnums_1.registerEnumType.PHONE) {
-            notificationService_1.default.sendSms({
-                text: `Your OTP is ${verificationCode}`,
-                to: phoneNumber,
-            });
-        }
-        if (type == RegisterationEnums_1.registerEnumType.EMAIL) {
-            notificationService_1.default.sendEmail({
-                to: user.email,
-                subject: "Password Reset Request",
-                body: `Your OTP is ${verificationCode}`,
-            });
-        }
-    }
-    catch (error) {
-        return next(new ErrorResponse_1.default(`Email could not be sent`, 500));
-    }
-    (0, BaseResponseHandler_1.default)({
-        message: `OTP Sent`,
-        res,
-        statusCode: 200,
-        success: true,
-        data: `OTP Sent to ${type}`,
-    });
-}));
+// export const forgetPassword = asyncHandler(async (req, res, next) => {
+//   const { email, phoneNumber, type } = req.body;
+//   const user = await User.findOne({ $or: [{ email }, { phoneNumber }] });
+//   if (!user) {
+//     return next(new ErrorResponse(`${type} not Found`, 404));
+//   }
+//   const authUser = await Auth.findOne({ user: user._id });
+//   if (!authUser) {
+//     return next(new ErrorResponse(`${type} not Found`, 404));
+//   }
+//   const verificationCode = generateVerificationCode();
+//   authUser.verificationCode = verificationCode;
+//   await authUser.save();
+//   try {
+//     if (type == registerEnumType.PHONE) {
+//       NotificationService.sendSms({
+//         text: `Your OTP is ${verificationCode}`,
+//         to: phoneNumber,
+//       });
+//     }
+//     if (type == registerEnumType.EMAIL) {
+//       NotificationService.sendEmail({
+//         to: user.email,
+//         subject: "Password Reset Request",
+//         body: `Your OTP is ${verificationCode}`,
+//       });
+//     }
+//   } catch (error) {
+//     return next(new ErrorResponse(`Email could not be sent`, 500));
+//   }
+//   baseResponseHandler({
+//     message: `OTP Sent`,
+//     res,
+//     statusCode: 200,
+//     success: true,
+//     data: `OTP Sent to ${type}`,
+//   });
+// });

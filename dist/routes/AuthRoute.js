@@ -42,7 +42,6 @@ const userDetailsRegisterationValidationSchema_1 = __importStar(require("../midd
 const passwordRegisterValidationSchema_1 = __importStar(require("../middleware/validation/authentication/passwordRegisterValidationSchema"));
 const verifyRegisterEmailValidationSchema_1 = require("../middleware/validation/authentication/verifyRegisterEmailValidationSchema");
 const AuthController_1 = require("../controllers/auth/AuthController");
-const forgotPasswordValidationSchema_1 = __importStar(require("../middleware/validation/authentication/forgotPasswordValidationSchema"));
 const verifyRegisterEmailValidationSchema_2 = __importDefault(require("../middleware/validation/authentication/verifyRegisterEmailValidationSchema"));
 const userAuthStatusSchema_1 = __importStar(require("../middleware/validation/authentication/userAuthStatusSchema"));
 const suggestUsernameValidationSchema_1 = __importStar(require("../middleware/validation/authentication/suggestUsernameValidationSchema"));
@@ -51,7 +50,7 @@ const router = express_1.default.Router();
 router.post("/login", (0, loginValidationSchemas_1.default)(loginValidationSchemas_1.loginUserSchema), AuthController_1.loginUser);
 router.get("/verify-email/resend", AuthController_1.resendEmailOTP);
 router.get("/verifyUserRegisteration", (0, userAuthStatusSchema_1.default)(userAuthStatusSchema_1.validateUserAuthStatusRequestSchema), AuthController_1.getAuthVerificationStatus);
-router.post("/forgotPassword", (0, forgotPasswordValidationSchema_1.default)(forgotPasswordValidationSchema_1.forgotPasswordSchema), AuthController_1.forgetPassword);
+// router.post("/forgotPassword", validateForgotPasswordRequest(forgotPasswordSchema), forgetPassword);
 router.get("/sugguest/username", (0, suggestUsernameValidationSchema_1.default)(suggestUsernameValidationSchema_1.validateSuggestUsernameRequestSchema), AuthController_1.suggestUsername);
 router.post("/verify-phoneNumber/resend", AuthController_1.resendMobileOTP);
 router.post("/verify-otp", (0, otpValidationSchema_1.default)(otpValidationSchema_1.OTPVerificationSchema), AuthController_1.verifyOTP);

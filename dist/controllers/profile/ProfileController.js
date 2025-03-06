@@ -25,7 +25,7 @@ const utils_1 = require("../../lib/utils/utils");
 exports.updateUserProfile = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { email, firstName, lastName } = req.body;
     const authuser = yield (0, utils_1.getAuthUser)(req, next);
-    const user = yield User_1.default.findById(authuser._id);
+    const user = yield User_1.default.findById(authuser.user);
     if (!user) {
         return next(new ErrorResponse_1.default(`User Not Found`, 404));
     }
