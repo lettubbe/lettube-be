@@ -158,7 +158,16 @@ export const sendVerificationEmail = asyncHandler(async (req, res, next) => {
     
       authUser.verificationCode = token;
       authUser.verificationExpires = expiresAt;
+      authUser.save();
     }
+
+    baseResponseHandler({
+      res,
+      statusCode: 200,
+      success: true,
+      message: "Verification Email Sent",
+      data: authUser,
+    });
 
     return;
 
@@ -177,7 +186,16 @@ export const sendVerificationEmail = asyncHandler(async (req, res, next) => {
     
       authUser.verificationCode = token;
       authUser.verificationExpires = expiresAt;
+      authUser.save();
     }
+
+    baseResponseHandler({
+      res,
+      statusCode: 200,
+      success: true,
+      message: "Verification Email Sent",
+      data: authUser,
+    });
 
     return;
 

@@ -116,7 +116,6 @@ exports.sendVerificationEmail = (0, express_async_handler_1.default)((req, res, 
     const { email, phoneNumber, type } = req.body;
     const emailExists = yield User_1.default.findOne({ email });
     if (email && emailExists) {
-        // return next(new ErrorResponse(`Email Already Exists`, 400));
         const authUser = yield Auth_1.default.findOne({ user: emailExists._id });
         if (authUser) {
             const token = (0, generate_1.generateVerificationCode)();
@@ -124,11 +123,19 @@ exports.sendVerificationEmail = (0, express_async_handler_1.default)((req, res, 
             authUser.verificationCode = token;
             authUser.verificationExpires = expiresAt;
         }
+        authUser.save();
+        user.save();
+        (0, BaseResponseHandler_1.default)({
+            res,
+            statusCode: 200,
+            success: true,
+            message: "Verification Email Sent",
+            data: authUser,
+        });
         return;
     }
     const phoneNumberExists = yield User_1.default.findOne({ phoneNumber });
     if (phoneNumber && phoneNumberExists) {
-        // return next(new ErrorResponse(`Phone Number Already Exists`, 400));
         const authUser = yield Auth_1.default.findOne({ user: phoneNumberExists._id });
         if (authUser) {
             const token = (0, generate_1.generateVerificationCode)();
@@ -136,6 +143,13 @@ exports.sendVerificationEmail = (0, express_async_handler_1.default)((req, res, 
             authUser.verificationCode = token;
             authUser.verificationExpires = expiresAt;
         }
+        (0, BaseResponseHandler_1.default)({
+            res,
+            statusCode: 200,
+            success: true,
+            message: "Verification Email Sent",
+            data: authUser,
+        });
         return;
     }
     const emailLowercase = email.toLowerCase();
