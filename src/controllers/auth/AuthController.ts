@@ -160,6 +160,8 @@ export const sendVerificationEmail = asyncHandler(async (req, res, next) => {
       authUser.verificationExpires = expiresAt;
     }
 
+    return;
+
   }
 
   const phoneNumberExists = await User.findOne({ phoneNumber });
@@ -176,6 +178,8 @@ export const sendVerificationEmail = asyncHandler(async (req, res, next) => {
       authUser.verificationCode = token;
       authUser.verificationExpires = expiresAt;
     }
+
+    return;
 
   }
 
