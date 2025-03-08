@@ -216,13 +216,13 @@ export const sendVerificationEmail = asyncHandler(async (req, res, next) => {
       NotificationService.sendEmail({
         to: email,
         subject: "Lettube Register Email Verification",
-        body: `Please Verify Email Address, Please use the following code: ${token}`,
+        body: `Please Verify Email Address, Please use the following code: ${tokenOTP}`,
       });
     }
 
     if (type === registerEnumType.PHONE) {
       NotificationService.sendSms({
-        text: `Please Verify Phone Number, Please use the following code: ${token}`,
+        text: `Please Verify Phone Number, Please use the following code: ${tokenOTP}`,
         to: phoneNumber,
       });
     }
