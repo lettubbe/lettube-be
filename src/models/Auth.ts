@@ -1,5 +1,6 @@
 import { model, Schema } from "mongoose";
 import { registerEnumType } from "../constants/enums/RegisterationEnums";
+import { bool } from "aws-sdk/clients/signer";
 
 const authSchema = new Schema(
   {
@@ -25,6 +26,22 @@ const authSchema = new Schema(
       type: Boolean,
       default: false,
     },
+    isPasswordSet: {
+      type: Boolean,
+      default: false,
+    },
+    isUsernameSet: {
+      type: Boolean,
+      default: false,
+    },
+    isDOBSet: {
+      type: Boolean,
+      default: false
+    },
+    isUserDetailsSet: {
+      type: Boolean,
+      default: false
+    }
   },
   { timestamps: true }
 );
@@ -33,6 +50,10 @@ export interface IAuth extends Document {
   isEmailVerified: boolean;
   isPhoneVerified: boolean;
   verificationCode: string;
+  isPasswordSet: boolean;
+  isUsernameSet: boolean;
+  isDOBSet: boolean;
+  isUserDetailsSet: boolean;
   type: string;
   user: string;
   verificationExpires: Date;

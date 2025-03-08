@@ -39,9 +39,7 @@ export const loginUser = asyncHandler(async (req, res, next) => {
   const passwordMatch = await comparePassword(password, user.password);
 
   if (!passwordMatch) {
-    return next(
-      new ErrorResponse(`Incorrect Login Details`, 404)
-    );
+    return next(new ErrorResponse(`Incorrect Login Details`, 404));
   }
 
   const token = generateToken(user._id);
@@ -147,18 +145,17 @@ export const sendVerificationEmail = asyncHandler(async (req, res, next) => {
 
   // const query = buildUserAuthTypeQuery(email, phoneNumber);
 
+  let tokenOTP =  generateVerificationCode();
+
   const emailExists = await User.findOne({ email });
 
   if (email && emailExists) {
-   
-
     const authUser = await Auth.findOne({ user: emailExists._id });
 
-    if(authUser){
-      const token = generateVerificationCode();
-      const expiresAt = new Date(otpTokenExpiry(5 * 60) * 1000); 
-    
-      authUser.verificationCode = token;
+    if (authUser) {
+      const expiresAt = new Date(otpTokenExpiry(5 * 60) * 1000);
+
+      authUser.verificationCode = tokenOTP;
       authUser.verificationExpires = expiresAt;
       authUser.save();
     }
@@ -172,21 +169,18 @@ export const sendVerificationEmail = asyncHandler(async (req, res, next) => {
     });
 
     return;
-
   }
 
   const phoneNumberExists = await User.findOne({ phoneNumber });
 
   if (phoneNumber && phoneNumberExists) {
-    
-
     const authUser = await Auth.findOne({ user: phoneNumberExists._id });
 
-    if(authUser){
-      const token = generateVerificationCode();
+    if (authUser) {
+      const token = tokenOTP;
       const expiresAt = new Date(otpTokenExpiry(5 * 60) * 1000); // Convert UNIX timestamp to Date (5 mintues)
-    
-      authUser.verificationCode = token;
+
+      authUser.verificationCode = tokenOTP;
       authUser.verificationExpires = expiresAt;
       authUser.save();
     }
@@ -200,7 +194,6 @@ export const sendVerificationEmail = asyncHandler(async (req, res, next) => {
     });
 
     return;
-
   }
 
   const emailLowercase = email.toLowerCase();
@@ -295,9 +288,7 @@ export const createUserDetails = asyncHandler(async (req, res, next) => {
   const user = await User.findOne(query);
 
   if (!user) {
-    return next(
-      new ErrorResponse(`User Not Found`, 404)
-    );
+    return next(new ErrorResponse(`User Not Found`, 404));
   }
 
   const usernameExists = await User.findOne({
@@ -308,13 +299,46 @@ export const createUserDetails = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse(`Username Already Exists`, 400));
   }
 
-  if (firstName) user.firstName = firstName;
-  if (lastName) user.lastName = lastName;
-  if (dob) user.dob = dob;
-  if (age) user.age = age;
-  if (username) user.username = username;
+  const authUser = await Auth.findOne({ user: user._id });
 
-  await user.save();
+  if (!authUser) {
+    return next(new ErrorResponse(`user not found`, 404));
+  }
+
+  // if (firstName) user.firstName = firstName;
+
+  // if (lastName) user.lastName = lastName;
+
+  // if (dob) {
+  //   user.dob = dob;
+  //   authUser.isDOBSet = true;
+  // }
+
+  // if (age) user.age = age;
+
+  // if (username) {
+  //   user.username = username
+  //   authUser.isUsernameSet = true;
+  // };
+
+  // if(user.firstName && user.lastName && user.username ){
+  //   authUser.isUserDetailsSet = true;
+  // }
+
+  // await user.save();
+  // await authUser.save();
+
+  // Update user fields dynamically
+  Object.assign(user, { firstName, lastName, dob, age, username });
+
+  // Update authUser flags based on changes
+  if (dob) authUser.isDOBSet = true;
+  if (username) authUser.isUsernameSet = true;
+  if (user.firstName && user.lastName) {
+    authUser.isUserDetailsSet = true;
+  }
+
+  await Promise.all([user.save(), authUser.save()]);
 
   const userData = removeSensitiveFields(user, ["password"]);
 
@@ -330,43 +354,6 @@ export const createUserDetails = asyncHandler(async (req, res, next) => {
 // @route   /api/v1/auth/user/username/suggest
 // @desc    Suggest Unique Username
 // @access  Public
-// export const suggestUsername = asyncHandler(async (req, res, next) => {
-//   const { email, phoneNumber } = req.query;
-
-//   const query = buildUserAuthTypeQuery(email as string, phoneNumber as string);
-
-//   const user = await User.findOne(query);
-
-//   if (!user) {
-//     return next(new ErrorResponse(`Provided User with the was not found`, 404));
-//   }
-
-//   let baseUsername = (
-//     user.firstName +
-//     user.lastName +
-//     Math.floor(Math.random() * 1000)
-//   )
-//     .toLowerCase()
-//     .replace(/\s+/g, "");
-//   let suggestedUsername = baseUsername;
-//   let count = 1;
-
-//   // Check if the username already exists, and modify it until it's unique
-//   while (await User.findOne({ username: suggestedUsername })) {
-//     suggestedUsername = `${baseUsername}${count}${Math.floor(
-//       Math.random() * 100
-//     )}`;
-//     count++;
-//   }
-
-//   baseResponseHandler({
-//     res,
-//     statusCode: 200,
-//     success: true,
-//     message: "Suggested unique username",
-//     data: suggestedUsername,
-//   });
-// });
 
 export const suggestUsername = asyncHandler(async (req, res, next) => {
   const { email, phoneNumber } = req.query;
@@ -421,12 +408,12 @@ export const suggestUsername = asyncHandler(async (req, res, next) => {
   });
 });
 
-
 // @route   /api/v1/auth/verifyUserRegisteration
 // @desc    Verify User Registeration Status
 // @access  Public
 
-export const getAuthVerificationStatus = asyncHandler(async (req, res, next) => {
+export const getAuthVerificationStatus = asyncHandler(
+  async (req, res, next) => {
     const { email, phoneNumber, type } = req.query;
 
     const query = buildUserAuthTypeQuery(
@@ -493,56 +480,3 @@ export const verifyOTP = asyncHandler(async (req, res, next) => {
 
   res.status(200).json({ success: true, data: "OTP valid" });
 });
-
-// @route   /api/v1/auth/forgotPassword
-// @desc    Verify OTP
-// @access  Public
-
-// export const forgetPassword = asyncHandler(async (req, res, next) => {
-//   const { email, phoneNumber, type } = req.body;
-
-//   const user = await User.findOne({ $or: [{ email }, { phoneNumber }] });
-
-//   if (!user) {
-//     return next(new ErrorResponse(`${type} not Found`, 404));
-//   }
-
-//   const authUser = await Auth.findOne({ user: user._id });
-
-//   if (!authUser) {
-//     return next(new ErrorResponse(`${type} not Found`, 404));
-//   }
-
-//   const verificationCode = generateVerificationCode();
-
-//   authUser.verificationCode = verificationCode;
-
-//   await authUser.save();
-
-//   try {
-//     if (type == registerEnumType.PHONE) {
-//       NotificationService.sendSms({
-//         text: `Your OTP is ${verificationCode}`,
-//         to: phoneNumber,
-//       });
-//     }
-
-//     if (type == registerEnumType.EMAIL) {
-//       NotificationService.sendEmail({
-//         to: user.email,
-//         subject: "Password Reset Request",
-//         body: `Your OTP is ${verificationCode}`,
-//       });
-//     }
-//   } catch (error) {
-//     return next(new ErrorResponse(`Email could not be sent`, 500));
-//   }
-
-//   baseResponseHandler({
-//     message: `OTP Sent`,
-//     res,
-//     statusCode: 200,
-//     success: true,
-//     data: `OTP Sent to ${type}`,
-//   });
-// });

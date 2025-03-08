@@ -25,6 +25,22 @@ const authSchema = new mongoose_1.Schema({
         type: Boolean,
         default: false,
     },
+    isPasswordSet: {
+        type: Boolean,
+        default: false,
+    },
+    isUsernameSet: {
+        type: Boolean,
+        default: false,
+    },
+    isDOBSet: {
+        type: Boolean,
+        default: false
+    },
+    isUserDetailsSet: {
+        type: Boolean,
+        default: false
+    }
 }, { timestamps: true });
 const Auth = (0, mongoose_1.model)("auth", authSchema);
 exports.default = Auth;
