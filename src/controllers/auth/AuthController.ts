@@ -296,7 +296,7 @@ export const createUserDetails = asyncHandler(async (req, res, next) => {
 
   if (!user) {
     return next(
-      new ErrorResponse(`User With The Provided Email Not Found`, 404)
+      new ErrorResponse(`User Not Found`, 404)
     );
   }
 
@@ -330,15 +330,52 @@ export const createUserDetails = asyncHandler(async (req, res, next) => {
 // @route   /api/v1/auth/user/username/suggest
 // @desc    Suggest Unique Username
 // @access  Public
+// export const suggestUsername = asyncHandler(async (req, res, next) => {
+//   const { email, phoneNumber } = req.query;
+
+//   const query = buildUserAuthTypeQuery(email as string, phoneNumber as string);
+
+//   const user = await User.findOne(query);
+
+//   if (!user) {
+//     return next(new ErrorResponse(`Provided User with the was not found`, 404));
+//   }
+
+//   let baseUsername = (
+//     user.firstName +
+//     user.lastName +
+//     Math.floor(Math.random() * 1000)
+//   )
+//     .toLowerCase()
+//     .replace(/\s+/g, "");
+//   let suggestedUsername = baseUsername;
+//   let count = 1;
+
+//   // Check if the username already exists, and modify it until it's unique
+//   while (await User.findOne({ username: suggestedUsername })) {
+//     suggestedUsername = `${baseUsername}${count}${Math.floor(
+//       Math.random() * 100
+//     )}`;
+//     count++;
+//   }
+
+//   baseResponseHandler({
+//     res,
+//     statusCode: 200,
+//     success: true,
+//     message: "Suggested unique username",
+//     data: suggestedUsername,
+//   });
+// });
+
 export const suggestUsername = asyncHandler(async (req, res, next) => {
   const { email, phoneNumber } = req.query;
 
   const query = buildUserAuthTypeQuery(email as string, phoneNumber as string);
-
   const user = await User.findOne(query);
 
   if (!user) {
-    return next(new ErrorResponse(`Provided User with the was not found`, 404));
+    return next(new ErrorResponse(`Provided User was not found`, 404));
   }
 
   let baseUsername = (
@@ -348,10 +385,12 @@ export const suggestUsername = asyncHandler(async (req, res, next) => {
   )
     .toLowerCase()
     .replace(/\s+/g, "");
+
   let suggestedUsername = baseUsername;
+  let suggestionsSet = new Set();
   let count = 1;
 
-  // Check if the username already exists, and modify it until it's unique
+  // Ensure primary username is unique
   while (await User.findOne({ username: suggestedUsername })) {
     suggestedUsername = `${baseUsername}${count}${Math.floor(
       Math.random() * 100
@@ -359,14 +398,29 @@ export const suggestUsername = asyncHandler(async (req, res, next) => {
     count++;
   }
 
+  suggestionsSet.add(suggestedUsername);
+
+  // Generate 3 more unique username suggestions
+  while (suggestionsSet.size < 4) {
+    let newSuggestion = `${baseUsername}${Math.floor(Math.random() * 1000)}`;
+
+    if (!(await User.findOne({ username: newSuggestion }))) {
+      suggestionsSet.add(newSuggestion);
+    }
+  }
+
   baseResponseHandler({
     res,
     statusCode: 200,
     success: true,
     message: "Suggested unique username",
-    data: suggestedUsername,
+    data: {
+      suggestedUsername,
+      suggestions: Array.from(suggestionsSet).slice(1), // Exclude the primary suggestion
+    },
   });
 });
+
 
 // @route   /api/v1/auth/verifyUserRegisteration
 // @desc    Verify User Registeration Status
