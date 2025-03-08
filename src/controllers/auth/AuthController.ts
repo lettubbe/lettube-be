@@ -177,7 +177,6 @@ export const sendVerificationEmail = asyncHandler(async (req, res, next) => {
     const authUser = await Auth.findOne({ user: phoneNumberExists._id });
 
     if (authUser) {
-      const token = tokenOTP;
       const expiresAt = new Date(otpTokenExpiry(5 * 60) * 1000); // Convert UNIX timestamp to Date (5 mintues)
 
       authUser.verificationCode = tokenOTP;
@@ -202,10 +201,9 @@ export const sendVerificationEmail = asyncHandler(async (req, res, next) => {
 
   const authUser = await Auth.create({ user: user._id, type });
 
-  const token = generateVerificationCode();
   const expiresAt = new Date(otpTokenExpiry(5 * 60) * 1000); // Convert UNIX timestamp to Date (5 mintues)
 
-  authUser.verificationCode = token;
+  authUser.verificationCode = tokenOTP;
   authUser.verificationExpires = expiresAt;
 
   // user.referalCode = generateReferalCode(user.firstName, user.lastName);
