@@ -115,13 +115,13 @@ exports.resendEmailOTP = (0, express_async_handler_1.default)((req, res, next) =
 exports.sendVerificationEmail = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { email, phoneNumber, type } = req.body;
     // const query = buildUserAuthTypeQuery(email, phoneNumber);
-    let token = (0, generate_1.generateVerificationCode)();
+    let tokenOTP = (0, generate_1.generateVerificationCode)();
     const emailExists = yield User_1.default.findOne({ email });
     if (email && emailExists) {
         const authUser = yield Auth_1.default.findOne({ user: emailExists._id });
         if (authUser) {
             const expiresAt = new Date((0, generate_1.otpTokenExpiry)(5 * 60) * 1000);
-            authUser.verificationCode = token;
+            authUser.verificationCode = tokenOTP;
             authUser.verificationExpires = expiresAt;
             authUser.save();
         }
@@ -138,9 +138,8 @@ exports.sendVerificationEmail = (0, express_async_handler_1.default)((req, res, 
     if (phoneNumber && phoneNumberExists) {
         const authUser = yield Auth_1.default.findOne({ user: phoneNumberExists._id });
         if (authUser) {
-            const token = (0, generate_1.generateVerificationCode)();
             const expiresAt = new Date((0, generate_1.otpTokenExpiry)(5 * 60) * 1000); // Convert UNIX timestamp to Date (5 mintues)
-            authUser.verificationCode = token;
+            authUser.verificationCode = tokenOTP;
             authUser.verificationExpires = expiresAt;
             authUser.save();
         }
@@ -156,9 +155,8 @@ exports.sendVerificationEmail = (0, express_async_handler_1.default)((req, res, 
     const emailLowercase = email.toLowerCase();
     const user = yield User_1.default.create({ email: emailLowercase });
     const authUser = yield Auth_1.default.create({ user: user._id, type });
-    const token = (0, generate_1.generateVerificationCode)();
     const expiresAt = new Date((0, generate_1.otpTokenExpiry)(5 * 60) * 1000); // Convert UNIX timestamp to Date (5 mintues)
-    authUser.verificationCode = token;
+    authUser.verificationCode = tokenOTP;
     authUser.verificationExpires = expiresAt;
     // user.referalCode = generateReferalCode(user.firstName, user.lastName);
     authUser.save();
@@ -168,12 +166,12 @@ exports.sendVerificationEmail = (0, express_async_handler_1.default)((req, res, 
             notificationService_1.default.sendEmail({
                 to: email,
                 subject: "Lettube Register Email Verification",
-                body: `Please Verify Email Address, Please use the following code: ${token}`,
+                body: `Please Verify Email Address, Please use the following code: ${tokenOTP}`,
             });
         }
         if (type === RegisterationEnums_1.registerEnumType.PHONE) {
             notificationService_1.default.sendSms({
-                text: `Please Verify Phone Number, Please use the following code: ${token}`,
+                text: `Please Verify Phone Number, Please use the following code: ${tokenOTP}`,
                 to: phoneNumber,
             });
         }

@@ -4,11 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
+const CategoryController_1 = require("../controllers/auth/CategoryController");
 const router = express_1.default.Router();
-const AuthRoute_1 = __importDefault(require("./AuthRoute"));
-const ProfileRoute_1 = __importDefault(require("./ProfileRoute"));
-const CategoryRoute_1 = __importDefault(require("./CategoryRoute"));
-router.use("/auth", AuthRoute_1.default);
-router.use("/profile", ProfileRoute_1.default);
-router.use("/category", CategoryRoute_1.default);
+router.get("/", CategoryController_1.getCategories);
 exports.default = router;

@@ -1,0 +1,8 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const mongoose_1 = require("mongoose");
+const FeedSchema = new mongoose_1.Schema({
+    categories: [String],
+});
+const Feed = (0, mongoose_1.model)("feed", FeedSchema);
+exports.default = Feed;
