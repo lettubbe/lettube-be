@@ -56,9 +56,10 @@ export const loginUser = asyncHandler(async (req, res, next) => {
 
   if (missingFields.length > 0) {
     baseResponseHandler({
-      message: `Auth User Details`,
+      message: `Cannot log in. Please complete verification steps: ${missingFields.join(", ")}`,
+      error: `Cannot log in. Please complete verification steps: ${missingFields.join(", ")}`,
       res,
-      statusCode: 200,
+      statusCode: 400,
       success: true,
       data: authUser
     });

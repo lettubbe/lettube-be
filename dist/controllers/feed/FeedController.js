@@ -21,6 +21,7 @@ const BaseResponseHandler_1 = __importDefault(require("../../messages/BaseRespon
 // @access  private
 exports.createCategoryFeeds = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { categories } = req.body;
+    console.log("categories", categories);
     const categoryFeed = yield Feed_1.default.create(categories);
     (0, BaseResponseHandler_1.default)({
         message: "Category Feed Uploaded Successfully",

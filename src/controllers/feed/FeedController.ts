@@ -11,6 +11,8 @@ export const createCategoryFeeds = asyncHandler(async (req, res, next) => {
 
     const { categories } = req.body;
 
+    console.log("categories", categories);
+
     const categoryFeed = await Feed.create(categories);
 
     baseResponseHandler({

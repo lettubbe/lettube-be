@@ -49,9 +49,10 @@ exports.loginUser = (0, express_async_handler_1.default)((req, res, next) => __a
     const missingFields = requiredFields.filter((field) => !authUser[field]);
     if (missingFields.length > 0) {
         (0, BaseResponseHandler_1.default)({
-            message: `Auth User Details`,
+            message: `Cannot log in. Please complete verification steps: ${missingFields.join(", ")}`,
+            error: `Cannot log in. Please complete verification steps: ${missingFields.join(", ")}`,
             res,
-            statusCode: 200,
+            statusCode: 400,
             success: true,
             data: authUser
         });
