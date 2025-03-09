@@ -19,10 +19,32 @@ const BaseResponseHandler_1 = __importDefault(require("../../messages/BaseRespon
 // @desc     Add Category to user Feed
 // @route   /api/v1/feed/category
 // @access  private
+// export const createCategoryFeeds = asyncHandler(async (req, res, next) => {
+//     const { categories } = req.body;
+//     console.log("categories", categories);
+//     const categoryFeed = await Feed.create(categories);
+//     baseResponseHandler({
+//         message: "Category Feed Uploaded Successfully",
+//         res,
+//         statusCode: 201,
+//         success: true,
+//         data: categoryFeed,
+//     });
+// });
 exports.createCategoryFeeds = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { categories } = req.body;
     console.log("categories", categories);
-    const categoryFeed = yield Feed_1.default.create(categories);
+    // Find an existing feed document or create a new one
+    let categoryFeed = yield Feed_1.default.findOne();
+    if (!categoryFeed) {
+        // If no document exists, create a new one
+        categoryFeed = new Feed_1.default({ categories });
+    }
+    else {
+        // Merge new categories with existing ones, avoiding duplicates
+        categoryFeed.categories = Array.from(new Set([...categoryFeed.categories, ...categories]));
+    }
+    yield categoryFeed.save();
     (0, BaseResponseHandler_1.default)({
         message: "Category Feed Uploaded Successfully",
         res,

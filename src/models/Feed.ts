@@ -6,7 +6,7 @@ const FeedSchema = new Schema({
 });
 
 export interface IFeed extends Document {
-  categories: [string];
+  categories: string[];
 }
 
 export interface IFeedModel extends Model<IFeed> {
