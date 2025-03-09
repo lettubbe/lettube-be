@@ -216,6 +216,7 @@ exports.createUserPassword = (0, express_async_handler_1.default)((req, res, nex
 // @access  Public
 exports.createUserDetails = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { email, firstName, lastName, phoneNumber, dob, age, username } = req.body;
+    let jwtToken;
     const query = (0, utils_1.buildUserAuthTypeQuery)(email, phoneNumber);
     const user = yield User_1.default.findOne(query);
     if (!user) {
@@ -231,34 +232,22 @@ exports.createUserDetails = (0, express_async_handler_1.default)((req, res, next
     if (!authUser) {
         return next(new ErrorResponse_1.default(`user not found`, 404));
     }
-    // if (firstName) user.firstName = firstName;
-    // if (lastName) user.lastName = lastName;
-    // if (dob) {
-    //   user.dob = dob;
-    //   authUser.isDOBSet = true;
-    // }
-    // if (age) user.age = age;
-    // if (username) {
-    //   user.username = username
-    //   authUser.isUsernameSet = true;
-    // };
-    // if(user.firstName && user.lastName && user.username ){
-    //   authUser.isUserDetailsSet = true;
-    // }
-    // await user.save();
-    // await authUser.save();
     // Update user fields dynamically
     Object.assign(user, { firstName, lastName, dob, age, username });
     // Update authUser flags based on changes
-    if (dob)
+    if (dob) {
         authUser.isDOBSet = true;
+        jwtToken = (0, generate_1.generateToken)(user._id);
+    }
+    ;
     if (username)
         authUser.isUsernameSet = true;
     if (user.firstName && user.lastName) {
         authUser.isUserDetailsSet = true;
     }
     yield Promise.all([user.save(), authUser.save()]);
-    const userData = (0, utils_1.removeSensitiveFields)(user, ["password"]);
+    const userDataWithoutPassword = (0, utils_1.removeSensitiveFields)(user, ["password"]);
+    const userData = Object.assign(Object.assign({}, userDataWithoutPassword), { jwtToken });
     (0, BaseResponseHandler_1.default)({
         res,
         statusCode: 200,

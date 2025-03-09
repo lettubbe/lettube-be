@@ -281,6 +281,8 @@ export const createUserDetails = asyncHandler(async (req, res, next) => {
   const { email, firstName, lastName, phoneNumber, dob, age, username } =
     req.body;
 
+  let jwtToken;
+
   const query = buildUserAuthTypeQuery(email, phoneNumber);
 
   const user = await User.findOne(query);
@@ -303,34 +305,14 @@ export const createUserDetails = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse(`user not found`, 404));
   }
 
-  // if (firstName) user.firstName = firstName;
-
-  // if (lastName) user.lastName = lastName;
-
-  // if (dob) {
-  //   user.dob = dob;
-  //   authUser.isDOBSet = true;
-  // }
-
-  // if (age) user.age = age;
-
-  // if (username) {
-  //   user.username = username
-  //   authUser.isUsernameSet = true;
-  // };
-
-  // if(user.firstName && user.lastName && user.username ){
-  //   authUser.isUserDetailsSet = true;
-  // }
-
-  // await user.save();
-  // await authUser.save();
-
   // Update user fields dynamically
   Object.assign(user, { firstName, lastName, dob, age, username });
 
   // Update authUser flags based on changes
-  if (dob) authUser.isDOBSet = true;
+  if (dob) {
+    authUser.isDOBSet = true;
+    jwtToken = generateToken(user._id);
+  };
   if (username) authUser.isUsernameSet = true;
   if (user.firstName && user.lastName) {
     authUser.isUserDetailsSet = true;
@@ -338,7 +320,12 @@ export const createUserDetails = asyncHandler(async (req, res, next) => {
 
   await Promise.all([user.save(), authUser.save()]);
 
-  const userData = removeSensitiveFields(user, ["password"]);
+  const userDataWithoutPassword = removeSensitiveFields(user, ["password"]);
+
+  const userData = {
+    ...userDataWithoutPassword,
+    jwtToken
+  }
 
   baseResponseHandler({
     res,
