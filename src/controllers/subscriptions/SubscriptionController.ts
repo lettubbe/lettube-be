@@ -92,9 +92,12 @@ export const getSubscribedTo = asyncHandler(async (req, res, next) => {
 
 export const bulkSubscribe = asyncHandler(async (req, res, next) => {
   const { userIds } = req.body; 
+
+  console.log("userIds", userIds);
+
   const subscriberId = await getAuthUser(req, next); 
 
-  if (!Array.isArray(userIds) || userIds.length === 0) {
+  if (!Array.isArray(userIds)) {
     return next(new ErrorResponse("Invalid user IDs provided", 400));
   }
 

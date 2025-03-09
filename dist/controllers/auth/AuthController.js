@@ -33,6 +33,30 @@ exports.loginUser = (0, express_async_handler_1.default)((req, res, next) => __a
     if (!user) {
         return next(new ErrorResponse_1.default(`Incorrect Login Details`, 404));
     }
+    const authUser = yield Auth_1.default.findOne({ user: user._id });
+    if (!authUser) {
+        return next(new ErrorResponse_1.default(`User not found`, 404));
+    }
+    // Ensure required fields are set before login
+    const requiredFields = [
+        "isPhoneVerified",
+        "isEmailVerified",
+        "isPasswordSet",
+        "isUsernameSet",
+        "isDOBSet",
+        "isUserDetailsSet",
+    ];
+    const missingFields = requiredFields.filter((field) => !authUser[field]);
+    if (missingFields.length > 0) {
+        (0, BaseResponseHandler_1.default)({
+            message: `Auth User Details`,
+            res,
+            statusCode: 200,
+            success: true,
+            data: authUser
+        });
+        return;
+    }
     const passwordMatch = yield (0, generate_1.comparePassword)(password, user.password);
     if (!passwordMatch) {
         return next(new ErrorResponse_1.default(`Incorrect Login Details`, 404));
@@ -239,7 +263,6 @@ exports.createUserDetails = (0, express_async_handler_1.default)((req, res, next
         authUser.isDOBSet = true;
         jwtToken = (0, generate_1.generateToken)(user._id);
     }
-    ;
     if (username)
         authUser.isUsernameSet = true;
     if (user.firstName && user.lastName) {
@@ -247,7 +270,7 @@ exports.createUserDetails = (0, express_async_handler_1.default)((req, res, next
     }
     yield Promise.all([user.save(), authUser.save()]);
     const userDataWithoutPassword = (0, utils_1.removeSensitiveFields)(user, ["password"]);
-    const userData = Object.assign(Object.assign({}, userDataWithoutPassword), { jwtToken });
+    const userData = Object.assign(Object.assign({}, userDataWithoutPassword), { token: jwtToken });
     (0, BaseResponseHandler_1.default)({
         res,
         statusCode: 200,

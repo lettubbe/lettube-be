@@ -4,7 +4,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
-const CategoryController_1 = require("../controllers/category/CategoryController");
-const router = express_1.default.Router();
-router.get("/", CategoryController_1.getCategories);
+const SubscriptionController_1 = require("../controllers/subscriptions/SubscriptionController");
+const protect_1 = require("../middleware/protect");
+const router = (0, express_1.default)();
+router.post("/bulk", protect_1.protect, SubscriptionController_1.bulkSubscribe);
 exports.default = router;

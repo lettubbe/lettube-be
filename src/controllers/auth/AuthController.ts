@@ -36,6 +36,36 @@ export const loginUser = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse(`Incorrect Login Details`, 404));
   }
 
+  const authUser = await Auth.findOne({ user: user._id });
+
+  if (!authUser) {
+    return next(new ErrorResponse(`User not found`, 404));
+  }
+
+  // Ensure required fields are set before login
+  const requiredFields = [
+    "isPhoneVerified",
+    "isEmailVerified",
+    "isPasswordSet",
+    "isUsernameSet",
+    "isDOBSet",
+    "isUserDetailsSet",
+  ];
+
+  const missingFields = requiredFields.filter((field) => !(authUser as any)[field]);
+
+  if (missingFields.length > 0) {
+    baseResponseHandler({
+      message: `Auth User Details`,
+      res,
+      statusCode: 200,
+      success: true,
+      data: authUser
+    });
+
+    return;
+  }
+
   const passwordMatch = await comparePassword(password, user.password);
 
   if (!passwordMatch) {
@@ -145,7 +175,7 @@ export const sendVerificationEmail = asyncHandler(async (req, res, next) => {
 
   // const query = buildUserAuthTypeQuery(email, phoneNumber);
 
-  let tokenOTP =  generateVerificationCode();
+  let tokenOTP = generateVerificationCode();
 
   const emailExists = await User.findOne({ email });
 
@@ -312,7 +342,7 @@ export const createUserDetails = asyncHandler(async (req, res, next) => {
   if (dob) {
     authUser.isDOBSet = true;
     jwtToken = generateToken(user._id);
-  };
+  }
   if (username) authUser.isUsernameSet = true;
   if (user.firstName && user.lastName) {
     authUser.isUserDetailsSet = true;
@@ -324,8 +354,8 @@ export const createUserDetails = asyncHandler(async (req, res, next) => {
 
   const userData = {
     ...userDataWithoutPassword,
-    jwtToken
-  }
+    token: jwtToken,
+  };
 
   baseResponseHandler({
     res,
