@@ -14,7 +14,7 @@ const router = express.Router();
 
 
 router.post("/login", validateLoginRequest(loginUserSchema), loginUser);
-router.get("/verify-email/resend", resendEmailOTP);
+router.post("/verify-email/resend", resendEmailOTP);
 router.get("/verifyUserRegisteration", validateUserAuthStatusRequest(validateUserAuthStatusRequestSchema), getAuthVerificationStatus);
 // router.post("/forgotPassword", validateForgotPasswordRequest(forgotPasswordSchema), forgetPassword);
 router.get("/sugguest/username", validateUserSuggestUsernameRequest(validateSuggestUsernameRequestSchema), suggestUsername);
