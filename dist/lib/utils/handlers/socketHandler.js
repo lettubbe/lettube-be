@@ -14,9 +14,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getSocketIdForUser = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
-const ChatController_1 = __importDefault(require("../../../controllers/chats/ChatController"));
 const Conversations_1 = require("../../../models/Conversations");
 const mongoose_1 = __importDefault(require("mongoose"));
+const chatService_1 = __importDefault(require("../../../services/chatService"));
 const onlineUsers = new Set();
 const userSockets = {}; // A map of user IDs to socket IDs
 const socketHandler = (io) => {
@@ -55,7 +55,7 @@ const socketHandler = (io) => {
                 // console.log("conversations", conversations);
                 socket.on("message", (data) => __awaiter(void 0, void 0, void 0, function* () {
                     try {
-                        const savedMessage = yield ChatController_1.default.save(data.message, data.sender);
+                        const savedMessage = yield chatService_1.default.save(data.message, data.sender);
                         io.emit("message", savedMessage);
                     }
                     catch (error) {

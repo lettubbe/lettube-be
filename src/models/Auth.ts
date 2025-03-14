@@ -56,7 +56,7 @@ export interface IAuth extends Document {
   isUserDetailsSet: boolean;
   type: string;
   user: string;
-  verificationExpires: Date;
+  verificationExpires: Date | null;
 }
 
 const Auth = model<IAuth>("auth", authSchema);

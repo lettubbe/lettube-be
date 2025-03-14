@@ -1,29 +1,12 @@
 import asyncHandler from "express-async-handler";
 import Feed from "../../models/Feed";
 import baseResponseHandler from "../../messages/BaseResponseHandler";
+import { getAuthUser } from "../../lib/utils/utils";
 
 
-// @desc     Add Category to user Feed
-// @route   /api/v1/feed/category
+// @desc    Add Category to user Feed
+// @route   GET /api/v1/feed/category
 // @access  private
-
-// export const createCategoryFeeds = asyncHandler(async (req, res, next) => {
-
-//     const { categories } = req.body;
-
-//     console.log("categories", categories);
-
-//     const categoryFeed = await Feed.create(categories);
-
-//     baseResponseHandler({
-//         message: "Category Feed Uploaded Successfully",
-//         res,
-//         statusCode: 201,
-//         success: true,
-//         data: categoryFeed,
-//     });
-
-// });
 
 export const createCategoryFeeds = asyncHandler(async (req, res, next) => {
     const { categories } = req.body;
@@ -52,7 +35,23 @@ export const createCategoryFeeds = asyncHandler(async (req, res, next) => {
     });
 });
 
+// @desc     Get User Feed
+// @route   GET /api/v1/feed/
+// @access  private
 
+export const getUserFeeds = asyncHandler(async (req, res, next) => {
+
+    const user = await getAuthUser(req, next);
+
+    baseResponseHandler({
+        message: `User Feeds Retrived successfully`,
+        res,
+        statusCode: 200,
+        success: true,
+        data: user
+    });
+
+});
 
 
 

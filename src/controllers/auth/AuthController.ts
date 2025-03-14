@@ -9,7 +9,7 @@ import {
   hashUserPassword,
   otpTokenExpiry,
 } from "../../lib/utils/generate";
-import { verifyOtpTemplate } from "../../lib/templates/Auth/Auth.template";
+import { forgotPasswordEmailTemplate, welcomeEmailTemplate } from "../../lib/templates/Auth/Auth.template";
 import User from "../../models/User";
 import Auth from "../../models/Auth";
 import baseResponseHandler from "../../messages/BaseResponseHandler";
@@ -44,7 +44,6 @@ export const loginUser = asyncHandler(async (req, res, next) => {
 
   // Ensure required fields are set before login
   const requiredFields = [
-    "isPhoneVerified",
     "isEmailVerified",
     "isPasswordSet",
     "isUsernameSet",
@@ -88,49 +87,17 @@ export const loginUser = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @route   /api/v1/auth/verify-email/resend
+
+// @route   /api/v1/auth/verify/resend
 // @desc    Resend OTP, verification
 // @access  Public
 
-export const resendMobileOTP = asyncHandler(async (req, res, next) => {
-  const { phoneNumber } = req.body;
+export const resendOTP = asyncHandler(async (req, res, next) => {
+  const { email, phoneNumber } = req.body;
 
-  const user = await User.findOne({ phoneNumber });
+  const query = buildUserAuthTypeQuery(email, phoneNumber);
 
-  if (!user) {
-    return next(new ErrorResponse(`Phone Number Not Found`, 404));
-  }
-
-  const token = generateVerificationCode();
-
-  const authUser = await Auth.findOne({ user: user._id });
-
-  if (!authUser) {
-    return next(new ErrorResponse(`User Not Found`, 404));
-  }
-
-  authUser.verificationCode = token;
-
-  try {
-    NotificationService.sendSms({
-      text: `OTP Resent, code is ${token}`,
-      to: phoneNumber,
-    });
-  } catch (error) {
-    return next(new ErrorResponse(`Email could not be sent`, 500));
-  }
-
-  res.status(201).json({ success: true, data: "Verification code Resent" });
-});
-
-// @route   /api/v1/auth/verify-email/resend
-// @desc    Resend OTP, verification
-// @access  Public
-
-export const resendEmailOTP = asyncHandler(async (req, res, next) => {
-  const { email } = req.body;
-
-  const user = await User.findOne({ email });
+  const user = await User.findOne(query);
 
   if (!user) {
     return next(new ErrorResponse(`User Not Found`, 404));
@@ -142,18 +109,36 @@ export const resendEmailOTP = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse(`User Not Found`, 404));
   }
 
-  const token = generateVerificationCode();
+  const verificationCode = generateVerificationCode();
 
+  const token = email ? verificationCode : config.isDevelopment ? "12345" : verificationCode;
+
+  const expiresAt = new Date(otpTokenExpiry(5 * 60) * 1000);
+
+  authUser.verificationExpires = expiresAt;
   authUser.verificationCode = token;
 
   await authUser.save();
 
   try {
-    NotificationService.sendEmail({
-      to: user.email,
-      subject: "Email Verification",
-      body: `OTP Resent, code is ${token}`,
-    });
+
+    const emailVerficationTemplate = welcomeEmailTemplate(token);
+
+    if(email){
+          NotificationService.sendEmail({
+            to: user.email,
+            subject: "Email Verification",
+            body: emailVerficationTemplate,
+          });
+    }
+
+    if(phoneNumber){
+      NotificationService.sendSms({
+        text: `Please Verify Your OTP ${token}`,
+        to: phoneNumber,
+      })
+    }
+
   } catch (error) {
     return next(new ErrorResponse(`Email could not be sent`, 500));
   }
@@ -163,27 +148,31 @@ export const resendEmailOTP = asyncHandler(async (req, res, next) => {
     statusCode: 201,
     success: true,
     message: "Verification code Resent",
-    data: "Verification code Resent",
+    data: authUser,
   });
 });
 
-// @route   /api/v1/auth/verify/register
+// @route   /api/v1/auth/verify
 // @desc    Send OTP to email/phone
 // @access  Public
 
 export const sendVerificationEmail = asyncHandler(async (req, res, next) => {
+
   const { email, phoneNumber, type } = req.body;
 
   // const query = buildUserAuthTypeQuery(email, phoneNumber);
 
-  let tokenOTP = generateVerificationCode();
+  const verificationCode = generateVerificationCode();
+
+  let tokenOTP = verificationCode;
+  let mobileOTP = config.isDevelopment ? "12345" : verificationCode;
 
   const emailExists = await User.findOne({ email });
 
   if (email && emailExists) {
     const authUser = await Auth.findOne({ user: emailExists._id });
 
-    if (authUser) {
+    if (authUser && !authUser.isEmailVerified) {
       const expiresAt = new Date(otpTokenExpiry(5 * 60) * 1000);
 
       authUser.verificationCode = tokenOTP;
@@ -207,7 +196,7 @@ export const sendVerificationEmail = asyncHandler(async (req, res, next) => {
   if (phoneNumber && phoneNumberExists) {
     const authUser = await Auth.findOne({ user: phoneNumberExists._id });
 
-    if (authUser) {
+    if (authUser && !authUser.isPhoneVerified) {
       const expiresAt = new Date(otpTokenExpiry(5 * 60) * 1000); // Convert UNIX timestamp to Date (5 mintues)
 
       authUser.verificationCode = tokenOTP;
@@ -232,9 +221,9 @@ export const sendVerificationEmail = asyncHandler(async (req, res, next) => {
 
   const authUser = await Auth.create({ user: user._id, type });
 
-  const expiresAt = new Date(otpTokenExpiry(5 * 60) * 1000); // Convert UNIX timestamp to Date (5 mintues)
+  const expiresAt = new Date(otpTokenExpiry(5 * 60) * 1000); 
 
-  authUser.verificationCode = tokenOTP;
+  authUser.verificationCode = type == registerEnumType.EMAIL ? tokenOTP : mobileOTP;
   authUser.verificationExpires = expiresAt;
 
   // user.referalCode = generateReferalCode(user.firstName, user.lastName);
@@ -243,17 +232,20 @@ export const sendVerificationEmail = asyncHandler(async (req, res, next) => {
   user.save();
 
   try {
+
+    const emailVerficationTemplate = welcomeEmailTemplate(tokenOTP);
+
     if (type === registerEnumType.EMAIL) {
       NotificationService.sendEmail({
         to: email,
         subject: "Lettube Register Email Verification",
-        body: `Please Verify Email Address, Please use the following code: ${tokenOTP}`,
+        body: emailVerficationTemplate,
       });
     }
 
     if (type === registerEnumType.PHONE) {
       NotificationService.sendSms({
-        text: `Please Verify Phone Number, Please use the following code: ${tokenOTP}`,
+        text: `Please Verify Phone Number, Please use the following code: ${mobileOTP}`,
         to: phoneNumber,
       });
     }
@@ -287,9 +279,17 @@ export const createUserPassword = asyncHandler(async (req, res, next) => {
 
   const hashedPassword = await hashUserPassword(password);
 
+  const authUser = await Auth.findOne({ user: user._id });
+
+  if(!authUser){
+    return next(new ErrorResponse(`Auth User not found`, 404));
+  }
+
   user.password = hashedPassword;
+  authUser.isPasswordSet = true;
 
   await user.save();
+  await authUser.save();
 
   const userData: Partial<typeof user> = removeSensitiveFields(user, [
     "password",
@@ -480,19 +480,147 @@ export const verifyOTP = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse(`Invalid OTP`, 404));
   }
 
-  if (user.verificationExpires < new Date()) {
+  if (user.verificationExpires && user.verificationExpires < new Date()) {
     return next(new ErrorResponse("Verification code expired", 400));
   }
 
-  if (type && type === "email") {
+  if (type && type === registerEnumType.EMAIL) {
     user.isEmailVerified = true;
-  } else {
+  } 
+  
+  if(type && type == registerEnumType.PHONE){
     user.isPhoneVerified = true;
   }
 
   user.verificationCode = "";
+  user.verificationExpires = null;
 
   await user.save();
 
-  res.status(200).json({ success: true, data: "OTP valid" });
+  console.log("user", user);
+
+  baseResponseHandler({
+    message: "OTP Verified Successfully",
+    res,
+    statusCode: 200,
+    success: true,
+    data: "OTP Valid"
+  })
+});
+
+// @route   /api/v1/auth/forgotPassword
+// @desc    Request For Password OTP
+// @access  Public
+
+export const forgetPassword = asyncHandler(async (req, res, next) => {
+  const { email, phoneNumber, type } = req.body;
+
+  const emailLowerCase = email.toLowerCase();
+
+  const query = buildUserAuthTypeQuery(emailLowerCase, phoneNumber);
+
+  const user = await User.findOne(query);
+
+  console.log("user", user)
+
+  if (!user) {
+    return next(new ErrorResponse(`User not Found`, 404));
+  }
+
+  const authuser = await Auth.findOne({ user: user._id });
+
+
+  if (!authuser) {
+    return next(new ErrorResponse(`User not Found`, 404));
+  }
+
+  const verificationCode = generateVerificationCode();
+
+  const verificationTemplate = forgotPasswordEmailTemplate(
+    user.firstName,
+    verificationCode
+  );
+
+  const expiresAt = new Date(otpTokenExpiry(5 * 60) * 1000);
+
+  authuser.verificationCode = verificationCode;
+  authuser.verificationExpires = expiresAt;
+
+  await authuser.save();
+
+  try {
+
+    if (type == registerEnumType.EMAIL) {      
+      NotificationService.sendEmail({
+        to: user.email,
+        subject: "Password Reset Request",
+        body: verificationTemplate,
+      });
+    }
+
+    if (type == registerEnumType.PHONE) {
+      NotificationService.sendSms({
+        text: `Your OTP is ${verificationCode}`,
+        to: phoneNumber
+      })
+    }
+
+  } catch (error) {
+    return next(new ErrorResponse(`Email could not be sent`, 500));
+  }
+
+  baseResponseHandler({
+    message: `Forgot Password Sent Successfully`,
+    res,
+    statusCode: 200,
+    success: true,
+    data: user
+  })
+});
+
+// @route   /api/v1/auth/resetPassword
+// @desc    Verify OTP
+// @access  Public
+
+export const resetPassword = asyncHandler(async (req, res, next) => {
+  const { password, email, phoneNumber, token } = req.body;
+
+  console.log({ password, token, email, phoneNumber });
+
+  const query = buildUserAuthTypeQuery(email, phoneNumber);
+
+  const authUser = await Auth.findOne({ verificationCode: token });
+  const user = await User.findOne(query);
+
+  console.log({ authUser, user });
+
+  if (!authUser || !user) {
+    return next(new ErrorResponse(`Invalid OTP`, 400));
+  }
+
+  if (authUser.verificationExpires && authUser.verificationExpires < new Date()) {
+    return next(new ErrorResponse("Verification code expired", 400));
+  }
+
+  if (!password) {
+    return next(new ErrorResponse(`Password is required`, 400));
+  }
+
+  const hashedPassword = await hashUserPassword(password);
+
+  user.password = hashedPassword;
+  authUser.verificationCode = "";
+  authUser.verificationExpires = null;
+
+  await user.save();
+  
+  const userData = removeSensitiveFields(user, ["password"]);
+
+  baseResponseHandler({
+    message: `Password Changed Successfully`,
+    res,
+    statusCode: 200,
+    success: true,
+    data: userData
+  });
 });

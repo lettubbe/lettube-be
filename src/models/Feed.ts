@@ -2,6 +2,11 @@ import { Document, Model, model, Schema } from "mongoose";
 import mongoosePaginate from "mongoose-paginate-v2";
 
 const FeedSchema = new Schema({
+  user: {
+    type: Schema.Types.ObjectId,
+    ref: "user",
+    required: [true],
+  },
   categories: [String],
 });
 

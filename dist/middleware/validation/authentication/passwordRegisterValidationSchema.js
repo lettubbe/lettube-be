@@ -29,7 +29,7 @@ exports.passwordRegisterVerificationSchema = joi_1.default.object({
         "string.base": "Phone number must be a string",
     }),
 })
-    .or("email", "phone") // Ensure at least one is provided
+    .or("email", "phoneNumber") // Ensure at least one is provided
     .messages({
     "object.missing": "Either email or phone number is required",
 });

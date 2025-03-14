@@ -1,8 +1,8 @@
 import jwt from "jsonwebtoken";
 import { Server, Socket } from "socket.io";
-import ChatController from "../../../controllers/chats/ChatController";
 import { Conversation, Message } from "../../../models/Conversations";
 import mongoose from "mongoose";
+import chatService from "../../../services/chatService";
 
 const onlineUsers = new Set<string>();
 const userSockets = {} as any; // A map of user IDs to socket IDs
@@ -55,7 +55,7 @@ const socketHandler = (io: Server) => {
     
         socket.on("message", async (data) => {
           try {
-            const savedMessage = await ChatController.save(
+            const savedMessage = await chatService.save(
               data.message,
               data.sender
             );

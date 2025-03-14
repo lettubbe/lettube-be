@@ -12,15 +12,17 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.verifyOTP = exports.getAuthVerificationStatus = exports.suggestUsername = exports.createUserDetails = exports.createUserPassword = exports.sendVerificationEmail = exports.resendEmailOTP = exports.resendMobileOTP = exports.loginUser = void 0;
+exports.resetPassword = exports.forgetPassword = exports.verifyOTP = exports.getAuthVerificationStatus = exports.suggestUsername = exports.createUserDetails = exports.createUserPassword = exports.sendVerificationEmail = exports.resendOTP = exports.loginUser = void 0;
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const ErrorResponse_1 = __importDefault(require("../../messages/ErrorResponse"));
 const notificationService_1 = __importDefault(require("../../services/notificationService"));
 const generate_1 = require("../../lib/utils/generate");
+const Auth_template_1 = require("../../lib/templates/Auth/Auth.template");
 const User_1 = __importDefault(require("../../models/User"));
 const Auth_1 = __importDefault(require("../../models/Auth"));
 const BaseResponseHandler_1 = __importDefault(require("../../messages/BaseResponseHandler"));
 const utils_1 = require("../../lib/utils/utils");
+const config_1 = __importDefault(require("../../config"));
 const RegisterationEnums_1 = require("../../constants/enums/RegisterationEnums");
 // @route   /api/v1/auth/register
 // @desc    Login A User
@@ -39,7 +41,6 @@ exports.loginUser = (0, express_async_handler_1.default)((req, res, next) => __a
     }
     // Ensure required fields are set before login
     const requiredFields = [
-        "isPhoneVerified",
         "isEmailVerified",
         "isPasswordSet",
         "isUsernameSet",
@@ -74,38 +75,13 @@ exports.loginUser = (0, express_async_handler_1.default)((req, res, next) => __a
         data: { userData, token },
     });
 }));
-// @route   /api/v1/auth/verify-email/resend
+// @route   /api/v1/auth/verify/resend
 // @desc    Resend OTP, verification
 // @access  Public
-exports.resendMobileOTP = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    const { phoneNumber } = req.body;
-    const user = yield User_1.default.findOne({ phoneNumber });
-    if (!user) {
-        return next(new ErrorResponse_1.default(`Phone Number Not Found`, 404));
-    }
-    const token = (0, generate_1.generateVerificationCode)();
-    const authUser = yield Auth_1.default.findOne({ user: user._id });
-    if (!authUser) {
-        return next(new ErrorResponse_1.default(`User Not Found`, 404));
-    }
-    authUser.verificationCode = token;
-    try {
-        notificationService_1.default.sendSms({
-            text: `OTP Resent, code is ${token}`,
-            to: phoneNumber,
-        });
-    }
-    catch (error) {
-        return next(new ErrorResponse_1.default(`Email could not be sent`, 500));
-    }
-    res.status(201).json({ success: true, data: "Verification code Resent" });
-}));
-// @route   /api/v1/auth/verify-email/resend
-// @desc    Resend OTP, verification
-// @access  Public
-exports.resendEmailOTP = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    const { email } = req.body;
-    const user = yield User_1.default.findOne({ email });
+exports.resendOTP = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const { email, phoneNumber } = req.body;
+    const query = (0, utils_1.buildUserAuthTypeQuery)(email, phoneNumber);
+    const user = yield User_1.default.findOne(query);
     if (!user) {
         return next(new ErrorResponse_1.default(`User Not Found`, 404));
     }
@@ -113,15 +89,27 @@ exports.resendEmailOTP = (0, express_async_handler_1.default)((req, res, next) =
     if (!authUser) {
         return next(new ErrorResponse_1.default(`User Not Found`, 404));
     }
-    const token = (0, generate_1.generateVerificationCode)();
+    const verificationCode = (0, generate_1.generateVerificationCode)();
+    const token = email ? verificationCode : config_1.default.isDevelopment ? "12345" : verificationCode;
+    const expiresAt = new Date((0, generate_1.otpTokenExpiry)(5 * 60) * 1000);
+    authUser.verificationExpires = expiresAt;
     authUser.verificationCode = token;
     yield authUser.save();
     try {
-        notificationService_1.default.sendEmail({
-            to: user.email,
-            subject: "Email Verification",
-            body: `OTP Resent, code is ${token}`,
-        });
+        const emailVerficationTemplate = (0, Auth_template_1.welcomeEmailTemplate)(token);
+        if (email) {
+            notificationService_1.default.sendEmail({
+                to: user.email,
+                subject: "Email Verification",
+                body: emailVerficationTemplate,
+            });
+        }
+        if (phoneNumber) {
+            notificationService_1.default.sendSms({
+                text: `Please Verify Your OTP ${token}`,
+                to: phoneNumber,
+            });
+        }
     }
     catch (error) {
         return next(new ErrorResponse_1.default(`Email could not be sent`, 500));
@@ -131,20 +119,22 @@ exports.resendEmailOTP = (0, express_async_handler_1.default)((req, res, next) =
         statusCode: 201,
         success: true,
         message: "Verification code Resent",
-        data: "Verification code Resent",
+        data: authUser,
     });
 }));
-// @route   /api/v1/auth/verify/register
+// @route   /api/v1/auth/verify
 // @desc    Send OTP to email/phone
 // @access  Public
 exports.sendVerificationEmail = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { email, phoneNumber, type } = req.body;
     // const query = buildUserAuthTypeQuery(email, phoneNumber);
-    let tokenOTP = (0, generate_1.generateVerificationCode)();
+    const verificationCode = (0, generate_1.generateVerificationCode)();
+    let tokenOTP = verificationCode;
+    let mobileOTP = config_1.default.isDevelopment ? "12345" : verificationCode;
     const emailExists = yield User_1.default.findOne({ email });
     if (email && emailExists) {
         const authUser = yield Auth_1.default.findOne({ user: emailExists._id });
-        if (authUser) {
+        if (authUser && !authUser.isEmailVerified) {
             const expiresAt = new Date((0, generate_1.otpTokenExpiry)(5 * 60) * 1000);
             authUser.verificationCode = tokenOTP;
             authUser.verificationExpires = expiresAt;
@@ -162,7 +152,7 @@ exports.sendVerificationEmail = (0, express_async_handler_1.default)((req, res, 
     const phoneNumberExists = yield User_1.default.findOne({ phoneNumber });
     if (phoneNumber && phoneNumberExists) {
         const authUser = yield Auth_1.default.findOne({ user: phoneNumberExists._id });
-        if (authUser) {
+        if (authUser && !authUser.isPhoneVerified) {
             const expiresAt = new Date((0, generate_1.otpTokenExpiry)(5 * 60) * 1000); // Convert UNIX timestamp to Date (5 mintues)
             authUser.verificationCode = tokenOTP;
             authUser.verificationExpires = expiresAt;
@@ -180,23 +170,24 @@ exports.sendVerificationEmail = (0, express_async_handler_1.default)((req, res, 
     const emailLowercase = email.toLowerCase();
     const user = yield User_1.default.create({ email: emailLowercase });
     const authUser = yield Auth_1.default.create({ user: user._id, type });
-    const expiresAt = new Date((0, generate_1.otpTokenExpiry)(5 * 60) * 1000); // Convert UNIX timestamp to Date (5 mintues)
-    authUser.verificationCode = tokenOTP;
+    const expiresAt = new Date((0, generate_1.otpTokenExpiry)(5 * 60) * 1000);
+    authUser.verificationCode = type == RegisterationEnums_1.registerEnumType.EMAIL ? tokenOTP : mobileOTP;
     authUser.verificationExpires = expiresAt;
     // user.referalCode = generateReferalCode(user.firstName, user.lastName);
     authUser.save();
     user.save();
     try {
+        const emailVerficationTemplate = (0, Auth_template_1.welcomeEmailTemplate)(tokenOTP);
         if (type === RegisterationEnums_1.registerEnumType.EMAIL) {
             notificationService_1.default.sendEmail({
                 to: email,
                 subject: "Lettube Register Email Verification",
-                body: `Please Verify Email Address, Please use the following code: ${tokenOTP}`,
+                body: emailVerficationTemplate,
             });
         }
         if (type === RegisterationEnums_1.registerEnumType.PHONE) {
             notificationService_1.default.sendSms({
-                text: `Please Verify Phone Number, Please use the following code: ${tokenOTP}`,
+                text: `Please Verify Phone Number, Please use the following code: ${mobileOTP}`,
                 to: phoneNumber,
             });
         }
@@ -223,8 +214,14 @@ exports.createUserPassword = (0, express_async_handler_1.default)((req, res, nex
         return next(new ErrorResponse_1.default(`${type ? type : "User"} Not Found`, 404));
     }
     const hashedPassword = yield (0, generate_1.hashUserPassword)(password);
+    const authUser = yield Auth_1.default.findOne({ user: user._id });
+    if (!authUser) {
+        return next(new ErrorResponse_1.default(`Auth User not found`, 404));
+    }
     user.password = hashedPassword;
+    authUser.isPasswordSet = true;
     yield user.save();
+    yield authUser.save();
     const userData = (0, utils_1.removeSensitiveFields)(user, [
         "password",
     ]);
@@ -357,16 +354,105 @@ exports.verifyOTP = (0, express_async_handler_1.default)((req, res, next) => __a
     if (!user) {
         return next(new ErrorResponse_1.default(`Invalid OTP`, 404));
     }
-    if (user.verificationExpires < new Date()) {
+    if (user.verificationExpires && user.verificationExpires < new Date()) {
         return next(new ErrorResponse_1.default("Verification code expired", 400));
     }
-    if (type && type === "email") {
+    if (type && type === RegisterationEnums_1.registerEnumType.EMAIL) {
         user.isEmailVerified = true;
     }
-    else {
+    if (type && type == RegisterationEnums_1.registerEnumType.PHONE) {
         user.isPhoneVerified = true;
     }
     user.verificationCode = "";
+    user.verificationExpires = null;
     yield user.save();
-    res.status(200).json({ success: true, data: "OTP valid" });
+    console.log("user", user);
+    (0, BaseResponseHandler_1.default)({
+        message: "OTP Verified Successfully",
+        res,
+        statusCode: 200,
+        success: true,
+        data: "OTP Valid"
+    });
+}));
+// @route   /api/v1/auth/forgotPassword
+// @desc    Request For Password OTP
+// @access  Public
+exports.forgetPassword = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const { email, phoneNumber, type } = req.body;
+    const emailLowerCase = email.toLowerCase();
+    const query = (0, utils_1.buildUserAuthTypeQuery)(emailLowerCase, phoneNumber);
+    const user = yield User_1.default.findOne(query);
+    console.log("user", user);
+    if (!user) {
+        return next(new ErrorResponse_1.default(`User not Found`, 404));
+    }
+    const authuser = yield Auth_1.default.findOne({ user: user._id });
+    if (!authuser) {
+        return next(new ErrorResponse_1.default(`User not Found`, 404));
+    }
+    const verificationCode = (0, generate_1.generateVerificationCode)();
+    const verificationTemplate = (0, Auth_template_1.forgotPasswordEmailTemplate)(user.firstName, verificationCode);
+    const expiresAt = new Date((0, generate_1.otpTokenExpiry)(5 * 60) * 1000);
+    authuser.verificationCode = verificationCode;
+    authuser.verificationExpires = expiresAt;
+    yield authuser.save();
+    try {
+        if (type == RegisterationEnums_1.registerEnumType.EMAIL) {
+            notificationService_1.default.sendEmail({
+                to: user.email,
+                subject: "Password Reset Request",
+                body: verificationTemplate,
+            });
+        }
+        if (type == RegisterationEnums_1.registerEnumType.PHONE) {
+            notificationService_1.default.sendSms({
+                text: `Your OTP is ${verificationCode}`,
+                to: phoneNumber
+            });
+        }
+    }
+    catch (error) {
+        return next(new ErrorResponse_1.default(`Email could not be sent`, 500));
+    }
+    (0, BaseResponseHandler_1.default)({
+        message: `Forgot Password Sent Successfully`,
+        res,
+        statusCode: 200,
+        success: true,
+        data: user
+    });
+}));
+// @route   /api/v1/auth/resetPassword
+// @desc    Verify OTP
+// @access  Public
+exports.resetPassword = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const { password, email, phoneNumber, token } = req.body;
+    console.log({ password, token, email, phoneNumber });
+    const query = (0, utils_1.buildUserAuthTypeQuery)(email, phoneNumber);
+    const authUser = yield Auth_1.default.findOne({ verificationCode: token });
+    const user = yield User_1.default.findOne(query);
+    console.log({ authUser, user });
+    if (!authUser || !user) {
+        return next(new ErrorResponse_1.default(`Invalid OTP`, 400));
+    }
+    if (authUser.verificationExpires && authUser.verificationExpires < new Date()) {
+        return next(new ErrorResponse_1.default("Verification code expired", 400));
+    }
+    if (!password) {
+        return next(new ErrorResponse_1.default(`Password is required`, 400));
+    }
+    const hashedPassword = yield (0, generate_1.hashUserPassword)(password);
+    user.password = hashedPassword;
+    authUser.verificationCode = "";
+    authUser.verificationExpires = null;
+    yield user.save();
+    const userData = (0, utils_1.removeSensitiveFields)(user, ["password"]);
+    (0, BaseResponseHandler_1.default)({
+        message: `Password Changed Successfully`,
+        res,
+        statusCode: 200,
+        success: true,
+        data: userData
+    });
 }));

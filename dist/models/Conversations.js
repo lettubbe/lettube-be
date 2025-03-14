@@ -23,6 +23,10 @@ const messageSchema = new mongoose_1.Schema({
         type: mongoose_1.Schema.Types.ObjectId,
         required: [true, "Sender is required"],
         ref: "user"
+    },
+    isDeleted: {
+        type: Boolean,
+        default: false
     }
 }, { timestamps: true });
 const conversationSchema = new mongoose_1.Schema({

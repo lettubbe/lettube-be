@@ -8,18 +8,24 @@ const joi_1 = __importDefault(require("joi"));
 const ErrorResponse_1 = __importDefault(require("../../../messages/ErrorResponse"));
 exports.passwordResetSchema = joi_1.default.object({
     password: joi_1.default.string()
-        .min(6)
+        .min(8)
+        .pattern(/[\d]/)
+        .pattern(/[!@#$%^&*(),.?":{}|<>]/)
         .required()
         .messages({
-        'any.required': 'Password is required',
-        'string.base': 'Password must be a string',
+        "any.required": "Password is required",
+        "string.min": "Password must be at least 8 characters long",
+        "string.pattern.base": "Password must contain at least one number and one special character",
+        "string.base": "Password must be a string",
     }),
-    otp: joi_1.default.string()
-        .required()
-        .messages({
-        'any.required': 'OTP is required',
-        'string.base': 'OTP must be string',
-    })
+    token: joi_1.default.string().required().messages({
+        "any.required": "OTP is required",
+        "string.base": "OTP must be string",
+    }),
+})
+    .or("email", "phoneNumber") // Ensure at least one is provided
+    .messages({
+    "object.missing": "Either email or phone number is required",
 });
 const validatePasswordResetRequest = (schema) => {
     return (req, res, next) => {

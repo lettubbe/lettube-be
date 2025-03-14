@@ -12,13 +12,22 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const Chat_1 = __importDefault(require("../../models/Chat"));
-class ChatService {
-    save(message, sender) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const chatMessage = new Chat_1.default({ message, sender });
-            return chatMessage.save();
-        });
+exports.deleteChatMessage = void 0;
+const express_async_handler_1 = __importDefault(require("express-async-handler"));
+const Conversations_1 = require("../../models/Conversations");
+const ErrorResponse_1 = __importDefault(require("../../messages/ErrorResponse"));
+exports.deleteChatMessage = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const { messageId } = req.params;
+    // Check if messageId is provided
+    if (!messageId) {
+        return next(new ErrorResponse_1.default(`Message id is required`, 404));
     }
-}
-exports.default = new ChatService();
+    // Find and update the message
+    const message = yield Conversations_1.Message.findByIdAndUpdate(messageId, { isDeleted: true }, // Optionally, update text
+    { new: true });
+    // Check if message exists
+    if (!message) {
+        return next(new ErrorResponse_1.default(`Message is required`, 404));
+    }
+    res.status(200).json({ message: "Message deleted successfully", data: message });
+}));
