@@ -287,8 +287,8 @@ exports.suggestUsername = (0, express_async_handler_1.default)((req, res, next) 
     if (!user) {
         return next(new ErrorResponse_1.default(`Provided User was not found`, 404));
     }
-    let baseUsername = (user.firstName +
-        user.lastName +
+    let baseUsername = ((user === null || user === void 0 ? void 0 : user.firstName) +
+        (user === null || user === void 0 ? void 0 : user.lastName) +
         Math.floor(Math.random() * 1000))
         .toLowerCase()
         .replace(/\s+/g, "");

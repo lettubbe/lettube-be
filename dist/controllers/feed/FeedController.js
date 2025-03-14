@@ -28,7 +28,7 @@ exports.createCategoryFeeds = (0, express_async_handler_1.default)((req, res, ne
     let categoryFeed = yield Feed_1.default.findOne();
     if (!categoryFeed) {
         // If no document exists, create a new one
-        categoryFeed = new Feed_1.default({ categories });
+        categoryFeed = new Feed_1.default({ categories, user: user._id });
     }
     else {
         // Merge new categories with existing ones, avoiding duplicates

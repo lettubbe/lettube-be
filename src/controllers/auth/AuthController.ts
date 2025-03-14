@@ -382,8 +382,8 @@ export const suggestUsername = asyncHandler(async (req, res, next) => {
   }
 
   let baseUsername = (
-    user.firstName +
-    user.lastName +
+    user?.firstName +
+    user?.lastName +
     Math.floor(Math.random() * 1000)
   )
     .toLowerCase()
