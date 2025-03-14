@@ -13,12 +13,14 @@ export const createCategoryFeeds = asyncHandler(async (req, res, next) => {
 
     console.log("categories", categories);
 
+    const user = await getAuthUser(req, next);
+
     // Find an existing feed document or create a new one
     let categoryFeed = await Feed.findOne();
 
     if (!categoryFeed) {
         // If no document exists, create a new one
-        categoryFeed = new Feed({ categories });
+        categoryFeed = new Feed({ categories, user: user._id });
     } else {
         // Merge new categories with existing ones, avoiding duplicates
         categoryFeed.categories = Array.from(new Set([...categoryFeed.categories, ...categories]));
@@ -53,5 +55,11 @@ export const getUserFeeds = asyncHandler(async (req, res, next) => {
 
 });
 
+// @desc     Get User Feed
+// @route   GET /api/v1/feed/
+// @access  private
 
+export const getContacts = asyncHandler(async (req, res, next) => {
+
+});
 

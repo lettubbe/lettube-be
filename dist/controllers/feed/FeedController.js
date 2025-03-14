@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getUserFeeds = exports.createCategoryFeeds = void 0;
+exports.getContacts = exports.getUserFeeds = exports.createCategoryFeeds = void 0;
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const Feed_1 = __importDefault(require("../../models/Feed"));
 const BaseResponseHandler_1 = __importDefault(require("../../messages/BaseResponseHandler"));
@@ -23,6 +23,7 @@ const utils_1 = require("../../lib/utils/utils");
 exports.createCategoryFeeds = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { categories } = req.body;
     console.log("categories", categories);
+    const user = yield (0, utils_1.getAuthUser)(req, next);
     // Find an existing feed document or create a new one
     let categoryFeed = yield Feed_1.default.findOne();
     if (!categoryFeed) {
@@ -54,4 +55,9 @@ exports.getUserFeeds = (0, express_async_handler_1.default)((req, res, next) => 
         success: true,
         data: user
     });
+}));
+// @desc     Get User Feed
+// @route   GET /api/v1/feed/
+// @access  private
+exports.getContacts = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
 }));
