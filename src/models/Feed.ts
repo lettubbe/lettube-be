@@ -8,10 +8,13 @@ const FeedSchema = new Schema({
     required: [true],
   },
   categories: [String],
+  excludedCategories: [String],
 });
 
 export interface IFeed extends Document {
+  user: string;
   categories: string[];
+  excludedCategories: string[];
 }
 
 export interface IFeedModel extends Model<IFeed> {

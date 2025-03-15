@@ -36,3 +36,7 @@ export const buildUserAuthTypeQuery = (email?: string, phoneNumber?: string) => 
 
   return query;
 };
+
+export const normalizePhoneNumber = (phoneNumber: string) => {
+  return phoneNumber.replace(/\D/g, '').slice(-10); 
+};

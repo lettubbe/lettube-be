@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.buildUserAuthTypeQuery = exports.removeSensitiveFields = exports.formatCurrency = exports.getAuthUser = void 0;
+exports.normalizePhoneNumber = exports.buildUserAuthTypeQuery = exports.removeSensitiveFields = exports.formatCurrency = exports.getAuthUser = void 0;
 const ErrorResponse_1 = __importDefault(require("../../messages/ErrorResponse"));
 const User_1 = __importDefault(require("../../models/User"));
 const getAuthUser = (req, next) => __awaiter(void 0, void 0, void 0, function* () {
@@ -46,3 +46,7 @@ const buildUserAuthTypeQuery = (email, phoneNumber) => {
     return query;
 };
 exports.buildUserAuthTypeQuery = buildUserAuthTypeQuery;
+const normalizePhoneNumber = (phoneNumber) => {
+    return phoneNumber.replace(/\D/g, '').slice(-10);
+};
+exports.normalizePhoneNumber = normalizePhoneNumber;

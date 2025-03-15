@@ -8,6 +8,7 @@ const FeedSchema = new mongoose_1.Schema({
         required: [true],
     },
     categories: [String],
+    excludedCategories: [String],
 });
 const Feed = (0, mongoose_1.model)("feed", FeedSchema);
 exports.default = Feed;
