@@ -1,6 +1,6 @@
 import asyncHandler from "express-async-handler";
 import Category from "../../models/Category";
-import { getPaginateOptions } from "../../lib/utils/paginate";
+import { getPaginateOptions, transformPaginateResponse } from "../../lib/utils/paginate";
 import baseResponseHandler from "../../messages/BaseResponseHandler";
 import { CATEGORIES } from "../../_data/categories";
 
@@ -14,6 +14,8 @@ export const getCategories = asyncHandler(async (req, res, next) => {
     const { limit, page  } = req.query;
 
     const options = getPaginateOptions(page, limit);  
+
+    const categoryData = transformPaginateResponse([]); 
 
     // const Categories = await Category.paginate({}, options);
 

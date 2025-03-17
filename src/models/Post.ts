@@ -1,8 +1,7 @@
 import { Model, model, Schema, Types } from "mongoose";
 import mongoosePaginate from "mongoose-paginate-v2";
 
-const postSchema = new Schema<IPost>(
-  {
+const postSchema = new Schema<IPost>({
     user: {
       type: Schema.Types.ObjectId,
       ref: "user",
@@ -27,7 +26,7 @@ const postSchema = new Schema<IPost>(
       {
         user: { type: Schema.Types.ObjectId, ref: "user", required: true },
         text: { type: String, required: true },
-        likes: [{ type: Schema.Types.ObjectId, ref: "user" }], // Users who liked the comment
+        likes: [{ type: Schema.Types.ObjectId, ref: "user" }],
         replies: [
           {
             user: { type: Schema.Types.ObjectId, ref: "user", required: true },
@@ -87,6 +86,8 @@ export interface IPostModel extends Model<IPost> {
     nextPage: number | null;
   }>;
 }
+
+postSchema.plugin(mongoosePaginate);
 
 const Post = model<IPost, IPostModel>("post", postSchema);
 

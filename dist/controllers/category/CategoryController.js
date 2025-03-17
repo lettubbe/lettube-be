@@ -23,6 +23,7 @@ const categories_1 = require("../../_data/categories");
 exports.getCategories = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { limit, page } = req.query;
     const options = (0, paginate_1.getPaginateOptions)(page, limit);
+    const categoryData = (0, paginate_1.transformPaginateResponse)([]);
     // const Categories = await Category.paginate({}, options);
     const categories = categories_1.CATEGORIES;
     (0, BaseResponseHandler_1.default)({

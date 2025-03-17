@@ -32,6 +32,9 @@ exports.createCategoryFeeds = (0, express_async_handler_1.default)((req, res, ne
     // Find an existing feed document for the user
     let categoryFeed = yield Feed_1.default.findOne({ user: user._id });
     const authUser = yield Auth_1.default.findById(user._id);
+    if (!authUser) {
+        return next(new ErrorResponse_1.default(`User Profile Not found`, 404));
+    }
     if (!categoryFeed) {
         // If no document exists, create a new one
         categoryFeed = new Feed_1.default({
@@ -48,9 +51,9 @@ exports.createCategoryFeeds = (0, express_async_handler_1.default)((req, res, ne
         categoryFeed.categories = updatedCategories.filter((cat) => !updatedExcludedCategories.includes(cat));
         categoryFeed.excludedCategories = updatedExcludedCategories.filter((cat) => !updatedCategories.includes(cat));
     }
-    yield (authUser === null || authUser === void 0 ? void 0 : authUser.isCategorySet);
-    true;
+    authUser.isCategorySet = true;
     yield categoryFeed.save();
+    yield authUser.save();
     (0, BaseResponseHandler_1.default)({
         message: "Category Feed Updated Successfully",
         res,
