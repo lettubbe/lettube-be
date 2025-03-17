@@ -20,7 +20,7 @@ export const uploadFile = async (req: FileRequest, next: NextFunction, folder: s
 
     const s3Params: any = {
         Bucket: process.env.S3_BUCKET_NAME,
-        Key: `${folder}/${Math.random()}${uuidv4()}.${fileExtension}`,
+        Key: `${folder}/${uuidv4()}.${fileExtension}`,
         Body: file.buffer,
         ContentType: file.mimetype,
     };

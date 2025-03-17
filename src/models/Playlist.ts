@@ -2,31 +2,36 @@ import { model, Schema, Document, Model } from "mongoose";
 import mongoosePaginate from "mongoose-paginate-v2";
 
 const playlistSchema = new Schema({
-    name: {
-        type: String,
-        required: [true, "Playlist name is required"]
-    },
-    coverPhoto: {
-        type: String,
-        required: [true, "Cover is required"]
-    },
-    description: {
-      type: String,
-    },
-    videos: {
-        type: [String]
-    },
-    visibility: {
-        type: String,
-        enum: ["private", "public"],
-    }
+  name: {
+    type: String,
+    required: [true, "Playlist name is required"],
+  },
+  user: {
+    type: Schema.Types.ObjectId,
+    ref: "user",
+    required: [true],
+  },
+  coverPhoto: {
+    type: String,
+    required: [true, "Cover is required"],
+  },
+  description: {
+    type: String,
+  },
+  videos: {
+    type: [String],
+  },
+  visibility: {
+    type: String,
+    enum: ["private", "public"],
+  },
 });
 
 export interface IPlaylist extends Document {
-    name: string;
-    coverPhoto: string;
-    description: string | null;
-    videos: string[]
+  name: string;
+  coverPhoto: string;
+  description: string | null;
+  videos: string[];
 }
 
 export interface IPlaylistModel extends Model<IPlaylist> {

@@ -26,7 +26,7 @@ export const validateAddPlaylistSchema = Joi.object({
 
 const validateAddPlaylistRequest = (schema: Joi.ObjectSchema) => {
     return (req: Request, res: Response, next: NextFunction) => {
-        const { error } = schema.validate(req.body);
+        const { error } = schema.validate(req.body, { allowUnknown: true });
         if (error) {
             return next(new ErrorResponse(error.details[0].message, 400));
         }

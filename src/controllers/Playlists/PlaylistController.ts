@@ -25,6 +25,7 @@ export const createPlaylist = asyncHandler(async (req, res, next) => {
 
     const playlist = await Playlist.create({
         name,
+        user: user._id,
         description: description ? description : null,
         coverPhoto: playlistCoverPhoto
     });
@@ -43,13 +44,15 @@ export const createPlaylist = asyncHandler(async (req, res, next) => {
 // @desc    get users Playlists
 // @access  Private
 
-export const getPlaylist = asyncHandler(async (req, res, next) => {
+export const getPlaylists = asyncHandler(async (req, res, next) => {
+
+    const user = await getAuthUser(req, next);
 
     const { limit = 10, page = 1 } = req.params;
 
     const options = getPaginateOptions(page, limit);
 
-    const playlists = await Playlist.paginate({}, options);
+    const playlists = await Playlist.paginate({ user: user._id }, options);
 
     const playlistData = transformPaginateResponse(playlists);
 
@@ -63,7 +66,31 @@ export const getPlaylist = asyncHandler(async (req, res, next) => {
 
 });
 
-// @route   PATCH /api/v1/playlist
+// @route   PATCH /api/v1/playlist/:playlistId
+// @desc    get playlist
+// @access  Private
+
+export const getPlaylist = asyncHandler(async (req, res, next) => {
+
+    const { playlistId } = req.params;
+
+    const playlist = await Playlist.findById(playlistId);
+
+    if(!playlist){
+        return next(new ErrorResponse(`Playlist not found`, 404));
+    }
+
+    baseResponseHandler({
+        message: `Playlist retrieved Successfully`,
+        res,
+        statusCode:200,
+        success: true,
+        data: playlist
+    });
+
+});
+
+// @route   PATCH /api/v1/playlist/video
 // @desc    Upload Video To Playlist
 // @access  Private
 
@@ -88,4 +115,69 @@ export const uploadVideoToPlaylist = asyncHandler(async (req, res, next) => {
         success: true,
         data: playlist,
     });
+});
+
+// @route   PATCH /api/v1/playlist
+// @desc    Upload Video To Playlist
+// @access  Private
+
+export const updatePlaylist = asyncHandler(async (req, res, next) => {
+
+    const { name, description, visibility } = req.body;
+    const { playlistId } = req.params;
+
+    const playlistData = {
+        name,
+        description,
+        visibility
+    }
+
+    const playlist = await Playlist.findByIdAndUpdate(playlistId, playlistData, {
+        new: true
+    });
+
+
+    baseResponseHandler({
+        message: `Playlist Updated Successfullly`,
+        res,
+        statusCode: 200,
+        success: true,
+        data: playlist,
+    });
+
+});
+
+// @route   PATCH /api/v1/playlist/playlistCoverPhoto
+// @desc    Upload Video To Playlist
+// @access  Private
+
+export const updatePlaylistCoverPhoto = asyncHandler(async (req, res, next) => {
+
+    const { playlistId } = req.params;
+
+    const playlist = await Playlist.findById(playlistId);
+
+    const user = await getAuthUser(req, next);
+
+    if(!playlist){
+        return next(new ErrorResponse(`No Playlist found`, 404));
+    }
+
+    const playlistCoverPhoto = await uploadFile(req, next, `playlistCoversPhotos/${user._id}`);
+
+    if(!playlistCoverPhoto){
+        return next(new ErrorResponse(`Error Occured When uploading photo`, 404));
+    }
+
+    playlist.coverPhoto = playlistCoverPhoto;
+
+
+    baseResponseHandler({
+        message: `Playlist Updated Successfullly`,
+        res,
+        statusCode: 200,
+        success: true,
+        data: playlist,
+    });
+
 });

@@ -25,7 +25,7 @@ const uploadFile = (req, next, folder) => __awaiter(void 0, void 0, void 0, func
     const fileExtension = file.originalname.split(".").pop();
     const s3Params = {
         Bucket: process.env.S3_BUCKET_NAME,
-        Key: `${folder}/${Math.random()}${(0, uuid_1.v4)()}.${fileExtension}`,
+        Key: `${folder}/${(0, uuid_1.v4)()}.${fileExtension}`,
         Body: file.buffer,
         ContentType: file.mimetype,
     };
