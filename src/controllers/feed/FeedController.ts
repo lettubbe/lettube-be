@@ -55,7 +55,7 @@ export const createCategoryFeeds = asyncHandler(async (req, res, next) => {
   authUser.isCategorySet = true;
 
   await categoryFeed.save();
-  await authUser?.save();
+  await authUser.save();
 
   baseResponseHandler({
     message: "Category Feed Updated Successfully",
