@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getContacts = exports.getUserFeeds = exports.createCategoryFeeds = void 0;
+exports.getContacts = exports.getUserUploadedFeeds = exports.getUserFeeds = exports.createCategoryFeeds = void 0;
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const Feed_1 = __importDefault(require("../../models/Feed"));
 const BaseResponseHandler_1 = __importDefault(require("../../messages/BaseResponseHandler"));
@@ -20,6 +20,8 @@ const utils_1 = require("../../lib/utils/utils");
 const ErrorResponse_1 = __importDefault(require("../../messages/ErrorResponse"));
 const User_1 = __importDefault(require("../../models/User"));
 const posts_1 = require("../../_data/posts");
+const Post_1 = __importDefault(require("../../models/Post"));
+const paginate_1 = require("../../lib/utils/paginate");
 // @desc    Add Category to user Feed
 // @route   POST /api/v1/feed/category
 // @access  Private
@@ -60,6 +62,23 @@ exports.getUserFeeds = (0, express_async_handler_1.default)((req, res, next) => 
     const user = yield (0, utils_1.getAuthUser)(req, next);
     console.log("user", user);
     const posts = posts_1.samplePosts;
+    (0, BaseResponseHandler_1.default)({
+        message: `User Feeds Retrived successfully`,
+        res,
+        statusCode: 200,
+        success: true,
+        data: posts,
+    });
+}));
+// @desc     Get User Feed
+// @route   GET /api/v1/feed/uploads
+// @access  private
+exports.getUserUploadedFeeds = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const user = yield (0, utils_1.getAuthUser)(req, next);
+    const { page, limit } = req.params;
+    const options = (0, paginate_1.getPaginateOptions)(page, limit);
+    const posts = yield Post_1.default.paginate({ user: user._id }, options);
+    console.log("posts", posts);
     (0, BaseResponseHandler_1.default)({
         message: `User Feeds Retrived successfully`,
         res,

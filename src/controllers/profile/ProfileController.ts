@@ -50,7 +50,8 @@ export const updateUserProfile = asyncHandler(async (req, res, next) => {
 // @desc    Upload Profile Picture
 // @access  Private/public
 
-export const updateProfilePhoto = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+export const updateProfilePhoto = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
     const { email, phoneNumber } = req.body;
 
     const query = buildUserAuthTypeQuery(email, phoneNumber);
@@ -121,21 +122,35 @@ export const uploadCoverPhoto = asyncHandler(async (req, res, next) => {
   });
 });
 
-
-// @route   /api/v1/profile/profileDescription/
+// @route   /api/v1/profile/profileDetails/
 // @desc    Upload Profile Picture
 // @access  Private/public
 
-export const updateProfileDescripion = asyncHandler(async (req, res, next) => {
+export const updateProfileDetails = asyncHandler(async (req, res, next) => {
+  const { description, firstName, lastName, websiteLink } = req.body;
 
-   const user = await getAuthUser(req, next);
+  const user = await getAuthUser(req, next);
 
-   const profile = await User.findById(user._id);
+  const profile = await User.findById(user._id);
 
-   if(!profile){
+  if (!profile) {
     return next(new ErrorResponse(`Profile Not Found`, 404));
-   }
+  }
 
-   
+  if (description) profile.description = description;
+  if (firstName) profile.firstName = firstName;
+  if (lastName) profile.lastName = lastName;
+  if (websiteLink) profile.websiteLink = websiteLink;
 
+  await profile.save();
+
+  const updatedUser = await User.findById(user._id).select("-password");
+
+  baseResponseHandler({
+    message: `Profile details updated successfully`,
+    res,
+    statusCode: 200,
+    success: true,
+    data: updatedUser,
+  });
 });

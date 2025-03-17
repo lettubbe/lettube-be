@@ -47,6 +47,9 @@ const UserSchema = new Schema({
   description: {
     type: String
   },
+  websiteLink: {
+    type: String,
+  },
   emailVerificationToken: String,
   resetPasswordToken: String,
   resetPasswordExpire: Date,
@@ -103,6 +106,8 @@ export interface IUser extends Document {
   email: string;
   password: string;
   matchPassword: any;
+  description: string;
+  websiteLink: string;
   firstName: string;
   lastName: string;
   phoneNumber: string;

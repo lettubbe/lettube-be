@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateProfileDescripion = exports.uploadCoverPhoto = exports.updateProfilePhoto = exports.updateUserProfile = void 0;
+exports.updateProfileDetails = exports.uploadCoverPhoto = exports.updateProfilePhoto = exports.updateUserProfile = void 0;
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const ErrorResponse_1 = __importDefault(require("../../messages/ErrorResponse"));
 const User_1 = __importDefault(require("../../models/User"));
@@ -99,13 +99,31 @@ exports.uploadCoverPhoto = (0, express_async_handler_1.default)((req, res, next)
         data: userData,
     });
 }));
-// @route   /api/v1/profile/profileDescription/
+// @route   /api/v1/profile/profileDetails/
 // @desc    Upload Profile Picture
 // @access  Private/public
-exports.updateProfileDescripion = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+exports.updateProfileDetails = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const { description, firstName, lastName, websiteLink } = req.body;
     const user = yield (0, utils_1.getAuthUser)(req, next);
     const profile = yield User_1.default.findById(user._id);
     if (!profile) {
         return next(new ErrorResponse_1.default(`Profile Not Found`, 404));
     }
+    if (description)
+        profile.description = description;
+    if (firstName)
+        profile.firstName = firstName;
+    if (lastName)
+        profile.lastName = lastName;
+    if (websiteLink)
+        profile.websiteLink = websiteLink;
+    yield profile.save();
+    const updatedUser = yield User_1.default.findById(user._id).select("-password");
+    (0, BaseResponseHandler_1.default)({
+        message: `Profile details updated successfully`,
+        res,
+        statusCode: 200,
+        success: true,
+        data: updatedUser,
+    });
 }));

@@ -60,6 +60,9 @@ const UserSchema = new mongoose_1.Schema({
     description: {
         type: String
     },
+    websiteLink: {
+        type: String,
+    },
     emailVerificationToken: String,
     resetPasswordToken: String,
     resetPasswordExpire: Date,

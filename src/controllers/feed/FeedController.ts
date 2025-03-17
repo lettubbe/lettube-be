@@ -5,6 +5,8 @@ import { getAuthUser, normalizePhoneNumber } from "../../lib/utils/utils";
 import ErrorResponse from "../../messages/ErrorResponse";
 import User from "../../models/User";
 import { samplePosts } from "../../_data/posts";
+import Post from "../../models/Post";
+import { getPaginateOptions } from "../../lib/utils/paginate";
 
 // @desc    Add Category to user Feed
 // @route   POST /api/v1/feed/category
@@ -64,6 +66,30 @@ export const getUserFeeds = asyncHandler(async (req, res, next) => {
   console.log("user", user);
 
   const posts = samplePosts;
+
+  baseResponseHandler({
+    message: `User Feeds Retrived successfully`,
+    res,
+    statusCode: 200,
+    success: true,
+    data: posts,
+  });
+});
+
+// @desc     Get User Feed
+// @route   GET /api/v1/feed/uploads
+// @access  private
+
+export const getUserUploadedFeeds = asyncHandler(async (req, res, next) => {
+  const user = await getAuthUser(req, next);
+
+  const { page, limit } = req.params;
+
+  const options = getPaginateOptions(page, limit);
+
+  const posts = await Post.paginate({ user: user._id }, options);
+
+  console.log("posts", posts);
 
   baseResponseHandler({
     message: `User Feeds Retrived successfully`,
