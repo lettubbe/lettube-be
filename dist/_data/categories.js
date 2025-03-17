@@ -14,5 +14,5 @@ exports.CATEGORIES = [
     { _id: 8, name: "Food" },
     { _id: 8, name: "Travel" },
     { _id: 8, name: "Comedy & skits" },
-    { _id: 8, name: "Motivational & self improvement" }
+    { _id: 8, name: "Motivational & self improvement" },
 ];

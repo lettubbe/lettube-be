@@ -41,6 +41,12 @@ const UserSchema = new Schema({
   profilePicture: {
     type: String,
   },
+  coverPhoto: {
+    type: String,
+  },
+  description: {
+    type: String
+  },
   emailVerificationToken: String,
   resetPasswordToken: String,
   resetPasswordExpire: Date,
@@ -110,6 +116,7 @@ export interface IUser extends Document {
   resetPasswordToken: string;
   resetPasswordExpire: string;
   profilePicture: string;
+  coverPhoto: string;
   location: any;
   locationAddress: any;
   date: string;

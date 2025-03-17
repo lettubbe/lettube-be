@@ -44,4 +44,5 @@ const phoneContactsValidationSchema_1 = __importStar(require("../middleware/vali
 const router = express_1.default.Router();
 router.post("/category", [(0, categoryValidationSchema_1.default)(categoryValidationSchema_1.validateAddCategoryFeedSchema), protect_1.protect], FeedController_1.createCategoryFeeds);
 router.post("/contacts", [(0, phoneContactsValidationSchema_1.default)(phoneContactsValidationSchema_1.validatePhoneContactsSchema), protect_1.protect], FeedController_1.getContacts);
+router.get("/", protect_1.protect, FeedController_1.getUserFeeds);
 exports.default = router;

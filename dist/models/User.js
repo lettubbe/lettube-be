@@ -54,6 +54,12 @@ const UserSchema = new mongoose_1.Schema({
     profilePicture: {
         type: String,
     },
+    coverPhoto: {
+        type: String,
+    },
+    description: {
+        type: String
+    },
     emailVerificationToken: String,
     resetPasswordToken: String,
     resetPasswordExpire: Date,

@@ -19,6 +19,7 @@ const BaseResponseHandler_1 = __importDefault(require("../../messages/BaseRespon
 const utils_1 = require("../../lib/utils/utils");
 const ErrorResponse_1 = __importDefault(require("../../messages/ErrorResponse"));
 const User_1 = __importDefault(require("../../models/User"));
+const posts_1 = require("../../_data/posts");
 // @desc    Add Category to user Feed
 // @route   POST /api/v1/feed/category
 // @access  Private
@@ -57,39 +58,19 @@ exports.createCategoryFeeds = (0, express_async_handler_1.default)((req, res, ne
 // @access  private
 exports.getUserFeeds = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const user = yield (0, utils_1.getAuthUser)(req, next);
+    console.log("user", user);
+    const posts = posts_1.samplePosts;
     (0, BaseResponseHandler_1.default)({
         message: `User Feeds Retrived successfully`,
         res,
         statusCode: 200,
         success: true,
-        data: user,
+        data: posts,
     });
 }));
 // @desc     Get User Feed
 // @route    GET /api/v1/feed/phoneNumbers
 // @access   Private
-// export const getContacts = asyncHandler(async (req, res, next) => {
-//   const { phoneNumbers } = req.body;
-//   // Validate that phoneNumbers is an array
-//   if (!Array.isArray(phoneNumbers)) {
-//     return next(
-//       new ErrorResponse("phoneNumbers must be a non-empty array", 400)
-//     );
-//   }
-//   const contacts = await User.find({
-//     phoneNumber: { $in: phoneNumbers },
-//   }).select("firstName lastName phoneNumber email profilePicture");
-//   if (!contacts || contacts.length === 0) {
-//     return next(new ErrorResponse("No contacts found", 404));
-//   }
-//   baseResponseHandler({
-//     message: `Contact Retrived Successfully`,
-//     res,
-//     statusCode: 200,
-//     success: true,
-//     data: contacts
-//   });
-// });
 exports.getContacts = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { phoneNumbers } = req.body;
     // Validate that phoneNumbers is an array
@@ -104,9 +85,6 @@ exports.getContacts = (0, express_async_handler_1.default)((req, res, next) => _
             $regex: new RegExp(normalizedNumbers.map((num) => num).join("|")),
         },
     }).select("firstName lastName phoneNumber email profilePicture");
-    //   if (!contacts || contacts.length === 0) {
-    //     return next(new ErrorResponse("No contacts found", 404));
-    //   }
     (0, BaseResponseHandler_1.default)({
         message: "Contacts Retrieved Successfully",
         res,

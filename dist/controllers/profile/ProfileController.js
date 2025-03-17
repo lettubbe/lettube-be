@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateProfilePhoto = exports.updateUserProfile = void 0;
+exports.updateProfileDescripion = exports.uploadCoverPhoto = exports.updateProfilePhoto = exports.updateUserProfile = void 0;
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const ErrorResponse_1 = __importDefault(require("../../messages/ErrorResponse"));
 const User_1 = __importDefault(require("../../models/User"));
@@ -23,7 +23,7 @@ const utils_1 = require("../../lib/utils/utils");
 // @desc    Upload International Passport
 // @access  Private
 exports.updateUserProfile = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    const { email, firstName, lastName } = req.body;
+    const { firstName, lastName } = req.body;
     const authuser = yield (0, utils_1.getAuthUser)(req, next);
     const user = yield User_1.default.findById(authuser.user);
     if (!user) {
@@ -72,4 +72,40 @@ exports.updateProfilePhoto = (0, express_async_handler_1.default)((req, res, nex
         success: true,
         data: userData,
     });
+}));
+// @route   /api/v1/profile/upload/coverPhoto
+// @desc    Upload Profile Picture
+// @access  Private/public
+exports.uploadCoverPhoto = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const user = yield (0, utils_1.getAuthUser)(req, next);
+    const userProfile = yield User_1.default.findById(user._id);
+    if (!userProfile) {
+        return next(new ErrorResponse_1.default(`User Not Found`, 404));
+    }
+    const picture = yield (0, fileUpload_1.uploadFile)(req, next, `coverPhotos/${user._id}`);
+    if (!picture) {
+        return next(new ErrorResponse_1.default(`Failed to upload profile picture`, 500));
+    }
+    userProfile.coverPhoto = picture;
+    yield user.save();
+    const userData = (0, utils_1.removeSensitiveFields)(user, [
+        "password",
+    ]);
+    (0, BaseResponseHandler_1.default)({
+        res,
+        statusCode: 200,
+        message: `Cover Picture Uploaded Successfully`,
+        success: true,
+        data: userData,
+    });
+}));
+// @route   /api/v1/profile/profileDescription/
+// @desc    Upload Profile Picture
+// @access  Private/public
+exports.updateProfileDescripion = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const user = yield (0, utils_1.getAuthUser)(req, next);
+    const profile = yield User_1.default.findById(user._id);
+    if (!profile) {
+        return next(new ErrorResponse_1.default(`Profile Not Found`, 404));
+    }
 }));

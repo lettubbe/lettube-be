@@ -4,6 +4,7 @@ import baseResponseHandler from "../../messages/BaseResponseHandler";
 import { getAuthUser, normalizePhoneNumber } from "../../lib/utils/utils";
 import ErrorResponse from "../../messages/ErrorResponse";
 import User from "../../models/User";
+import { samplePosts } from "../../_data/posts";
 
 // @desc    Add Category to user Feed
 // @route   POST /api/v1/feed/category
@@ -60,46 +61,22 @@ export const createCategoryFeeds = asyncHandler(async (req, res, next) => {
 export const getUserFeeds = asyncHandler(async (req, res, next) => {
   const user = await getAuthUser(req, next);
 
+  console.log("user", user);
+
+  const posts = samplePosts;
+
   baseResponseHandler({
     message: `User Feeds Retrived successfully`,
     res,
     statusCode: 200,
     success: true,
-    data: user,
+    data: posts,
   });
 });
 
 // @desc     Get User Feed
 // @route    GET /api/v1/feed/phoneNumbers
 // @access   Private
-
-// export const getContacts = asyncHandler(async (req, res, next) => {
-//   const { phoneNumbers } = req.body;
-
-//   // Validate that phoneNumbers is an array
-//   if (!Array.isArray(phoneNumbers)) {
-//     return next(
-//       new ErrorResponse("phoneNumbers must be a non-empty array", 400)
-//     );
-//   }
-
-//   const contacts = await User.find({
-//     phoneNumber: { $in: phoneNumbers },
-//   }).select("firstName lastName phoneNumber email profilePicture");
-
-//   if (!contacts || contacts.length === 0) {
-//     return next(new ErrorResponse("No contacts found", 404));
-//   }
-
-//   baseResponseHandler({
-//     message: `Contact Retrived Successfully`,
-//     res,
-//     statusCode: 200,
-//     success: true,
-//     data: contacts
-//   });
-
-// });
 
 export const getContacts = asyncHandler(async (req, res, next) => {
   const { phoneNumbers } = req.body;
@@ -122,10 +99,6 @@ export const getContacts = asyncHandler(async (req, res, next) => {
       $regex: new RegExp(normalizedNumbers.map((num) => num).join("|")),
     },
   }).select("firstName lastName phoneNumber email profilePicture");
-
-//   if (!contacts || contacts.length === 0) {
-//     return next(new ErrorResponse("No contacts found", 404));
-//   }
 
   baseResponseHandler({
     message: "Contacts Retrieved Successfully",

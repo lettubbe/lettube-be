@@ -1,5 +1,5 @@
 import express from "express";
-import { updateProfilePhoto } from "../controllers/profile/ProfileController";
+import { updateProfilePhoto, uploadCoverPhoto } from "../controllers/profile/ProfileController";
 import upload from "../middleware/multer";
 import { protect } from "../middleware/protect";
 
@@ -9,6 +9,12 @@ router.post(
   "/upload/profilePicture",
   [protect, upload.single("profilePicture")],
   updateProfilePhoto
+);
+
+router.post(
+  "/upload/coverPhoto",
+  [protect, upload.single("coverPhoto")],
+  uploadCoverPhoto
 );
 
 export default router;

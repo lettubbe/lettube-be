@@ -9,15 +9,15 @@ import baseResponseHandler from "../../messages/BaseResponseHandler";
 // @access  Private
 
 export const subscribe = asyncHandler(async (req, res, next) => {
-  const { userId } = req.params;
-  const subscriberId = await getAuthUser(req, next);
+  const { userId } = req.body;
+  const user = await getAuthUser(req, next);
 
-  if (subscriberId === userId) {
+  if (user._id == userId) {
     return next(new ErrorResponse("You cannot subscribe to yourself", 400));
   }
 
   const subscription = await Subscription.create({
-    subscriber: subscriberId,
+    subscriber: user._id,
     subscribedTo: userId,
   });
 
@@ -35,11 +35,11 @@ export const subscribe = asyncHandler(async (req, res, next) => {
 // @access  Private
 
 export const unsubscribe = asyncHandler(async (req, res, next) => {
-  const { userId } = req.params;
-  const subscriberId = await getAuthUser(req, next);
+  const { userId } = req.body;
+  const user = await getAuthUser(req, next);
 
   const subscription = await Subscription.findOneAndDelete({
-    subscriber: subscriberId,
+    subscriber: user._id,
     subscribedTo: userId,
   });
 
@@ -47,13 +47,14 @@ export const unsubscribe = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("Subscription not found", 404));
   }
 
-  res.status(200).json({
+  baseResponseHandler({
+    message: `You have unsubscribe successfully`,
+    res,
+    statusCode: 200,
     success: true,
-    message: "Unsubscribed successfully",
-  });
+    data: subscription
+  })
 });
-
-// Get subscribers of a user
 
 // @desc    Get User Subscribers
 // @route   /api/v1/subscription/subscribers

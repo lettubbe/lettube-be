@@ -22,13 +22,13 @@ const BaseResponseHandler_1 = __importDefault(require("../../messages/BaseRespon
 // @route   /api/v1/subscription/subscribe
 // @access  Private
 exports.subscribe = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    const { userId } = req.params;
-    const subscriberId = yield (0, utils_1.getAuthUser)(req, next);
-    if (subscriberId === userId) {
+    const { userId } = req.body;
+    const user = yield (0, utils_1.getAuthUser)(req, next);
+    if (user._id == userId) {
         return next(new ErrorResponse_1.default("You cannot subscribe to yourself", 400));
     }
     const subscription = yield Subscription_1.default.create({
-        subscriber: subscriberId,
+        subscriber: user._id,
         subscribedTo: userId,
     });
     (0, BaseResponseHandler_1.default)({
@@ -43,21 +43,23 @@ exports.subscribe = (0, express_async_handler_1.default)((req, res, next) => __a
 // @route   /api/v1/subscription/unsubscribe
 // @access  Private
 exports.unsubscribe = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    const { userId } = req.params;
-    const subscriberId = yield (0, utils_1.getAuthUser)(req, next);
+    const { userId } = req.body;
+    const user = yield (0, utils_1.getAuthUser)(req, next);
     const subscription = yield Subscription_1.default.findOneAndDelete({
-        subscriber: subscriberId,
+        subscriber: user._id,
         subscribedTo: userId,
     });
     if (!subscription) {
         return next(new ErrorResponse_1.default("Subscription not found", 404));
     }
-    res.status(200).json({
+    (0, BaseResponseHandler_1.default)({
+        message: `You have unsubscribe successfully`,
+        res,
+        statusCode: 200,
         success: true,
-        message: "Unsubscribed successfully",
+        data: subscription
     });
 }));
-// Get subscribers of a user
 // @desc    Get User Subscribers
 // @route   /api/v1/subscription/subscribers
 // @access  Private

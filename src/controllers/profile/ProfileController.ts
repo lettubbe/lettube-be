@@ -15,7 +15,7 @@ import {
 // @access  Private
 
 export const updateUserProfile = asyncHandler(async (req, res, next) => {
-  const { email, firstName, lastName } = req.body;
+  const { firstName, lastName } = req.body;
 
   const authuser = await getAuthUser(req, next);
 
@@ -50,8 +50,7 @@ export const updateUserProfile = asyncHandler(async (req, res, next) => {
 // @desc    Upload Profile Picture
 // @access  Private/public
 
-export const updateProfilePhoto = asyncHandler(
-  async (req: Request, res: Response, next: NextFunction) => {
+export const updateProfilePhoto = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
     const { email, phoneNumber } = req.body;
 
     const query = buildUserAuthTypeQuery(email, phoneNumber);
@@ -85,3 +84,58 @@ export const updateProfilePhoto = asyncHandler(
     });
   }
 );
+
+// @route   /api/v1/profile/upload/coverPhoto
+// @desc    Upload Profile Picture
+// @access  Private/public
+
+export const uploadCoverPhoto = asyncHandler(async (req, res, next) => {
+  const user = await getAuthUser(req, next);
+
+  const userProfile = await User.findById(user._id);
+
+  if (!userProfile) {
+    return next(new ErrorResponse(`User Not Found`, 404));
+  }
+
+  const picture = await uploadFile(req, next, `coverPhotos/${user._id}`);
+
+  if (!picture) {
+    return next(new ErrorResponse(`Failed to upload profile picture`, 500));
+  }
+
+  userProfile.coverPhoto = picture;
+
+  await user.save();
+
+  const userData: Partial<typeof user> = removeSensitiveFields(user, [
+    "password",
+  ]);
+
+  baseResponseHandler({
+    res,
+    statusCode: 200,
+    message: `Cover Picture Uploaded Successfully`,
+    success: true,
+    data: userData,
+  });
+});
+
+
+// @route   /api/v1/profile/profileDescription/
+// @desc    Upload Profile Picture
+// @access  Private/public
+
+export const updateProfileDescripion = asyncHandler(async (req, res, next) => {
+
+   const user = await getAuthUser(req, next);
+
+   const profile = await User.findById(user._id);
+
+   if(!profile){
+    return next(new ErrorResponse(`Profile Not Found`, 404));
+   }
+
+   
+
+});

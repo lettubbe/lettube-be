@@ -8,4 +8,6 @@ const SubscriptionController_1 = require("../controllers/subscriptions/Subscript
 const protect_1 = require("../middleware/protect");
 const router = (0, express_1.default)();
 router.post("/bulk", protect_1.protect, SubscriptionController_1.bulkSubscribe);
+router.post("/subscribe/:userId", protect_1.protect, SubscriptionController_1.subscribe);
+router.post("/unsubscribe/:userId", protect_1.protect, SubscriptionController_1.unsubscribe);
 exports.default = router;
