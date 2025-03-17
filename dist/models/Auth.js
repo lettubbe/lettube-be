@@ -29,6 +29,10 @@ const authSchema = new mongoose_1.Schema({
         type: Boolean,
         default: false,
     },
+    isCategorySet: {
+        type: Boolean,
+        default: false,
+    },
     isUsernameSet: {
         type: Boolean,
         default: false,

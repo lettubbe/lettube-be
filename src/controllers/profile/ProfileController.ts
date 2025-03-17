@@ -10,48 +10,12 @@ import {
   removeSensitiveFields,
 } from "../../lib/utils/utils";
 
-// @route   /api/v1/profile/upload/internationalPassport
-// @desc    Upload International Passport
-// @access  Private
-
-export const updateUserProfile = asyncHandler(async (req, res, next) => {
-  const { firstName, lastName } = req.body;
-
-  const authuser = await getAuthUser(req, next);
-
-  const user = await User.findById(authuser.user);
-
-  if (!user) {
-    return next(new ErrorResponse(`User Not Found`, 404));
-  }
-
-  // Update the fields
-  if (firstName) {
-    user.firstName = firstName;
-  }
-
-  if (lastName) {
-    user.lastName = lastName;
-  }
-
-  // // Save the updated user
-  await user.save();
-
-  baseResponseHandler({
-    res,
-    statusCode: 200,
-    success: true,
-    message: "Profile updated successfully",
-    data: user,
-  });
-});
 
 // @route   /api/v1/profile/upload/profilePhoto
 // @desc    Upload Profile Picture
 // @access  Private/public
 
-export const updateProfilePhoto = asyncHandler(
-  async (req: Request, res: Response, next: NextFunction) => {
+export const updateProfilePhoto = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
     const { email, phoneNumber } = req.body;
 
     const query = buildUserAuthTypeQuery(email, phoneNumber);

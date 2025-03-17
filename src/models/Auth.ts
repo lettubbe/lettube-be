@@ -30,6 +30,10 @@ const authSchema = new Schema(
       type: Boolean,
       default: false,
     },
+    isCategorySet: {
+      type: Boolean,
+      default: false,
+    },
     isUsernameSet: {
       type: Boolean,
       default: false,
@@ -54,6 +58,7 @@ export interface IAuth extends Document {
   isUsernameSet: boolean;
   isDOBSet: boolean;
   isUserDetailsSet: boolean;
+  isCategorySet: boolean;
   type: string;
   user: string;
   verificationExpires: Date | null;

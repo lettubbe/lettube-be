@@ -22,6 +22,7 @@ const User_1 = __importDefault(require("../../models/User"));
 const posts_1 = require("../../_data/posts");
 const Post_1 = __importDefault(require("../../models/Post"));
 const paginate_1 = require("../../lib/utils/paginate");
+const Auth_1 = __importDefault(require("../../models/Auth"));
 // @desc    Add Category to user Feed
 // @route   POST /api/v1/feed/category
 // @access  Private
@@ -30,6 +31,7 @@ exports.createCategoryFeeds = (0, express_async_handler_1.default)((req, res, ne
     const user = yield (0, utils_1.getAuthUser)(req, next);
     // Find an existing feed document for the user
     let categoryFeed = yield Feed_1.default.findOne({ user: user._id });
+    const authUser = yield Auth_1.default.findById(user._id);
     if (!categoryFeed) {
         // If no document exists, create a new one
         categoryFeed = new Feed_1.default({
@@ -46,6 +48,8 @@ exports.createCategoryFeeds = (0, express_async_handler_1.default)((req, res, ne
         categoryFeed.categories = updatedCategories.filter((cat) => !updatedExcludedCategories.includes(cat));
         categoryFeed.excludedCategories = updatedExcludedCategories.filter((cat) => !updatedCategories.includes(cat));
     }
+    yield (authUser === null || authUser === void 0 ? void 0 : authUser.isCategorySet);
+    true;
     yield categoryFeed.save();
     (0, BaseResponseHandler_1.default)({
         message: "Category Feed Updated Successfully",

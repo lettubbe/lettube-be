@@ -7,6 +7,7 @@ import User from "../../models/User";
 import { samplePosts } from "../../_data/posts";
 import Post from "../../models/Post";
 import { getPaginateOptions } from "../../lib/utils/paginate";
+import Auth from "../../models/Auth";
 
 // @desc    Add Category to user Feed
 // @route   POST /api/v1/feed/category
@@ -19,6 +20,12 @@ export const createCategoryFeeds = asyncHandler(async (req, res, next) => {
 
   // Find an existing feed document for the user
   let categoryFeed = await Feed.findOne({ user: user._id });
+
+  const authUser = await Auth.findById(user._id);
+
+  if(!authUser){
+    return next(new ErrorResponse(`User Profile Not found`, 404));
+  }
 
   if (!categoryFeed) {
     // If no document exists, create a new one
@@ -45,7 +52,10 @@ export const createCategoryFeeds = asyncHandler(async (req, res, next) => {
     );
   }
 
+  authUser.isCategorySet = true;
+
   await categoryFeed.save();
+  await authUser?.save();
 
   baseResponseHandler({
     message: "Category Feed Updated Successfully",
