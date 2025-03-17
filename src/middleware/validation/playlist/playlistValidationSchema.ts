@@ -13,7 +13,6 @@ export const validateAddPlaylistSchema = Joi.object({
             'string.min': 'Playlist Name must be at least 2 characters long',
             'string.max': 'Playlist Name must be less than or equal to 30 characters',
         }),
-    
     visibility: Joi.string()
         .valid('private', 'public')  // Restrict to 'private' or 'public'
         .required()

@@ -25,13 +25,14 @@ const paginate_1 = require("../../lib/utils/paginate");
 // @access  Private
 exports.createPlaylist = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const user = yield (0, utils_1.getAuthUser)(req, next);
-    const { name } = req.body;
+    const { name, description } = req.body;
     const playlistCoverPhoto = yield (0, fileUpload_1.uploadFile)(req, next, `playlistCoversPhotos/${user._id}`);
     if (!playlistCoverPhoto) {
         return next(new ErrorResponse_1.default(`Failed to upload Cover Photo`, 400));
     }
     const playlist = yield Playlist_1.default.create({
         name,
+        description: description ? description : null,
         coverPhoto: playlistCoverPhoto
     });
     (0, BaseResponseHandler_1.default)({

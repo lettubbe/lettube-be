@@ -10,6 +10,9 @@ const playlistSchema = new Schema({
         type: String,
         required: [true, "Cover is required"]
     },
+    description: {
+      type: String,
+    },
     videos: {
         type: [String]
     },
@@ -22,6 +25,7 @@ const playlistSchema = new Schema({
 export interface IPlaylist extends Document {
     name: string;
     coverPhoto: string;
+    description: string | null;
     videos: string[]
 }
 

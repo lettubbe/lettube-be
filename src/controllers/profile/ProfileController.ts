@@ -118,3 +118,23 @@ export const updateProfileDetails = asyncHandler(async (req, res, next) => {
     data: updatedUser,
   });
 });
+
+// @route   /api/v1/profile/me/
+// @desc    get User Profile 
+// @access  Private/public
+
+export const getUserProfile = asyncHandler(async (req, res, next) => {
+
+  const user = await getAuthUser(req, next);
+
+  const userData = removeSensitiveFields(user, ["password"]);
+
+  baseResponseHandler({
+    res,
+    statusCode: 200,
+    message: `User Profile retrived Successfully`,
+    success: true,
+    data: userData
+  })
+
+});

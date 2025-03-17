@@ -14,6 +14,9 @@ const playlistSchema = new mongoose_1.Schema({
         type: String,
         required: [true, "Cover is required"]
     },
+    description: {
+        type: String,
+    },
     videos: {
         type: [String]
     },

@@ -1,5 +1,6 @@
 import express from "express";
 import {
+  getUserProfile,
   updateProfileDetails,
   updateProfilePhoto,
   uploadCoverPhoto,
@@ -20,6 +21,8 @@ router.post(
   [protect, upload.single("coverPhoto")],
   uploadCoverPhoto
 );
+
+router.get("/me/", protect, getUserProfile);
 
 router.patch("/profileDetails/", protect, updateProfileDetails);
 
