@@ -15,10 +15,10 @@ export const passwordResetSchema = Joi.object({
         "Password must contain at least one number and one special character",
       "string.base": "Password must be a string",
     }),
-  token: Joi.string().required().messages({
-    "any.required": "OTP is required",
-    "string.base": "OTP must be string",
-  }),
+  // token: Joi.string().required().messages({
+  //   "any.required": "OTP is required",
+  //   "string.base": "OTP must be string",
+  // }),
 })
   .or("email", "phoneNumber") // Ensure at least one is provided
   .messages({

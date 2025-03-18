@@ -583,24 +583,27 @@ export const forgetPassword = asyncHandler(async (req, res, next) => {
 // @access  Public
 
 export const resetPassword = asyncHandler(async (req, res, next) => {
-  const { password, email, phoneNumber, token } = req.body;
+  const { password, email, phoneNumber } = req.body;
+  
 
-  console.log({ password, token, email, phoneNumber });
+  // console.log({ password, token, email, phoneNumber });
 
   const query = buildUserAuthTypeQuery(email, phoneNumber);
 
-  const authUser = await Auth.findOne({ verificationCode: token });
+  // const authUser = await Auth.findOne({ verificationCode: token });
   const user = await User.findOne(query);
 
-  console.log({ authUser, user });
+  // console.log({ authUser, user });
 
-  if (!authUser || !user) {
+  // !authUser
+
+  if (!user) {
     return next(new ErrorResponse(`Invalid OTP`, 400));
   }
 
-  if (authUser.verificationExpires && authUser.verificationExpires < new Date()) {
-    return next(new ErrorResponse("Verification code expired", 400));
-  }
+  // if (authUser.verificationExpires && authUser.verificationExpires < new Date()) {
+  //   return next(new ErrorResponse("Verification code expired", 400));
+  // }
 
   if (!password) {
     return next(new ErrorResponse(`Password is required`, 400));
@@ -609,8 +612,8 @@ export const resetPassword = asyncHandler(async (req, res, next) => {
   const hashedPassword = await hashUserPassword(password);
 
   user.password = hashedPassword;
-  authUser.verificationCode = "";
-  authUser.verificationExpires = null;
+  // authUser.verificationCode = "";
+  // authUser.verificationExpires = null;
 
   await user.save();
   
