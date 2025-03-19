@@ -427,25 +427,26 @@ exports.forgetPassword = (0, express_async_handler_1.default)((req, res, next) =
 // @desc    Verify OTP
 // @access  Public
 exports.resetPassword = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    const { password, email, phoneNumber, token } = req.body;
-    console.log({ password, token, email, phoneNumber });
+    const { password, email, phoneNumber } = req.body;
+    // console.log({ password, token, email, phoneNumber });
     const query = (0, utils_1.buildUserAuthTypeQuery)(email, phoneNumber);
-    const authUser = yield Auth_1.default.findOne({ verificationCode: token });
+    // const authUser = await Auth.findOne({ verificationCode: token });
     const user = yield User_1.default.findOne(query);
-    console.log({ authUser, user });
-    if (!authUser || !user) {
+    // console.log({ authUser, user });
+    // !authUser
+    if (!user) {
         return next(new ErrorResponse_1.default(`Invalid OTP`, 400));
     }
-    if (authUser.verificationExpires && authUser.verificationExpires < new Date()) {
-        return next(new ErrorResponse_1.default("Verification code expired", 400));
-    }
+    // if (authUser.verificationExpires && authUser.verificationExpires < new Date()) {
+    //   return next(new ErrorResponse("Verification code expired", 400));
+    // }
     if (!password) {
         return next(new ErrorResponse_1.default(`Password is required`, 400));
     }
     const hashedPassword = yield (0, generate_1.hashUserPassword)(password);
     user.password = hashedPassword;
-    authUser.verificationCode = "";
-    authUser.verificationExpires = null;
+    // authUser.verificationCode = "";
+    // authUser.verificationExpires = null;
     yield user.save();
     const userData = (0, utils_1.removeSensitiveFields)(user, ["password"]);
     (0, BaseResponseHandler_1.default)({

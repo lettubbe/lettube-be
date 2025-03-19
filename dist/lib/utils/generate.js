@@ -19,7 +19,7 @@ const crypto_1 = __importDefault(require("crypto"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const generateVerificationCode = () => {
-    return Math.floor(1000 + Math.random() * 90000).toString();
+    return Math.floor(10000 + Math.random() * 90000).toString();
 };
 exports.generateVerificationCode = generateVerificationCode;
 const generateHash = () => {
