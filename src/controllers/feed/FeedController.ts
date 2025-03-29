@@ -22,7 +22,7 @@ export const createCategoryFeeds = asyncHandler(async (req, res, next) => {
   // Find an existing feed document for the user
   let categoryFeed = await Feed.findOne({ user: user._id });
 
-  const authUser = await Auth.findById(user._id);
+  const authUser = await Auth.findOne({ user: user._id});
 
   if(!authUser){
     return next(new ErrorResponse(`User Profile Not found`, 404));
