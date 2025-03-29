@@ -11,7 +11,7 @@ const postSchema = new mongoose_1.Schema({
         ref: "user",
         required: true,
     },
-    categories: [String],
+    category: String,
     thumbnail: {
         type: String,
         required: [true, "Thumbnail is required"],
@@ -19,6 +19,20 @@ const postSchema = new mongoose_1.Schema({
     videoUrl: {
         type: String,
         required: [true, "Video URL is required"],
+    },
+    description: {
+        type: String,
+    },
+    visibility: {
+        type: String,
+        enum: ["public", "private", "subscribers"]
+    },
+    tags: {
+        type: [String]
+    },
+    isCommentsAllowed: {
+        type: Boolean,
+        default: true
     },
     reactions: {
         likes: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "user" }],

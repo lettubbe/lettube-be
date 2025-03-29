@@ -8,6 +8,7 @@ import { samplePosts } from "../../_data/posts";
 import Post from "../../models/Post";
 import { getPaginateOptions } from "../../lib/utils/paginate";
 import Auth from "../../models/Auth";
+import { uploadFile } from "../../lib/utils/fileUpload";
 
 // @desc    Add Category to user Feed
 // @route   POST /api/v1/feed/category
@@ -143,4 +144,41 @@ export const getContacts = asyncHandler(async (req, res, next) => {
     success: true,
     data: contacts || [],
   });
+});
+
+// @desc     Get User Feed
+// @route    GET /api/v1/feed/upload
+// @access   Private
+
+export const uploadFeedPost = asyncHandler(async (req, res, next) => {
+  const user = await getAuthUser(req, next);
+
+  console.log("hitting upload post");
+
+  // const thumbnailImage = uploadFile(req, next, `feedThunbnail/${user._id}/thumbnails`);
+  // const postVideo = uploadFile(req, next, `feedVideos/${user._id}/videos`)
+
+  // const { tags, category, description, visibility, isCommentsAllowed } = req.body;
+
+  // const postFeed = {
+  //   user: user._id,
+  //   tags,
+  //   category,
+  //   description,
+  //   visibility,
+  //   isCommentsAllowed,
+  //   videoUrl: postVideo,
+  //   thumbnail: thumbnailImage
+  // }
+
+  // const post = await Post.create(postFeed);
+
+  baseResponseHandler({
+    message: "Post Created Successfully",
+    res,
+    statusCode: 200,
+    success: true,
+    data: "post",
+  });
+
 });

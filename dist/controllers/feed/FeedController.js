@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getContacts = exports.getUserUploadedFeeds = exports.getUserFeeds = exports.createCategoryFeeds = void 0;
+exports.uploadFeedPost = exports.getContacts = exports.getUserUploadedFeeds = exports.getUserFeeds = exports.createCategoryFeeds = void 0;
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const Feed_1 = __importDefault(require("../../models/Feed"));
 const BaseResponseHandler_1 = __importDefault(require("../../messages/BaseResponseHandler"));
@@ -117,5 +117,33 @@ exports.getContacts = (0, express_async_handler_1.default)((req, res, next) => _
         statusCode: 200,
         success: true,
         data: contacts || [],
+    });
+}));
+// @desc     Get User Feed
+// @route    GET /api/v1/feed/upload
+// @access   Private
+exports.uploadFeedPost = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const user = yield (0, utils_1.getAuthUser)(req, next);
+    console.log("hitting upload post");
+    // const thumbnailImage = uploadFile(req, next, `feedThunbnail/${user._id}/thumbnails`);
+    // const postVideo = uploadFile(req, next, `feedVideos/${user._id}/videos`)
+    // const { tags, category, description, visibility, isCommentsAllowed } = req.body;
+    // const postFeed = {
+    //   user: user._id,
+    //   tags,
+    //   category,
+    //   description,
+    //   visibility,
+    //   isCommentsAllowed,
+    //   videoUrl: postVideo,
+    //   thumbnail: thumbnailImage
+    // }
+    // const post = await Post.create(postFeed);
+    (0, BaseResponseHandler_1.default)({
+        message: "Post Created Successfully",
+        res,
+        statusCode: 200,
+        success: true,
+        data: "post",
     });
 }));

@@ -7,7 +7,7 @@ const postSchema = new Schema<IPost>({
       ref: "user",
       required: true,
     },
-    categories: [String],
+    category: String,
     thumbnail: {
       type: String,
       required: [true, "Thumbnail is required"],
@@ -15,6 +15,20 @@ const postSchema = new Schema<IPost>({
     videoUrl: {
       type: String,
       required: [true, "Video URL is required"],
+    },
+    description: {
+      type: String,
+    },
+    visibility: {
+      type: String,
+      enum: ["public", "private", "subscribers"]
+    },
+    tags: {
+      type: [String]
+    },
+    isCommentsAllowed: {
+      type: Boolean,
+      default: true
     },
     reactions: {
       likes: [{ type: Schema.Types.ObjectId, ref: "user" }], 
@@ -53,6 +67,11 @@ export interface IPost extends Document {
     shares: number;
     views: number;
   };
+  category: string;
+  isCommentsAllowed: boolean;
+  tags: string[],
+  visibility: string;
+  description: string;
   comments: {
     user: Types.ObjectId;
     text: string;

@@ -37,13 +37,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
-const FeedController_1 = require("../controllers/feed/FeedController");
 const protect_1 = require("../middleware/protect");
-const categoryValidationSchema_1 = __importStar(require("../middleware/validation/feeds/categoryValidationSchema"));
 const phoneContactsValidationSchema_1 = __importStar(require("../middleware/validation/feeds/phoneContactsValidationSchema"));
+const categoryValidationSchema_1 = __importStar(require("../middleware/validation/feeds/categoryValidationSchema"));
+const FeedController_1 = require("../controllers/feed/FeedController");
 const router = express_1.default.Router();
 router.post("/category", [(0, categoryValidationSchema_1.default)(categoryValidationSchema_1.validateAddCategoryFeedSchema), protect_1.protect], FeedController_1.createCategoryFeeds);
 router.post("/contacts", [(0, phoneContactsValidationSchema_1.default)(phoneContactsValidationSchema_1.validatePhoneContactsSchema), protect_1.protect], FeedController_1.getContacts);
 router.get("/", protect_1.protect, FeedController_1.getUserFeeds);
 router.get("/uploads", protect_1.protect, FeedController_1.getUserUploadedFeeds);
+router.post("/upload", protect_1.protect, FeedController_1.uploadFeedPost);
 exports.default = router;

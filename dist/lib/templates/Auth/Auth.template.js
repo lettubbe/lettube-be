@@ -36,7 +36,7 @@ const welcomeEmailTemplate = (code) => {
                     </div>
                     
                     <p style="font-size: 14px; color: #666; margin-top: 10px;">
-                        This code will expire in <strong>10 minutes</strong>. If you didn’t request this, you can safely ignore this email.
+                        This code will expire in <strong>5 minutes</strong>. If you didn’t request this, you can safely ignore this email.
                     </p>
                     
                     <p style="font-size: 14px; color: #666;">
