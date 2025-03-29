@@ -22,11 +22,11 @@ export const createCategoryFeeds = asyncHandler(async (req, res, next) => {
   // Find an existing feed document for the user
   let categoryFeed = await Feed.findOne({ user: user._id });
 
-  const authUser = await Auth.findOne({ user: user._id});
+  // const authUser = await Auth.findOne({ user: user._id});
 
-  if(!authUser){
-    return next(new ErrorResponse(`User Profile Not found`, 404));
-  }
+  // if(!authUser){
+  //   return next(new ErrorResponse(`User Profile Not found`, 404));
+  // }
 
   if (!categoryFeed) {
     // If no document exists, create a new one
@@ -53,10 +53,10 @@ export const createCategoryFeeds = asyncHandler(async (req, res, next) => {
     );
   }
 
-  authUser.isCategorySet = true;
+  // authUser.isCategorySet = true;
 
   await categoryFeed.save();
-  await authUser.save();
+  // await authUser.save();
 
   baseResponseHandler({
     message: "Category Feed Updated Successfully",

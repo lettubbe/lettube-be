@@ -31,7 +31,7 @@ exports.createCategoryFeeds = (0, express_async_handler_1.default)((req, res, ne
     const user = yield (0, utils_1.getAuthUser)(req, next);
     // Find an existing feed document for the user
     let categoryFeed = yield Feed_1.default.findOne({ user: user._id });
-    const authUser = yield Auth_1.default.findById(user._id);
+    const authUser = yield Auth_1.default.findOne({ user: user._id });
     if (!authUser) {
         return next(new ErrorResponse_1.default(`User Profile Not found`, 404));
     }
