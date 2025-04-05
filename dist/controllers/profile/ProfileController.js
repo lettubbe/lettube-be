@@ -76,7 +76,7 @@ exports.uploadCoverPhoto = (0, express_async_handler_1.default)((req, res, next)
 // @desc    Upload Profile Picture
 // @access  Private
 exports.updateProfileDetails = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    const { description, firstName, lastName, websiteLink } = req.body;
+    const { description, firstName, lastName, displayName, websiteLink } = req.body;
     const user = yield (0, utils_1.getAuthUser)(req, next);
     const profile = yield User_1.default.findById(user._id);
     if (!profile) {
@@ -90,6 +90,8 @@ exports.updateProfileDetails = (0, express_async_handler_1.default)((req, res, n
         profile.lastName = lastName;
     if (websiteLink)
         profile.websiteLink = websiteLink;
+    if (displayName)
+        profile.displayName = displayName;
     yield profile.save();
     const updatedUser = yield User_1.default.findById(user._id).select("-password");
     (0, BaseResponseHandler_1.default)({

@@ -41,6 +41,9 @@ const UserSchema = new Schema({
   profilePicture: {
     type: String,
   },
+  displayName: {
+    type: String,
+  },
   coverPhoto: {
     type: String,
   },
@@ -115,6 +118,7 @@ export interface IUser extends Document {
   age: string;
   username: string;
   gender: string;
+  displayName: string;
   referalCode: string;
   verificationCode: string;
   emailVerificationToken: string;

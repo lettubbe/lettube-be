@@ -54,6 +54,9 @@ const UserSchema = new mongoose_1.Schema({
     profilePicture: {
         type: String,
     },
+    displayName: {
+        type: String,
+    },
     coverPhoto: {
         type: String,
     },
