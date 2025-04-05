@@ -45,26 +45,33 @@ export const createPlaylist = asyncHandler(async (req, res, next) => {
 // @access  Private
 
 export const getPlaylists = asyncHandler(async (req, res, next) => {
-
     const user = await getAuthUser(req, next);
 
     const { limit = 10, page = 1 } = req.params;
+    const { search = '' } = req.query;
 
     const options = getPaginateOptions(page, limit);
 
-    const playlists = await Playlist.paginate({ user: user._id }, options);
+    const query = {
+        user: user._id,
+        ...(search && {
+            name: { $regex: search, $options: 'i' } 
+        })
+    };
+
+    const playlists = await Playlist.paginate(query, options);
 
     const playlistData = transformPaginateResponse(playlists);
 
     baseResponseHandler({
-        message: `Playlist Retrived Successfully`,
+        message: `Playlists Retrieved Successfully`,
         res,
         statusCode: 200,
         success: true,
         data: playlistData
     });
-
 });
+
 
 // @route   PATCH /api/v1/playlist/:playlistId
 // @desc    get playlist
