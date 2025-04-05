@@ -71,7 +71,7 @@ export const uploadCoverPhoto = asyncHandler(async (req, res, next) => {
 
   userProfile.coverPhoto = picture;
 
-  await user.save();
+  await userProfile.save();
 
   const userData: Partial<typeof user> = removeSensitiveFields(user, [
     "password",

@@ -60,7 +60,7 @@ exports.uploadCoverPhoto = (0, express_async_handler_1.default)((req, res, next)
         return next(new ErrorResponse_1.default(`Failed to upload profile picture`, 500));
     }
     userProfile.coverPhoto = picture;
-    yield user.save();
+    yield userProfile.save();
     const userData = (0, utils_1.removeSensitiveFields)(user, [
         "password",
     ]);
