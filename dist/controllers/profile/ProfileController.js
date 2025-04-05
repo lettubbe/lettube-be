@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getUserProfile = exports.updateProfileDetails = exports.uploadCoverPhoto = exports.updateProfilePhoto = void 0;
+exports.getUserPublicProfile = exports.getUserProfile = exports.updateProfileDetails = exports.uploadCoverPhoto = exports.updateProfilePhoto = void 0;
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const ErrorResponse_1 = __importDefault(require("../../messages/ErrorResponse"));
 const User_1 = __importDefault(require("../../models/User"));
@@ -48,7 +48,7 @@ exports.updateProfilePhoto = (0, express_async_handler_1.default)((req, res, nex
 }));
 // @route   /api/v1/profile/upload/coverPhoto
 // @desc    Upload Profile Picture
-// @access  Private/public
+// @access  Private
 exports.uploadCoverPhoto = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const user = yield (0, utils_1.getAuthUser)(req, next);
     const userProfile = yield User_1.default.findById(user._id);
@@ -74,7 +74,7 @@ exports.uploadCoverPhoto = (0, express_async_handler_1.default)((req, res, next)
 }));
 // @route   /api/v1/profile/profileDetails/
 // @desc    Upload Profile Picture
-// @access  Private/public
+// @access  Private
 exports.updateProfileDetails = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { description, firstName, lastName, websiteLink } = req.body;
     const user = yield (0, utils_1.getAuthUser)(req, next);
@@ -102,9 +102,27 @@ exports.updateProfileDetails = (0, express_async_handler_1.default)((req, res, n
 }));
 // @route   /api/v1/profile/me/
 // @desc    get User Profile 
-// @access  Private/public
+// @access  Private
 exports.getUserProfile = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const user = yield (0, utils_1.getAuthUser)(req, next);
+    const userData = (0, utils_1.removeSensitiveFields)(user, ["password"]);
+    (0, BaseResponseHandler_1.default)({
+        res,
+        statusCode: 200,
+        message: `User Profile retrived Successfully`,
+        success: true,
+        data: userData
+    });
+}));
+// @route   /api/v1/profile/:userId/userProfile
+// @desc    get User Profile 
+// @access  Private
+exports.getUserPublicProfile = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const { userId } = req.params;
+    const user = yield User_1.default.findById(userId).select("-password");
+    if (!user) {
+        return next(new ErrorResponse_1.default(`User Not Found`, 404));
+    }
     const userData = (0, utils_1.removeSensitiveFields)(user, ["password"]);
     (0, BaseResponseHandler_1.default)({
         res,

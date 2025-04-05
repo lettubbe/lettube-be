@@ -52,7 +52,7 @@ export const updateProfilePhoto = asyncHandler(async (req: Request, res: Respons
 
 // @route   /api/v1/profile/upload/coverPhoto
 // @desc    Upload Profile Picture
-// @access  Private/public
+// @access  Private
 
 export const uploadCoverPhoto = asyncHandler(async (req, res, next) => {
   const user = await getAuthUser(req, next);
@@ -88,7 +88,7 @@ export const uploadCoverPhoto = asyncHandler(async (req, res, next) => {
 
 // @route   /api/v1/profile/profileDetails/
 // @desc    Upload Profile Picture
-// @access  Private/public
+// @access  Private
 
 export const updateProfileDetails = asyncHandler(async (req, res, next) => {
   const { description, firstName, lastName, websiteLink } = req.body;
@@ -121,7 +121,7 @@ export const updateProfileDetails = asyncHandler(async (req, res, next) => {
 
 // @route   /api/v1/profile/me/
 // @desc    get User Profile 
-// @access  Private/public
+// @access  Private
 
 export const getUserProfile = asyncHandler(async (req, res, next) => {
 
@@ -136,5 +136,31 @@ export const getUserProfile = asyncHandler(async (req, res, next) => {
     success: true,
     data: userData
   })
+
+});
+
+// @route   /api/v1/profile/:userId/userProfile
+// @desc    get User Profile 
+// @access  Private
+
+export const getUserPublicProfile = asyncHandler(async (req, res, next) => {
+
+  const { userId } = req.params;
+
+  const user = await User.findById(userId).select("-password");
+  
+  if (!user) {
+    return next(new ErrorResponse(`User Not Found`, 404));
+  }
+  
+  const userData = removeSensitiveFields(user, ["password"]);
+  
+  baseResponseHandler({
+    res,
+    statusCode: 200,
+    message: `User Profile retrived Successfully`,
+    success: true,
+    data: userData
+  });
 
 });
