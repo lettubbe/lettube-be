@@ -124,7 +124,7 @@ export const uploadVideoToPlaylist = asyncHandler(async (req, res, next) => {
     });
 });
 
-// @route   PATCH /api/v1/playlist
+// @route   PATCH /api/v1/playlist/:playlistId
 // @desc    Upload Video To Playlist
 // @access  Private
 
@@ -139,10 +139,25 @@ export const updatePlaylist = asyncHandler(async (req, res, next) => {
         visibility
     }
 
+    const user = await getAuthUser(req, next);
+
+    const playlistCoverPhoto = await uploadFile(req, next, `playlistCoversPhotos/${user._id}`);
+
+    if(!playlistCoverPhoto){
+        return next(new ErrorResponse(`Error Occured When uploading photo`, 500));
+    }
+
     const playlist = await Playlist.findByIdAndUpdate(playlistId, playlistData, {
         new: true
     });
 
+    if(!playlist){
+        return next(new ErrorResponse(`No Playlist found`, 404));
+    }
+    
+    playlist.coverPhoto = playlistCoverPhoto;
+
+    await playlist.save();
 
     baseResponseHandler({
         message: `Playlist Updated Successfullly`,

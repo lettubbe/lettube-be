@@ -43,9 +43,9 @@ const PlaylistController_1 = require("../controllers/Playlists/PlaylistControlle
 const multer_1 = __importDefault(require("../middleware/multer"));
 const router = express_1.default.Router();
 router.get("/", protect_1.protect, PlaylistController_1.getPlaylists);
-router.post("/", [multer_1.default.single("playlistCoverPhoto"), (0, playlistValidationSchema_1.default)(playlistValidationSchema_1.validateAddPlaylistSchema), protect_1.protect], PlaylistController_1.createPlaylist);
 router.get("/:playlistId", PlaylistController_1.getPlaylist);
-router.patch("/:playlistId", protect_1.protect, PlaylistController_1.updatePlaylist);
 router.patch("/video", protect_1.protect, PlaylistController_1.uploadVideoToPlaylist);
+router.patch("/:playlistId", [protect_1.protect, multer_1.default.single("playlistCoverPhoto")], PlaylistController_1.updatePlaylist);
 router.patch("/playlistCoverPhoto/:playlistId", [protect_1.protect, multer_1.default.single("playlistCover")], PlaylistController_1.updatePlaylistCoverPhoto);
+router.post("/", [multer_1.default.single("playlistCoverPhoto"), (0, playlistValidationSchema_1.default)(playlistValidationSchema_1.validateAddPlaylistSchema), protect_1.protect], PlaylistController_1.createPlaylist);
 exports.default = router;
