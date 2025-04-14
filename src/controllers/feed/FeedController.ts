@@ -6,7 +6,7 @@ import ErrorResponse from "../../messages/ErrorResponse";
 import User from "../../models/User";
 import { samplePosts } from "../../_data/posts";
 import Post from "../../models/Post";
-import { getPaginateOptions } from "../../lib/utils/paginate";
+import { getPaginateOptions, transformPaginateResponse } from "../../lib/utils/paginate";
 import Auth from "../../models/Auth";
 import { uploadFile, uploadFileFromFields } from "../../lib/utils/fileUpload";
 
@@ -100,14 +100,14 @@ export const getUserUploadedFeeds = asyncHandler(async (req, res, next) => {
 
   const posts = await Post.paginate({ user: user._id }, options);
 
-  console.log("posts", posts);
+  const postsTransformedData = transformPaginateResponse(posts);
 
   baseResponseHandler({
     message: `User Feeds Retrived successfully`,
     res,
     statusCode: 200,
     success: true,
-    data: posts,
+    data: postsTransformedData,
   });
 });
 

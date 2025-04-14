@@ -223,3 +223,27 @@ export const updatePlaylistCoverPhoto = asyncHandler(async (req, res, next) => {
     });
 
 });
+
+// @route   GET /api/v1/playlist/video
+// @desc    Get Playlist Videos
+// @access  Private
+
+export const getPlaylistVideos = asyncHandler(async (req, res, next) => {
+
+    const { playlistId } = req.params;
+
+    const playlist = await Playlist.findById(playlistId);
+
+    if(!playlist){
+        return next(new ErrorResponse(`No Playlist found`, 404));
+    }
+
+    baseResponseHandler({
+        message: `Playlist Videos Retrieved Successfully`,
+        res,
+        statusCode: 200,
+        success: true,
+        data: playlist.videos,
+    });
+
+});

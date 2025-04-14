@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updatePlaylistCoverPhoto = exports.updatePlaylist = exports.uploadVideoToPlaylist = exports.getPlaylist = exports.getPlaylists = exports.createPlaylist = void 0;
+exports.getPlaylistVideos = exports.updatePlaylistCoverPhoto = exports.updatePlaylist = exports.uploadVideoToPlaylist = exports.getPlaylist = exports.getPlaylists = exports.createPlaylist = void 0;
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const fileUpload_1 = require("../../lib/utils/fileUpload");
 const ErrorResponse_1 = __importDefault(require("../../messages/ErrorResponse"));
@@ -164,5 +164,22 @@ exports.updatePlaylistCoverPhoto = (0, express_async_handler_1.default)((req, re
         statusCode: 200,
         success: true,
         data: playlist,
+    });
+}));
+// @route   GET /api/v1/playlist/video
+// @desc    Get Playlist Videos
+// @access  Private
+exports.getPlaylistVideos = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const { playlistId } = req.params;
+    const playlist = yield Playlist_1.default.findById(playlistId);
+    if (!playlist) {
+        return next(new ErrorResponse_1.default(`No Playlist found`, 404));
+    }
+    (0, BaseResponseHandler_1.default)({
+        message: `Playlist Videos Retrieved Successfully`,
+        res,
+        statusCode: 200,
+        success: true,
+        data: playlist.videos,
     });
 }));

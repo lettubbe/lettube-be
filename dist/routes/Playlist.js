@@ -45,6 +45,7 @@ const router = express_1.default.Router();
 router.get("/", protect_1.protect, PlaylistController_1.getPlaylists);
 router.get("/:playlistId", PlaylistController_1.getPlaylist);
 router.patch("/:playlistId/video", [protect_1.protect, multer_1.default.single("playlistVideo")], PlaylistController_1.uploadVideoToPlaylist);
+router.get("/:playlistId/video", protect_1.protect, PlaylistController_1.getPlaylistVideos);
 router.patch("/:playlistId", [protect_1.protect, multer_1.default.single("playlistCoverPhoto")], PlaylistController_1.updatePlaylist);
 router.patch("/playlistCoverPhoto/:playlistId", [protect_1.protect, multer_1.default.single("playlistCover")], PlaylistController_1.updatePlaylistCoverPhoto);
 router.post("/", [multer_1.default.single("playlistCoverPhoto"), (0, playlistValidationSchema_1.default)(playlistValidationSchema_1.validateAddPlaylistSchema), protect_1.protect], PlaylistController_1.createPlaylist);

@@ -85,13 +85,13 @@ exports.getUserUploadedFeeds = (0, express_async_handler_1.default)((req, res, n
     const { page, limit } = req.params;
     const options = (0, paginate_1.getPaginateOptions)(page, limit);
     const posts = yield Post_1.default.paginate({ user: user._id }, options);
-    console.log("posts", posts);
+    const postsTransformedData = (0, paginate_1.transformPaginateResponse)(posts);
     (0, BaseResponseHandler_1.default)({
         message: `User Feeds Retrived successfully`,
         res,
         statusCode: 200,
         success: true,
-        data: posts,
+        data: postsTransformedData,
     });
 }));
 // @desc     Get User Feed
