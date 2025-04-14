@@ -102,27 +102,47 @@ export const getPlaylist = asyncHandler(async (req, res, next) => {
 // @access  Private
 
 export const uploadVideoToPlaylist = asyncHandler(async (req, res, next) => {
-
+    
     const { playlistId } = req.params;
-
+  
     const playlist = await Playlist.findById(playlistId);
 
-    if(!playlist){
-        return next(new ErrorResponse(`Playlist Not Found`, 404));
+    if (!playlist) {
+      return next(new ErrorResponse(`Playlist not found`, 404));
+    }
+  
+    const user = await getAuthUser(req, next);
+  
+    
+    const uploadedVideo = await uploadFile(
+      req,
+      next,
+      `${playlist.name}/${user._id}/playlist/videos`
+    );
+  
+    // Ensure the upload was successful
+    if (!uploadedVideo) {
+      return next(new ErrorResponse("Failed to upload video", 500));
     }
 
-    playlist.videos.unshift();
-
-    playlist.save();
-
+    // if(!playlistCoverPhoto){
+    //     return next(new ErrorResponse(`Failed to upload Cover Photo`, 400));
+    // }
+  
+    // Add the video URL to the beginning of the playlist's videos array
+    playlist.videos.unshift(uploadedVideo);
+  
+    await playlist.save();
+  
     baseResponseHandler({
-        message: `Playlist Uploaded to successfully`,
-        res,
-        statusCode: 200,
-        success: true,
-        data: playlist,
+      message: `Video uploaded to playlist successfully`,
+      res,
+      statusCode: 200,
+      success: true,
+      data: playlist,
     });
 });
+  
 
 // @route   PATCH /api/v1/playlist/:playlistId
 // @desc    Upload Video To Playlist

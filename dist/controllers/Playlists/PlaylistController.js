@@ -89,12 +89,22 @@ exports.uploadVideoToPlaylist = (0, express_async_handler_1.default)((req, res, 
     const { playlistId } = req.params;
     const playlist = yield Playlist_1.default.findById(playlistId);
     if (!playlist) {
-        return next(new ErrorResponse_1.default(`Playlist Not Found`, 404));
+        return next(new ErrorResponse_1.default(`Playlist not found`, 404));
     }
-    playlist.videos.unshift();
-    playlist.save();
+    const user = yield (0, utils_1.getAuthUser)(req, next);
+    const uploadedVideo = yield (0, fileUpload_1.uploadFile)(req, next, `${playlist.name}/${user._id}/playlist/videos`);
+    // Ensure the upload was successful
+    if (!uploadedVideo) {
+        return next(new ErrorResponse_1.default("Failed to upload video", 500));
+    }
+    // if(!playlistCoverPhoto){
+    //     return next(new ErrorResponse(`Failed to upload Cover Photo`, 400));
+    // }
+    // Add the video URL to the beginning of the playlist's videos array
+    playlist.videos.unshift(uploadedVideo);
+    yield playlist.save();
     (0, BaseResponseHandler_1.default)({
-        message: `Playlist Uploaded to successfully`,
+        message: `Video uploaded to playlist successfully`,
         res,
         statusCode: 200,
         success: true,

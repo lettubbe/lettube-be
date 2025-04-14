@@ -22,6 +22,7 @@ const User_1 = __importDefault(require("../../models/User"));
 const posts_1 = require("../../_data/posts");
 const Post_1 = __importDefault(require("../../models/Post"));
 const paginate_1 = require("../../lib/utils/paginate");
+const fileUpload_1 = require("../../lib/utils/fileUpload");
 // @desc    Add Category to user Feed
 // @route   POST /api/v1/feed/category
 // @access  Private
@@ -98,7 +99,6 @@ exports.getUserUploadedFeeds = (0, express_async_handler_1.default)((req, res, n
 // @access   Private
 exports.getContacts = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { phoneNumbers } = req.body;
-    // Validate that phoneNumbers is an array
     if (!Array.isArray(phoneNumbers)) {
         return next(new ErrorResponse_1.default("phoneNumbers must be a non-empty array", 400));
     }
@@ -123,26 +123,30 @@ exports.getContacts = (0, express_async_handler_1.default)((req, res, next) => _
 // @access   Private
 exports.uploadFeedPost = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const user = yield (0, utils_1.getAuthUser)(req, next);
-    console.log("hitting upload post");
-    // const thumbnailImage = uploadFile(req, next, `feedThunbnail/${user._id}/thumbnails`);
-    // const postVideo = uploadFile(req, next, `feedVideos/${user._id}/videos`)
-    // const { tags, category, description, visibility, isCommentsAllowed } = req.body;
-    // const postFeed = {
-    //   user: user._id,
-    //   tags,
-    //   category,
-    //   description,
-    //   visibility,
-    //   isCommentsAllowed,
-    //   videoUrl: postVideo,
-    //   thumbnail: thumbnailImage
-    // }
-    // const post = await Post.create(postFeed);
+    let tagsArray;
+    const thumbnailImage = yield (0, fileUpload_1.uploadFileFromFields)(req, next, `feedThunbnail/${user._id}/thumbnails`, "thumbnailImage");
+    const postVideo = yield (0, fileUpload_1.uploadFileFromFields)(req, next, `feedVideos/${user._id}/videos`, "postVideo");
+    const { tags, category, description, visibility, isCommentsAllowed } = req.body;
+    console.log("req.body", req.body);
+    tagsArray =
+        typeof tags === "string" ? JSON.parse(tags.replace(/'/g, '"')) : tags;
+    const isCommentsAllowedBool = String(isCommentsAllowed).toLowerCase() === "true";
+    const postFeed = {
+        user: user._id,
+        tags: tagsArray,
+        category,
+        description,
+        visibility,
+        isCommentsAllowed: isCommentsAllowedBool,
+        videoUrl: postVideo,
+        thumbnail: thumbnailImage,
+    };
+    const post = yield Post_1.default.create(postFeed);
     (0, BaseResponseHandler_1.default)({
         message: "Post Created Successfully",
         res,
         statusCode: 200,
         success: true,
-        data: "post",
+        data: post,
     });
 }));
