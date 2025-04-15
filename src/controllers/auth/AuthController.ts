@@ -9,7 +9,10 @@ import {
   hashUserPassword,
   otpTokenExpiry,
 } from "../../lib/utils/generate";
-import { forgotPasswordEmailTemplate, welcomeEmailTemplate } from "../../lib/templates/Auth/Auth.template";
+import {
+  forgotPasswordEmailTemplate,
+  welcomeEmailTemplate,
+} from "../../lib/templates/Auth/Auth.template";
 import User from "../../models/User";
 import Auth from "../../models/Auth";
 import baseResponseHandler from "../../messages/BaseResponseHandler";
@@ -25,6 +28,8 @@ import { registerEnumType } from "../../constants/enums/RegisterationEnums";
 // @access  Public
 
 export const loginUser = asyncHandler(async (req, res, next) => {
+  console.log("hitting login user");
+
   const { email, phoneNumber, password } = req.body;
 
   const query = buildUserAuthTypeQuery(email, phoneNumber);
@@ -49,18 +54,25 @@ export const loginUser = asyncHandler(async (req, res, next) => {
     "isUsernameSet",
     "isDOBSet",
     "isUserDetailsSet",
+    "isCategorySet",
   ];
 
-  const missingFields = requiredFields.filter((field) => !(authUser as any)[field]);
+  const missingFields = requiredFields.filter(
+    (field) => !(authUser as any)[field]
+  );
 
   if (missingFields.length > 0) {
     baseResponseHandler({
-      message: `Cannot log in. Please complete verification steps: ${missingFields.join(", ")}`,
-      error: `Cannot log in. Please complete verification steps: ${missingFields.join(", ")}`,
+      message: `Cannot log in. Please complete verification steps: ${missingFields.join(
+        ", "
+      )}`,
+      error: `Cannot log in. Please complete verification steps: ${missingFields.join(
+        ", "
+      )}`,
       res,
       statusCode: 400,
       success: true,
-      data: authUser
+      data: authUser,
     });
 
     return;
@@ -87,7 +99,6 @@ export const loginUser = asyncHandler(async (req, res, next) => {
   });
 });
 
-
 // @route   /api/v1/auth/verify/resend
 // @desc    Resend OTP, verification
 // @access  Public
@@ -111,7 +122,11 @@ export const resendOTP = asyncHandler(async (req, res, next) => {
 
   const verificationCode = generateVerificationCode();
 
-  const token = email ? verificationCode : config.isDevelopment ? "12345" : verificationCode;
+  const token = email
+    ? verificationCode
+    : config.isDevelopment
+    ? "12345"
+    : verificationCode;
 
   const expiresAt = new Date(otpTokenExpiry(5 * 60) * 1000);
 
@@ -121,24 +136,22 @@ export const resendOTP = asyncHandler(async (req, res, next) => {
   await authUser.save();
 
   try {
-
     const emailVerficationTemplate = welcomeEmailTemplate(token);
 
-    if(email){
-          NotificationService.sendEmail({
-            to: user.email,
-            subject: "Email Verification",
-            body: emailVerficationTemplate,
-          });
+    if (email) {
+      NotificationService.sendEmail({
+        to: user.email,
+        subject: "Email Verification",
+        body: emailVerficationTemplate,
+      });
     }
 
-    if(phoneNumber){
+    if (phoneNumber) {
       NotificationService.sendSms({
         text: `Please Verify Your OTP ${token}`,
         to: phoneNumber,
-      })
+      });
     }
-
   } catch (error) {
     return next(new ErrorResponse(`Email could not be sent`, 500));
   }
@@ -157,7 +170,6 @@ export const resendOTP = asyncHandler(async (req, res, next) => {
 // @access  Public
 
 export const sendVerificationEmail = asyncHandler(async (req, res, next) => {
-
   const { email, phoneNumber, type } = req.body;
 
   // const query = buildUserAuthTypeQuery(email, phoneNumber);
@@ -221,9 +233,10 @@ export const sendVerificationEmail = asyncHandler(async (req, res, next) => {
 
   const authUser = await Auth.create({ user: user._id, type });
 
-  const expiresAt = new Date(otpTokenExpiry(5 * 60) * 1000); 
+  const expiresAt = new Date(otpTokenExpiry(5 * 60) * 1000);
 
-  authUser.verificationCode = type == registerEnumType.EMAIL ? tokenOTP : mobileOTP;
+  authUser.verificationCode =
+    type == registerEnumType.EMAIL ? tokenOTP : mobileOTP;
   authUser.verificationExpires = expiresAt;
 
   // user.referalCode = generateReferalCode(user.firstName, user.lastName);
@@ -232,7 +245,6 @@ export const sendVerificationEmail = asyncHandler(async (req, res, next) => {
   user.save();
 
   try {
-
     const emailVerficationTemplate = welcomeEmailTemplate(tokenOTP);
 
     if (type === registerEnumType.EMAIL) {
@@ -281,7 +293,7 @@ export const createUserPassword = asyncHandler(async (req, res, next) => {
 
   const authUser = await Auth.findOne({ user: user._id });
 
-  if(!authUser){
+  if (!authUser) {
     return next(new ErrorResponse(`Auth User not found`, 404));
   }
 
@@ -308,9 +320,80 @@ export const createUserPassword = asyncHandler(async (req, res, next) => {
 // @desc    Create Password
 // @access  Public
 
+// export const createUserDetails = asyncHandler(async (req, res, next) => {
+//   const { email, firstName, lastName, phoneNumber, dob, age, username } =
+//     req.body;
+
+//   console.log({ reqBody: req.body });
+
+//   let jwtToken;
+
+//   const query = buildUserAuthTypeQuery(email, phoneNumber);
+
+//   const user = await User.findOne(query);
+
+//   if (!user) {
+//     return next(new ErrorResponse(`User Not Found`, 404));
+//   }
+
+//   const usernameExists = await User.findOne({
+//     username,
+//   });
+
+//   if (username && usernameExists) {
+//     return next(new ErrorResponse(`Username Already Exists`, 400));
+//   }
+
+//   const authUser = await Auth.findOne({ user: user._id });
+
+//   if (!authUser) {
+//     return next(new ErrorResponse(`user not found`, 404));
+//   }
+
+//   // Update user fields dynamically
+//   // Object.assign(user, { firstName, lastName, dob, age, username });
+
+//   const updatableFields = { firstName, lastName, dob, age, username };
+
+//   for (const key in updatableFields) {
+//     if (updatableFields[key] !== undefined) {
+//       user[key] = updatableFields[key];
+//     }
+//   }
+
+//   // Update authUser flags based on changes
+//   if (dob) {
+//     authUser.isDOBSet = true;
+//     jwtToken = generateToken(user._id);
+//   }
+//   if (username) authUser.isUsernameSet = true;
+//   if (user.firstName && user.lastName) {
+//     authUser.isUserDetailsSet = true;
+//   }
+
+//   await Promise.all([user.save(), authUser.save()]);
+
+//   const userDataWithoutPassword = removeSensitiveFields(user, ["password"]);
+
+//   const userData = {
+//     ...userDataWithoutPassword,
+//     token: jwtToken,
+//   };
+
+//   baseResponseHandler({
+//     res,
+//     statusCode: 200,
+//     success: true,
+//     message: "User Details Created",
+//     data: userData,
+//   });
+// });
+
 export const createUserDetails = asyncHandler(async (req, res, next) => {
   const { email, firstName, lastName, phoneNumber, dob, age, username } =
     req.body;
+
+  console.log({ reqBody: req.body });
 
   let jwtToken;
 
@@ -336,15 +419,30 @@ export const createUserDetails = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse(`user not found`, 404));
   }
 
-  // Update user fields dynamically
-  Object.assign(user, { firstName, lastName, dob, age, username });
+  const updatableFields: Partial<Pick<typeof user, "firstName" | "lastName" | "dob" | "age" | "username">> = {
+    firstName,
+    lastName,
+    dob,
+    age,
+    username,
+  };
+  
+  for (const key in updatableFields) {
+    if (updatableFields[key as keyof typeof updatableFields] !== undefined) {
+      user[key as keyof typeof updatableFields] =
+        updatableFields[key as keyof typeof updatableFields]!;
+    }
+  }
+  
 
-  // Update authUser flags based on changes
+  // ✅ Update authUser flags based on changes
   if (dob) {
     authUser.isDOBSet = true;
     jwtToken = generateToken(user._id);
   }
+
   if (username) authUser.isUsernameSet = true;
+
   if (user.firstName && user.lastName) {
     authUser.isUserDetailsSet = true;
   }
@@ -366,6 +464,7 @@ export const createUserDetails = asyncHandler(async (req, res, next) => {
     data: userData,
   });
 });
+
 
 // @route   /api/v1/auth/user/username/suggest
 // @desc    Suggest Unique Username
@@ -486,9 +585,9 @@ export const verifyOTP = asyncHandler(async (req, res, next) => {
 
   if (type && type === registerEnumType.EMAIL) {
     user.isEmailVerified = true;
-  } 
-  
-  if(type && type == registerEnumType.PHONE){
+  }
+
+  if (type && type == registerEnumType.PHONE) {
     user.isPhoneVerified = true;
   }
 
@@ -504,8 +603,8 @@ export const verifyOTP = asyncHandler(async (req, res, next) => {
     res,
     statusCode: 200,
     success: true,
-    data: "OTP Valid"
-  })
+    data: "OTP Valid",
+  });
 });
 
 // @route   /api/v1/auth/forgotPassword
@@ -521,14 +620,13 @@ export const forgetPassword = asyncHandler(async (req, res, next) => {
 
   const user = await User.findOne(query);
 
-  console.log("user", user)
+  console.log("user", user);
 
   if (!user) {
     return next(new ErrorResponse(`User not Found`, 404));
   }
 
   const authuser = await Auth.findOne({ user: user._id });
-
 
   if (!authuser) {
     return next(new ErrorResponse(`User not Found`, 404));
@@ -549,8 +647,7 @@ export const forgetPassword = asyncHandler(async (req, res, next) => {
   await authuser.save();
 
   try {
-
-    if (type == registerEnumType.EMAIL) {      
+    if (type == registerEnumType.EMAIL) {
       NotificationService.sendEmail({
         to: user.email,
         subject: "Password Reset Request",
@@ -561,10 +658,9 @@ export const forgetPassword = asyncHandler(async (req, res, next) => {
     if (type == registerEnumType.PHONE) {
       NotificationService.sendSms({
         text: `Your OTP is ${verificationCode}`,
-        to: phoneNumber
-      })
+        to: phoneNumber,
+      });
     }
-
   } catch (error) {
     return next(new ErrorResponse(`Email could not be sent`, 500));
   }
@@ -574,8 +670,8 @@ export const forgetPassword = asyncHandler(async (req, res, next) => {
     res,
     statusCode: 200,
     success: true,
-    data: user
-  })
+    data: user,
+  });
 });
 
 // @route   /api/v1/auth/resetPassword
@@ -584,7 +680,6 @@ export const forgetPassword = asyncHandler(async (req, res, next) => {
 
 export const resetPassword = asyncHandler(async (req, res, next) => {
   const { password, email, phoneNumber } = req.body;
-  
 
   // console.log({ password, token, email, phoneNumber });
 
@@ -616,7 +711,7 @@ export const resetPassword = asyncHandler(async (req, res, next) => {
   // authUser.verificationExpires = null;
 
   await user.save();
-  
+
   const userData = removeSensitiveFields(user, ["password"]);
 
   baseResponseHandler({
@@ -624,6 +719,6 @@ export const resetPassword = asyncHandler(async (req, res, next) => {
     res,
     statusCode: 200,
     success: true,
-    data: userData
+    data: userData,
   });
 });

@@ -28,6 +28,7 @@ const RegisterationEnums_1 = require("../../constants/enums/RegisterationEnums")
 // @desc    Login A User
 // @access  Public
 exports.loginUser = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    console.log("hitting login user");
     const { email, phoneNumber, password } = req.body;
     const query = (0, utils_1.buildUserAuthTypeQuery)(email, phoneNumber);
     // Find user by email or phone
@@ -46,6 +47,7 @@ exports.loginUser = (0, express_async_handler_1.default)((req, res, next) => __a
         "isUsernameSet",
         "isDOBSet",
         "isUserDetailsSet",
+        "isCategorySet",
     ];
     const missingFields = requiredFields.filter((field) => !authUser[field]);
     if (missingFields.length > 0) {
@@ -55,7 +57,7 @@ exports.loginUser = (0, express_async_handler_1.default)((req, res, next) => __a
             res,
             statusCode: 400,
             success: true,
-            data: authUser
+            data: authUser,
         });
         return;
     }
@@ -90,7 +92,11 @@ exports.resendOTP = (0, express_async_handler_1.default)((req, res, next) => __a
         return next(new ErrorResponse_1.default(`User Not Found`, 404));
     }
     const verificationCode = (0, generate_1.generateVerificationCode)();
-    const token = email ? verificationCode : config_1.default.isDevelopment ? "12345" : verificationCode;
+    const token = email
+        ? verificationCode
+        : config_1.default.isDevelopment
+            ? "12345"
+            : verificationCode;
     const expiresAt = new Date((0, generate_1.otpTokenExpiry)(5 * 60) * 1000);
     authUser.verificationExpires = expiresAt;
     authUser.verificationCode = token;
@@ -171,7 +177,8 @@ exports.sendVerificationEmail = (0, express_async_handler_1.default)((req, res, 
     const user = yield User_1.default.create({ email: emailLowercase });
     const authUser = yield Auth_1.default.create({ user: user._id, type });
     const expiresAt = new Date((0, generate_1.otpTokenExpiry)(5 * 60) * 1000);
-    authUser.verificationCode = type == RegisterationEnums_1.registerEnumType.EMAIL ? tokenOTP : mobileOTP;
+    authUser.verificationCode =
+        type == RegisterationEnums_1.registerEnumType.EMAIL ? tokenOTP : mobileOTP;
     authUser.verificationExpires = expiresAt;
     // user.referalCode = generateReferalCode(user.firstName, user.lastName);
     authUser.save();
@@ -236,8 +243,60 @@ exports.createUserPassword = (0, express_async_handler_1.default)((req, res, nex
 // @route   /api/v1/auth/userDetails
 // @desc    Create Password
 // @access  Public
+// export const createUserDetails = asyncHandler(async (req, res, next) => {
+//   const { email, firstName, lastName, phoneNumber, dob, age, username } =
+//     req.body;
+//   console.log({ reqBody: req.body });
+//   let jwtToken;
+//   const query = buildUserAuthTypeQuery(email, phoneNumber);
+//   const user = await User.findOne(query);
+//   if (!user) {
+//     return next(new ErrorResponse(`User Not Found`, 404));
+//   }
+//   const usernameExists = await User.findOne({
+//     username,
+//   });
+//   if (username && usernameExists) {
+//     return next(new ErrorResponse(`Username Already Exists`, 400));
+//   }
+//   const authUser = await Auth.findOne({ user: user._id });
+//   if (!authUser) {
+//     return next(new ErrorResponse(`user not found`, 404));
+//   }
+//   // Update user fields dynamically
+//   // Object.assign(user, { firstName, lastName, dob, age, username });
+//   const updatableFields = { firstName, lastName, dob, age, username };
+//   for (const key in updatableFields) {
+//     if (updatableFields[key] !== undefined) {
+//       user[key] = updatableFields[key];
+//     }
+//   }
+//   // Update authUser flags based on changes
+//   if (dob) {
+//     authUser.isDOBSet = true;
+//     jwtToken = generateToken(user._id);
+//   }
+//   if (username) authUser.isUsernameSet = true;
+//   if (user.firstName && user.lastName) {
+//     authUser.isUserDetailsSet = true;
+//   }
+//   await Promise.all([user.save(), authUser.save()]);
+//   const userDataWithoutPassword = removeSensitiveFields(user, ["password"]);
+//   const userData = {
+//     ...userDataWithoutPassword,
+//     token: jwtToken,
+//   };
+//   baseResponseHandler({
+//     res,
+//     statusCode: 200,
+//     success: true,
+//     message: "User Details Created",
+//     data: userData,
+//   });
+// });
 exports.createUserDetails = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { email, firstName, lastName, phoneNumber, dob, age, username } = req.body;
+    console.log({ reqBody: req.body });
     let jwtToken;
     const query = (0, utils_1.buildUserAuthTypeQuery)(email, phoneNumber);
     const user = yield User_1.default.findOne(query);
@@ -254,9 +313,20 @@ exports.createUserDetails = (0, express_async_handler_1.default)((req, res, next
     if (!authUser) {
         return next(new ErrorResponse_1.default(`user not found`, 404));
     }
-    // Update user fields dynamically
-    Object.assign(user, { firstName, lastName, dob, age, username });
-    // Update authUser flags based on changes
+    const updatableFields = {
+        firstName,
+        lastName,
+        dob,
+        age,
+        username,
+    };
+    for (const key in updatableFields) {
+        if (updatableFields[key] !== undefined) {
+            user[key] =
+                updatableFields[key];
+        }
+    }
+    // ✅ Update authUser flags based on changes
     if (dob) {
         authUser.isDOBSet = true;
         jwtToken = (0, generate_1.generateToken)(user._id);
@@ -372,7 +442,7 @@ exports.verifyOTP = (0, express_async_handler_1.default)((req, res, next) => __a
         res,
         statusCode: 200,
         success: true,
-        data: "OTP Valid"
+        data: "OTP Valid",
     });
 }));
 // @route   /api/v1/auth/forgotPassword
@@ -408,7 +478,7 @@ exports.forgetPassword = (0, express_async_handler_1.default)((req, res, next) =
         if (type == RegisterationEnums_1.registerEnumType.PHONE) {
             notificationService_1.default.sendSms({
                 text: `Your OTP is ${verificationCode}`,
-                to: phoneNumber
+                to: phoneNumber,
             });
         }
     }
@@ -420,7 +490,7 @@ exports.forgetPassword = (0, express_async_handler_1.default)((req, res, next) =
         res,
         statusCode: 200,
         success: true,
-        data: user
+        data: user,
     });
 }));
 // @route   /api/v1/auth/resetPassword
@@ -454,6 +524,6 @@ exports.resetPassword = (0, express_async_handler_1.default)((req, res, next) =>
         res,
         statusCode: 200,
         success: true,
-        data: userData
+        data: userData,
     });
 }));

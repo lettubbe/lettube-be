@@ -40,3 +40,14 @@ export const buildUserAuthTypeQuery = (email?: string, phoneNumber?: string) => 
 export const normalizePhoneNumber = (phoneNumber: string) => {
   return phoneNumber.replace(/\D/g, '').slice(-10); 
 };
+
+// function assignDefinedFields<T>(target: T, updates: Partial<T>) {
+//   for (const key in updates) {
+//     if (updates[key as keyof T] !== undefined) {
+//       target[key as keyof T] = updates[key as keyof T]!;
+//     }
+//   }
+// }
+
+// assignDefinedFields(user, { firstName, lastName, dob, age, username });
+
