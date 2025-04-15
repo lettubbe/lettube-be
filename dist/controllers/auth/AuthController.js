@@ -47,7 +47,7 @@ exports.loginUser = (0, express_async_handler_1.default)((req, res, next) => __a
         "isUsernameSet",
         "isDOBSet",
         "isUserDetailsSet",
-        "isCategorySet",
+        // "isCategorySet",
     ];
     const missingFields = requiredFields.filter((field) => !authUser[field]);
     if (missingFields.length > 0) {
@@ -326,7 +326,6 @@ exports.createUserDetails = (0, express_async_handler_1.default)((req, res, next
                 updatableFields[key];
         }
     }
-    // ✅ Update authUser flags based on changes
     if (dob) {
         authUser.isDOBSet = true;
         jwtToken = (0, generate_1.generateToken)(user._id);

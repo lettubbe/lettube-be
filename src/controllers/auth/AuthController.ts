@@ -54,7 +54,7 @@ export const loginUser = asyncHandler(async (req, res, next) => {
     "isUsernameSet",
     "isDOBSet",
     "isUserDetailsSet",
-    "isCategorySet",
+    // "isCategorySet",
   ];
 
   const missingFields = requiredFields.filter(
@@ -435,7 +435,6 @@ export const createUserDetails = asyncHandler(async (req, res, next) => {
   }
   
 
-  // ✅ Update authUser flags based on changes
   if (dob) {
     authUser.isDOBSet = true;
     jwtToken = generateToken(user._id);
