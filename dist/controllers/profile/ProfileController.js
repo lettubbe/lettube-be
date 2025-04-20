@@ -93,6 +93,8 @@ exports.updateProfileDetails = (0, express_async_handler_1.default)((req, res, n
         profile.websiteLink = websiteLink;
     if (displayName)
         profile.displayName = displayName;
+    if (username)
+        profile.username = username;
     yield profile.save();
     const updatedUser = yield User_1.default.findById(user._id).select("-password");
     (0, BaseResponseHandler_1.default)({

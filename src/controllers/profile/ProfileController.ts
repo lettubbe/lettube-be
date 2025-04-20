@@ -93,7 +93,7 @@ export const uploadCoverPhoto = asyncHandler(async (req, res, next) => {
 // @access  Private
 
 export const updateProfileDetails = asyncHandler(async (req, res, next) => {
-  const { description, firstName, lastName, displayName, websiteLink } = req.body;
+  const { description, firstName, lastName, displayName, username, websiteLink } = req.body;
 
   const user = await getAuthUser(req, next);
 
@@ -108,6 +108,7 @@ export const updateProfileDetails = asyncHandler(async (req, res, next) => {
   if (lastName) profile.lastName = lastName;
   if (websiteLink) profile.websiteLink = websiteLink;
   if(displayName) profile.displayName = displayName;
+  if(username) profile.username = username;
 
   await profile.save();
 
