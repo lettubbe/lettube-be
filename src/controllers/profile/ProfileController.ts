@@ -93,38 +93,38 @@ export const uploadCoverPhoto = asyncHandler(async (req, res, next) => {
 // @access  Private
 
 export const updateProfileDetails = asyncHandler(async (req, res, next) => {
-  // const { description, firstName, lastName, displayName, username, websiteLink } = req.body;
+  const { description, firstName, lastName, displayName, username, websiteLink } = req.body;
 
-  // const user = await getAuthUser(req, next);
+  const user = await getAuthUser(req, next);
 
-  // // console.log("logged user", user);
-  // console.log("update profile details", req.body);
+  // console.log("logged user", user);
+  console.log("update profile details", req.body);
 
-  // const profile = await User.findById(user._id);
+  const profile = await User.findById(user._id);
 
-  // if (!profile) {
-  //   return next(new ErrorResponse(`Profile Not Found`, 404));
-  // }
+  if (!profile) {
+    return next(new ErrorResponse(`Profile Not Found`, 404));
+  }
 
-  // if (description) profile.description = description;
-  // if (firstName) profile.firstName = firstName;
-  // if (lastName) profile.lastName = lastName;
-  // if (websiteLink) profile.websiteLink = websiteLink;
-  // if(displayName) profile.displayName = displayName;
-  // // if(username) profile.username = username;
+  if (description) profile.description = description;
+  if (firstName) profile.firstName = firstName;
+  if (lastName) profile.lastName = lastName;
+  if (websiteLink) profile.websiteLink = websiteLink;
+  if(displayName) profile.displayName = displayName;
+  if(username) profile.username = username;
 
   
 
-  // await profile.save();
+  await profile.save();
 
-  // const updatedUser = await User.findById(user._id).select("-password");
+  const updatedUser = await User.findById(user._id).select("-password");
 
   baseResponseHandler({
     message: `Profile details updated successfully`,
     res,
     statusCode: 200,
     success: true,
-    data: "updatedUser",
+    data: updatedUser,
   });
 });
 

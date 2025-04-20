@@ -77,28 +77,34 @@ exports.uploadCoverPhoto = (0, express_async_handler_1.default)((req, res, next)
 // @desc    Upload Profile Picture
 // @access  Private
 exports.updateProfileDetails = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    // const { description, firstName, lastName, displayName, username, websiteLink } = req.body;
-    // const user = await getAuthUser(req, next);
-    // // console.log("logged user", user);
-    // console.log("update profile details", req.body);
-    // const profile = await User.findById(user._id);
-    // if (!profile) {
-    //   return next(new ErrorResponse(`Profile Not Found`, 404));
-    // }
-    // if (description) profile.description = description;
-    // if (firstName) profile.firstName = firstName;
-    // if (lastName) profile.lastName = lastName;
-    // if (websiteLink) profile.websiteLink = websiteLink;
-    // if(displayName) profile.displayName = displayName;
-    // // if(username) profile.username = username;
-    // await profile.save();
-    // const updatedUser = await User.findById(user._id).select("-password");
+    const { description, firstName, lastName, displayName, username, websiteLink } = req.body;
+    const user = yield (0, utils_1.getAuthUser)(req, next);
+    // console.log("logged user", user);
+    console.log("update profile details", req.body);
+    const profile = yield User_1.default.findById(user._id);
+    if (!profile) {
+        return next(new ErrorResponse_1.default(`Profile Not Found`, 404));
+    }
+    if (description)
+        profile.description = description;
+    if (firstName)
+        profile.firstName = firstName;
+    if (lastName)
+        profile.lastName = lastName;
+    if (websiteLink)
+        profile.websiteLink = websiteLink;
+    if (displayName)
+        profile.displayName = displayName;
+    if (username)
+        profile.username = username;
+    yield profile.save();
+    const updatedUser = yield User_1.default.findById(user._id).select("-password");
     (0, BaseResponseHandler_1.default)({
         message: `Profile details updated successfully`,
         res,
         statusCode: 200,
         success: true,
-        data: "updatedUser",
+        data: updatedUser,
     });
 }));
 // @route   /api/v1/profile/me/
