@@ -66,6 +66,7 @@ exports.createCategoryFeeds = (0, express_async_handler_1.default)((req, res, ne
 // @route   GET /api/v1/feed/
 // @access  private
 exports.getUserFeeds = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    console.log("hitting getting user feeds");
     const user = yield (0, utils_1.getAuthUser)(req, next);
     console.log("user", user);
     const posts = posts_1.samplePosts;
@@ -124,10 +125,15 @@ exports.getContacts = (0, express_async_handler_1.default)((req, res, next) => _
 exports.uploadFeedPost = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const user = yield (0, utils_1.getAuthUser)(req, next);
     let tagsArray;
-    const thumbnailImage = yield (0, fileUpload_1.uploadFileFromFields)(req, next, `feedThunbnail/${user._id}/thumbnails`, "thumbnailImage");
+    console.log("body", req.body);
+    // const thumbnailImage = await uploadFileFromFields(
+    //   req,
+    //   next,
+    //   `feedThunbnail/${user._id}/thumbnails`,
+    //   "thumbnailImage"
+    // );
     const postVideo = yield (0, fileUpload_1.uploadFileFromFields)(req, next, `feedVideos/${user._id}/videos`, "postVideo");
     const { tags, category, description, visibility, isCommentsAllowed } = req.body;
-    console.log("req.body", req.body);
     tagsArray =
         typeof tags === "string" ? JSON.parse(tags.replace(/'/g, '"')) : tags;
     const isCommentsAllowedBool = String(isCommentsAllowed).toLowerCase() === "true";
@@ -139,7 +145,7 @@ exports.uploadFeedPost = (0, express_async_handler_1.default)((req, res, next) =
         visibility,
         isCommentsAllowed: isCommentsAllowedBool,
         videoUrl: postVideo,
-        thumbnail: thumbnailImage,
+        // thumbnail: thumbnailImage,
     };
     const post = yield Post_1.default.create(postFeed);
     (0, BaseResponseHandler_1.default)({

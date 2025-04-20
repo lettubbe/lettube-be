@@ -8,10 +8,10 @@ const joi_1 = __importDefault(require("joi"));
 const ErrorResponse_1 = __importDefault(require("../../../messages/ErrorResponse"));
 exports.validatePostFeedSchema = joi_1.default.object({
     // tags: Joi.array().items(Joi.string()).optional(), 
-    category: joi_1.default.string().required().messages({
-        "any.required": "Category is required 1234",
-        "string.base": "Password must be a string",
-    }),
+    // category: Joi.string().required().messages({
+    //   "any.required": "Category is required",
+    //   "string.base": "Category must be a string",
+    // }),
     description: joi_1.default.string().required().messages({
         "any.required": "Description is required",
         "string.base": "Description must be a string",

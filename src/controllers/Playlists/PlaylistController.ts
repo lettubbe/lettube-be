@@ -13,6 +13,8 @@ import { getPaginateOptions, transformPaginateResponse } from "../../lib/utils/p
 
 export const createPlaylist = asyncHandler(async (req, res, next) => {
 
+    console.log("hitting creating playlist");
+
     const user = await getAuthUser(req, next);
 
     const { name, description } = req.body;

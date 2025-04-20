@@ -24,6 +24,7 @@ const paginate_1 = require("../../lib/utils/paginate");
 // @desc    Create A Playlist
 // @access  Private
 exports.createPlaylist = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    console.log("hitting creating playlist");
     const user = yield (0, utils_1.getAuthUser)(req, next);
     const { name, description } = req.body;
     const playlistCoverPhoto = yield (0, fileUpload_1.uploadFile)(req, next, `playlistCoversPhotos/${user._id}`);

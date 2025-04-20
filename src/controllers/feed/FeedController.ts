@@ -72,6 +72,9 @@ export const createCategoryFeeds = asyncHandler(async (req, res, next) => {
 // @access  private
 
 export const getUserFeeds = asyncHandler(async (req, res, next) => {
+
+  console.log("hitting getting user feeds");
+
   const user = await getAuthUser(req, next);
 
   console.log("user", user);
@@ -85,6 +88,7 @@ export const getUserFeeds = asyncHandler(async (req, res, next) => {
     success: true,
     data: posts,
   });
+  
 });
 
 // @desc     Get User Feed
@@ -151,16 +155,19 @@ export const getContacts = asyncHandler(async (req, res, next) => {
 // @access   Private
 
 export const uploadFeedPost = asyncHandler(async (req, res, next) => {
+
   const user = await getAuthUser(req, next);
 
   let tagsArray;
 
-  const thumbnailImage = await uploadFileFromFields(
-    req,
-    next,
-    `feedThunbnail/${user._id}/thumbnails`,
-    "thumbnailImage"
-  );
+  console.log("body", req.body);
+
+  // const thumbnailImage = await uploadFileFromFields(
+  //   req,
+  //   next,
+  //   `feedThunbnail/${user._id}/thumbnails`,
+  //   "thumbnailImage"
+  // );
 
   const postVideo = await uploadFileFromFields(
     req,
@@ -171,8 +178,6 @@ export const uploadFeedPost = asyncHandler(async (req, res, next) => {
 
   const { tags, category, description, visibility, isCommentsAllowed } =
     req.body;
-
-  console.log("req.body", req.body);
 
   tagsArray =
     typeof tags === "string" ? JSON.parse(tags.replace(/'/g, '"')) : tags;
@@ -187,7 +192,7 @@ export const uploadFeedPost = asyncHandler(async (req, res, next) => {
     visibility,
     isCommentsAllowed: isCommentsAllowedBool,
     videoUrl: postVideo,
-    thumbnail: thumbnailImage,
+    // thumbnail: thumbnailImage,
   };
 
   const post = await Post.create(postFeed);

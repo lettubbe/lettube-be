@@ -3,7 +3,6 @@ import ErrorResponse from "../../messages/ErrorResponse";
 import NotificationService from "../../services/notificationService";
 import {
   comparePassword,
-  generateReferalCode,
   generateToken,
   generateVerificationCode,
   hashUserPassword,

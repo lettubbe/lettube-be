@@ -10,11 +10,12 @@ interface BaseResponse {
 }
 
 const baseResponseHandler = ({ res, statusCode, success, message, data = null }: BaseResponse) => {
-  return res.status(statusCode).json({
+  res.status(statusCode).json({
     success,
     message,
     ...(data && { data }), 
   });
+  return;
 };
 
 export default baseResponseHandler;

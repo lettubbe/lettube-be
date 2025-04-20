@@ -8,11 +8,13 @@ import upload from "../middleware/multer";
 
 const router = express.Router();
 
+// validatePostFeed(validatePostFeedSchema),
+
 router.post("/category", [validateAddCategoryFeedRequest(validateAddCategoryFeedSchema), protect], createCategoryFeeds);
 router.post("/contacts", [validateGetPhoneContacts(validatePhoneContactsSchema), protect], getContacts);
 router.get("/", protect, getUserFeeds);
 router.get("/uploads", protect, getUserUploadedFeeds);
-router.post("/upload", [protect, upload.fields([{ name: "thumbnailImage" }, {name: "postVideo" }])], validatePostFeed(validatePostFeedSchema), uploadFeedPost);
+router.post("/upload", [protect, upload.fields([{ name: "thumbnailImage" }, {name: "postVideo" }])], uploadFeedPost);
 
 
 export default router;
