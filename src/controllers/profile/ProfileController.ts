@@ -18,7 +18,9 @@ import {
 export const updateProfilePhoto = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
     const { email, phoneNumber } = req.body;
 
-    const query = buildUserAuthTypeQuery(email, phoneNumber);
+    const authUser = await getAuthUser(req, next);
+
+    const query = buildUserAuthTypeQuery(email, phoneNumber, authUser._id);
 
     const user = await User.findOne(query);
 

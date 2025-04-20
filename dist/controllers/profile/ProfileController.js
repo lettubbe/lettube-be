@@ -24,7 +24,8 @@ const utils_1 = require("../../lib/utils/utils");
 // @access  Private/public
 exports.updateProfilePhoto = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { email, phoneNumber } = req.body;
-    const query = (0, utils_1.buildUserAuthTypeQuery)(email, phoneNumber);
+    const authUser = yield (0, utils_1.getAuthUser)(req, next);
+    const query = (0, utils_1.buildUserAuthTypeQuery)(email, phoneNumber, authUser._id);
     const user = yield User_1.default.findOne(query);
     if (!user) {
         return next(new ErrorResponse_1.default(`User Not Found`, 404));
