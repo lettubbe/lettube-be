@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import { Schema, model, Query } from "mongoose";
+import mongoosePaginate from "mongoose-paginate-v2";
 
 const UserSchema = new Schema({
   firstName: {
@@ -67,7 +68,9 @@ const UserSchema = new Schema({
     type: Date,
     default: Date.now(),
   },
-});
+}, {  timestamps: true });
+
+UserSchema.plugin(mongoosePaginate);
 
 UserSchema.pre(/^find/, function (next) {
   // Use correct typing for `this`
