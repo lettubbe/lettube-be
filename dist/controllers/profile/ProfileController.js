@@ -79,8 +79,6 @@ exports.uploadCoverPhoto = (0, express_async_handler_1.default)((req, res, next)
 exports.updateProfileDetails = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { description, firstName, lastName, displayName, username, websiteLink } = req.body;
     const user = yield (0, utils_1.getAuthUser)(req, next);
-    // console.log("logged user", user);
-    console.log("update profile details", req.body);
     const profile = yield User_1.default.findById(user._id);
     if (!profile) {
         return next(new ErrorResponse_1.default(`Profile Not Found`, 404));

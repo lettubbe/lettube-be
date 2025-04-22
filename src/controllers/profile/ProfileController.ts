@@ -97,9 +97,6 @@ export const updateProfileDetails = asyncHandler(async (req, res, next) => {
 
   const user = await getAuthUser(req, next);
 
-  // console.log("logged user", user);
-  console.log("update profile details", req.body);
-
   const profile = await User.findById(user._id);
 
   if (!profile) {

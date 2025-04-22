@@ -71,7 +71,9 @@ exports.getPlaylists = (0, express_async_handler_1.default)((req, res, next) => 
 // @access  Private
 exports.getPlaylist = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { playlistId } = req.params;
-    const playlist = yield Playlist_1.default.findById(playlistId);
+    // const playlist = await Playlist.findById(playlistId).populate("user");
+    const playlist = yield Playlist_1.default.findById(playlistId)
+        .populate("user", "-password");
     if (!playlist) {
         return next(new ErrorResponse_1.default(`Playlist not found`, 404));
     }

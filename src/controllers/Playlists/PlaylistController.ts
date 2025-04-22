@@ -83,7 +83,11 @@ export const getPlaylist = asyncHandler(async (req, res, next) => {
 
     const { playlistId } = req.params;
 
-    const playlist = await Playlist.findById(playlistId);
+    // const playlist = await Playlist.findById(playlistId).populate("user");
+
+    const playlist = await Playlist.findById(playlistId)
+    .populate("user", "-password");
+
 
     if(!playlist){
         return next(new ErrorResponse(`Playlist not found`, 404));
