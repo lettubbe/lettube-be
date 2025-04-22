@@ -25,7 +25,7 @@ const playlistSchema = new Schema({
     type: String,
     enum: ["private", "public"],
   },
-});
+}, {  timestamps: true});
 
 export interface IPlaylist extends Document {
   name: string;
