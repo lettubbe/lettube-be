@@ -17,7 +17,7 @@ export const createPlaylist = asyncHandler(async (req, res, next) => {
 
     const user = await getAuthUser(req, next);
 
-    const { name, description } = req.body;
+    const { name, description, visibility } = req.body;
 
     const playlistCoverPhoto = await uploadFile(req, next, `playlistCoversPhotos/${user._id}`);
 
@@ -28,6 +28,7 @@ export const createPlaylist = asyncHandler(async (req, res, next) => {
     const playlist = await Playlist.create({
         name,
         user: user._id,
+        visibility,
         description: description ? description : null,
         coverPhoto: playlistCoverPhoto
     });

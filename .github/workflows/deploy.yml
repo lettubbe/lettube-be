@@ -1,0 +1,53 @@
+name: Deploy To EC2
+
+on:
+  push:
+    branches: [ "uat" ]
+  pull_request:
+    branches: [ "main", "uat" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x, 22.x]
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+    - run: npm ci
+    - run: npm run build --if-present
+    - run: npm test
+
+  deploy_to_uat:
+    needs: build
+    if: github.ref == 'refs/heads/uat'
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Deploy to UAT EC2
+      run: |
+        echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        scp -i ~/.ssh/id_rsa -r ./dist/ ubuntu@dev.lettubbe.com:/home/ubuntu/lettube-be
+        ssh -i ~/.ssh/id_rsa ubuntu@dev.lettubbe.com 'sudo systemctl restart lettube-staging-app'
+
+  deploy_to_main:
+    needs: build
+    if: github.event.pull_request.merged == true && github.base_ref == 'main' && github.head_ref == 'uat'
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Deploy to Main EC2
+      run: |
+        echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        scp -i ~/.ssh/id_rsa -r ./dist/ ubuntu@api.lettubbe.com:/home/ubuntu/lettube-be
+        ssh -i ~/.ssh/id_rsa ubuntu@api.lettubbe.com 'sudo systemctl restart lettube-production-app'
+
