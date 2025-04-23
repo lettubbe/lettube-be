@@ -25,6 +25,10 @@ jobs:
     - run: npm run build --if-present
     - run: npm test
 
+    - name: Add EC2 IP to known hosts
+      run: |
+        ssh-keyscan dev.lettubbe.com >> ~/.ssh/known_hosts
+
   deploy_to_uat:
     needs: build
     if: github.ref == 'refs/heads/uat'

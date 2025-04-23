@@ -123,20 +123,20 @@ exports.getContacts = (0, express_async_handler_1.default)((req, res, next) => _
 // @route    GET /api/v1/feed/upload
 // @access   Private
 exports.uploadFeedPost = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    console.log("hitting upload feed post");
     const user = yield (0, utils_1.getAuthUser)(req, next);
     let tagsArray;
     console.log("body", req.body);
-    // const thumbnailImage = await uploadFileFromFields(
-    //   req,
-    //   next,
-    //   `feedThunbnail/${user._id}/thumbnails`,
-    //   "thumbnailImage"
-    // );
+    const thumbnailImage = yield (0, fileUpload_1.uploadFileFromFields)(req, next, `feedThunbnail/${user._id}/thumbnails`, "thumbnailImage");
     const postVideo = yield (0, fileUpload_1.uploadFileFromFields)(req, next, `feedVideos/${user._id}/videos`, "postVideo");
     const { tags, category, description, visibility, isCommentsAllowed } = req.body;
+    console.log("tags", tags);
     tagsArray =
         typeof tags === "string" ? JSON.parse(tags.replace(/'/g, '"')) : tags;
     const isCommentsAllowedBool = String(isCommentsAllowed).toLowerCase() === "true";
+    if (tagsArray.length == 0) {
+        return next(new ErrorResponse_1.default(`tags is required`, 400));
+    }
     const postFeed = {
         user: user._id,
         tags: tagsArray,
@@ -145,7 +145,7 @@ exports.uploadFeedPost = (0, express_async_handler_1.default)((req, res, next) =
         visibility,
         isCommentsAllowed: isCommentsAllowedBool,
         videoUrl: postVideo,
-        // thumbnail: thumbnailImage,
+        thumbnail: thumbnailImage,
     };
     const post = yield Post_1.default.create(postFeed);
     (0, BaseResponseHandler_1.default)({

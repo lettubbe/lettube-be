@@ -17,12 +17,12 @@ const ErrorResponse_1 = __importDefault(require("../../messages/ErrorResponse"))
 const User_1 = __importDefault(require("../../models/User"));
 const getAuthUser = (req, next) => __awaiter(void 0, void 0, void 0, function* () {
     const userId = req.user.id;
-    console.log("user", req.user);
+    //  console.log("user", req.user);
     if (!userId) {
         return next(new ErrorResponse_1.default(`User Id is required`, 400));
     }
     const user = yield User_1.default.findOne({ _id: userId });
-    console.log("logged in user", user);
+    // console.log("logged in user", user);
     if (!user) {
         return next(new ErrorResponse_1.default(`User Id is required`, 400));
     }

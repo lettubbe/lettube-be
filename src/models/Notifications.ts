@@ -1,6 +1,5 @@
 import { model, Schema } from "mongoose";
 import { NotificationStatusEnum } from "../constants/enums/NotificationEnums";
-import { boolean } from "joi";
 
 const notificationSchema = new Schema({
     user: {

@@ -156,18 +156,20 @@ export const getContacts = asyncHandler(async (req, res, next) => {
 
 export const uploadFeedPost = asyncHandler(async (req, res, next) => {
 
+  console.log("hitting upload feed post");  
+
   const user = await getAuthUser(req, next);
 
   let tagsArray;
 
   console.log("body", req.body);
 
-  // const thumbnailImage = await uploadFileFromFields(
-  //   req,
-  //   next,
-  //   `feedThunbnail/${user._id}/thumbnails`,
-  //   "thumbnailImage"
-  // );
+  const thumbnailImage = await uploadFileFromFields(
+    req,
+    next,
+    `feedThunbnail/${user._id}/thumbnails`,
+    "thumbnailImage"
+  );
 
   const postVideo = await uploadFileFromFields(
     req,
@@ -179,10 +181,16 @@ export const uploadFeedPost = asyncHandler(async (req, res, next) => {
   const { tags, category, description, visibility, isCommentsAllowed } =
     req.body;
 
+  console.log("tags", tags);
+
   tagsArray =
     typeof tags === "string" ? JSON.parse(tags.replace(/'/g, '"')) : tags;
   const isCommentsAllowedBool =
     String(isCommentsAllowed).toLowerCase() === "true";
+
+  if(tagsArray.length == 0){
+    return next(new ErrorResponse(`tags is required`, 400));
+  }
 
   const postFeed = {
     user: user._id,
@@ -192,7 +200,7 @@ export const uploadFeedPost = asyncHandler(async (req, res, next) => {
     visibility,
     isCommentsAllowed: isCommentsAllowedBool,
     videoUrl: postVideo,
-    // thumbnail: thumbnailImage,
+    thumbnail: thumbnailImage,
   };
 
   const post = await Post.create(postFeed);
