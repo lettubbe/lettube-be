@@ -6,7 +6,10 @@ import ErrorResponse from "../../messages/ErrorResponse";
 import User from "../../models/User";
 import { samplePosts } from "../../_data/posts";
 import Post from "../../models/Post";
-import { getPaginateOptions, transformPaginateResponse } from "../../lib/utils/paginate";
+import {
+  getPaginateOptions,
+  transformPaginateResponse,
+} from "../../lib/utils/paginate";
 import Auth from "../../models/Auth";
 import { uploadFile, uploadFileFromFields } from "../../lib/utils/fileUpload";
 
@@ -72,7 +75,6 @@ export const createCategoryFeeds = asyncHandler(async (req, res, next) => {
 // @access  private
 
 export const getUserFeeds = asyncHandler(async (req, res, next) => {
-
   console.log("hitting getting user feeds");
 
   const user = await getAuthUser(req, next);
@@ -88,7 +90,6 @@ export const getUserFeeds = asyncHandler(async (req, res, next) => {
     success: true,
     data: posts,
   });
-  
 });
 
 // @desc     Get User Feed
@@ -122,7 +123,6 @@ export const getUserUploadedFeeds = asyncHandler(async (req, res, next) => {
 export const getContacts = asyncHandler(async (req, res, next) => {
   const { phoneNumbers } = req.body;
 
-  
   if (!Array.isArray(phoneNumbers)) {
     return next(
       new ErrorResponse("phoneNumbers must be a non-empty array", 400)
@@ -155,8 +155,7 @@ export const getContacts = asyncHandler(async (req, res, next) => {
 // @access   Private
 
 export const uploadFeedPost = asyncHandler(async (req, res, next) => {
-
-  console.log("hitting upload feed post");  
+  console.log("hitting upload feed post");
 
   const user = await getAuthUser(req, next);
 
@@ -183,12 +182,40 @@ export const uploadFeedPost = asyncHandler(async (req, res, next) => {
 
   console.log("tags", tags);
 
-  tagsArray =
-    typeof tags === "string" ? JSON.parse(tags.replace(/'/g, '"')) : tags;
+  if (!thumbnailImage) {
+    return next(
+      new ErrorResponse(
+        `Error Occured when uploading Thumbnail. Please Check your connection and try again`,
+        500
+      )
+    );
+  }
+
+  if (!postVideo) {
+    return next(
+      new ErrorResponse(
+        `Error Occured when uploading Video. Please Check your connection and try again`,
+        500
+      )
+    );
+  }
+
+  // tagsArray =
+  //   typeof tags === "string" ? JSON.parse(tags.replace(/'/g, '"')) : tags;
+
+  console.log("tags", tags);
+
+  // Split comma-separated string into array
+  tagsArray = typeof tags === "string" ? tags.split(",") : tags;
+
+  if (!tagsArray || tagsArray.length === 0) {
+    return next(new ErrorResponse("tags is required", 400));
+  }
+
   const isCommentsAllowedBool =
     String(isCommentsAllowed).toLowerCase() === "true";
 
-  if(tagsArray.length == 0){
+  if (tagsArray.length == 0) {
     return next(new ErrorResponse(`tags is required`, 400));
   }
 

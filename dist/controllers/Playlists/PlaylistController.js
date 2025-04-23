@@ -126,22 +126,21 @@ exports.updatePlaylist = (0, express_async_handler_1.default)((req, res, next) =
         visibility,
     };
     const user = yield (0, utils_1.getAuthUser)(req, next);
-    const playlistCoverPhoto = yield (0, fileUpload_1.uploadFile)(req, next, `playlistCoversPhotos/${user._id}`);
-    // if(!playlistCoverPhoto){
-    //     return next(new ErrorResponse(`Error Occured When uploading photo`, 500));
-    // }
-    // Only update coverPhoto if one was uploaded
-    if (playlistCoverPhoto) {
-        playlist.coverPhoto = playlistCoverPhoto;
-        yield playlist.save(); // Save only if we made changes
-    }
+    const playlistCoverPhoto = yield (0, fileUpload_1.uploadFile)(req, next, `playlistCoversPhotos/${user._id}`, true);
     const playlist = yield Playlist_1.default.findByIdAndUpdate(playlistId, playlistData, {
         new: true,
     });
     if (!playlist) {
         return next(new ErrorResponse_1.default(`No Playlist found`, 404));
     }
-    playlist.coverPhoto = playlistCoverPhoto;
+    if (playlistCoverPhoto) {
+        playlist.coverPhoto = playlistCoverPhoto;
+        yield playlist.save();
+    }
+    // if(!playlistCoverPhoto){
+    //     return next(new ErrorResponse(`Error Occured When uploading photo`, 500));
+    // }
+    //   playlist.coverPhoto = playlistCoverPhoto;
     yield playlist.save();
     (0, BaseResponseHandler_1.default)({
         message: `Playlist Updated Successfullly`,

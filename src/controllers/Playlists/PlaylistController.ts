@@ -173,10 +173,6 @@ export const updatePlaylist = asyncHandler(async (req, res, next) => {
     true
   );
 
-  // if(!playlistCoverPhoto){
-  //     return next(new ErrorResponse(`Error Occured When uploading photo`, 500));
-  // }
-
   const playlist = await Playlist.findByIdAndUpdate(playlistId, playlistData, {
     new: true,
   });
@@ -185,11 +181,14 @@ export const updatePlaylist = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse(`No Playlist found`, 404));
   }
 
-  // Only update coverPhoto if one was uploaded
   if (playlistCoverPhoto) {
     playlist.coverPhoto = playlistCoverPhoto;
-    await playlist.save(); // Save only if we made changes
+    await playlist.save();
   }
+
+  // if(!playlistCoverPhoto){
+  //     return next(new ErrorResponse(`Error Occured When uploading photo`, 500));
+  // }
 
   //   playlist.coverPhoto = playlistCoverPhoto;
 

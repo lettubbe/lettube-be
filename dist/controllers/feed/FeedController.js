@@ -131,8 +131,20 @@ exports.uploadFeedPost = (0, express_async_handler_1.default)((req, res, next) =
     const postVideo = yield (0, fileUpload_1.uploadFileFromFields)(req, next, `feedVideos/${user._id}/videos`, "postVideo");
     const { tags, category, description, visibility, isCommentsAllowed } = req.body;
     console.log("tags", tags);
-    tagsArray =
-        typeof tags === "string" ? JSON.parse(tags.replace(/'/g, '"')) : tags;
+    if (!thumbnailImage) {
+        return next(new ErrorResponse_1.default(`Error Occured when uploading Thumbnail. Please Check your connection and try again`, 500));
+    }
+    if (!postVideo) {
+        return next(new ErrorResponse_1.default(`Error Occured when uploading Video. Please Check your connection and try again`, 500));
+    }
+    // tagsArray =
+    //   typeof tags === "string" ? JSON.parse(tags.replace(/'/g, '"')) : tags;
+    console.log("tags", tags);
+    // Split comma-separated string into array
+    tagsArray = typeof tags === "string" ? tags.split(",") : tags;
+    if (!tagsArray || tagsArray.length === 0) {
+        return next(new ErrorResponse_1.default("tags is required", 400));
+    }
     const isCommentsAllowedBool = String(isCommentsAllowed).toLowerCase() === "true";
     if (tagsArray.length == 0) {
         return next(new ErrorResponse_1.default(`tags is required`, 400));

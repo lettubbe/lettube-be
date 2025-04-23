@@ -19,7 +19,13 @@ const s3_1 = require("./s3");
 const uploadFile = (req_1, next_1, folder_1, ...args_1) => __awaiter(void 0, [req_1, next_1, folder_1, ...args_1], void 0, function* (req, next, folder, optional = false) {
     const file = req.file;
     console.log("upload file", file);
+    // if (!file) {
+    //   return next(new ErrorResponse("No file uploaded", 400));
+    // }
     if (!file) {
+        if (optional) {
+            return null;
+        }
         return next(new ErrorResponse_1.default("No file uploaded", 400));
     }
     console.log("file", file);
