@@ -19,7 +19,6 @@ const BaseResponseHandler_1 = __importDefault(require("../../messages/BaseRespon
 const utils_1 = require("../../lib/utils/utils");
 const ErrorResponse_1 = __importDefault(require("../../messages/ErrorResponse"));
 const User_1 = __importDefault(require("../../models/User"));
-const posts_1 = require("../../_data/posts");
 const Post_1 = __importDefault(require("../../models/Post"));
 const paginate_1 = require("../../lib/utils/paginate");
 const fileUpload_1 = require("../../lib/utils/fileUpload");
@@ -69,13 +68,25 @@ exports.getUserFeeds = (0, express_async_handler_1.default)((req, res, next) => 
     console.log("hitting getting user feeds");
     const user = yield (0, utils_1.getAuthUser)(req, next);
     console.log("user", user);
-    const posts = posts_1.samplePosts;
+    const { page, limit } = req.query;
+    const options = (0, paginate_1.getPaginateOptions)(page, limit, {
+        populate: [
+            {
+                path: "user",
+                select: "username firstName lastName profilePicture",
+            },
+        ],
+    });
+    const posts = yield Post_1.default.paginate({ user: user._id }, options);
+    console.log("posts", posts);
+    const postsData = (0, paginate_1.transformPaginateResponse)(posts);
+    console.log("postsData", postsData);
     (0, BaseResponseHandler_1.default)({
         message: `User Feeds Retrived successfully`,
         res,
         statusCode: 200,
         success: true,
-        data: posts,
+        data: postsData,
     });
 }));
 // @desc     Get User Feed

@@ -81,14 +81,31 @@ export const getUserFeeds = asyncHandler(async (req, res, next) => {
 
   console.log("user", user);
 
-  const posts = samplePosts;
+  const { page, limit } = req.query;
+
+  const options = getPaginateOptions(page, limit, {
+    populate: [
+      {
+        path: "user",
+        select: "username firstName lastName profilePicture",
+      },
+    ],
+  });
+
+  const posts = await Post.paginate({ user: user._id }, options);
+
+  console.log("posts", posts);
+
+  const postsData = transformPaginateResponse(posts);
+
+  console.log("postsData", postsData);
 
   baseResponseHandler({
     message: `User Feeds Retrived successfully`,
     res,
     statusCode: 200,
     success: true,
-    data: posts,
+    data: postsData,
   });
 });
 
