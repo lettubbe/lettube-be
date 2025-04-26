@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.uploadFeedPost = exports.getContacts = exports.getUserUploadedFeeds = exports.getUserFeeds = exports.createCategoryFeeds = void 0;
+exports.likePost = exports.uploadFeedPost = exports.getContacts = exports.getUserUploadedFeeds = exports.getUserFeeds = exports.createCategoryFeeds = void 0;
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const Feed_1 = __importDefault(require("../../models/Feed"));
 const BaseResponseHandler_1 = __importDefault(require("../../messages/BaseResponseHandler"));
@@ -178,4 +178,27 @@ exports.uploadFeedPost = (0, express_async_handler_1.default)((req, res, next) =
         success: true,
         data: post,
     });
+}));
+// @desc     Get User Feed
+// @route    GET /api/v1/feed/:postId/like
+// @access   Private
+exports.likePost = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { postId } = req.params;
+    const userId = req.user._id;
+    const post = yield Post_1.default.findById(postId);
+    if (!post) {
+        res.status(404);
+        throw new Error("Post not found");
+    }
+    // Remove user from dislikes if present
+    post.reactions.dislikes = post.reactions.dislikes.filter((id) => id.toString() !== userId.toString());
+    // Toggle like
+    if (post.reactions.likes.includes(userId)) {
+        post.reactions.likes.pull(userId);
+    }
+    else {
+        post.reactions.likes.push(userId);
+    }
+    yield post.save();
+    res.status(200).json({ success: true, reactions: post.reactions });
 }));
