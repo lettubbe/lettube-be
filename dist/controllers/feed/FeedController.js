@@ -182,36 +182,6 @@ exports.uploadFeedPost = (0, express_async_handler_1.default)((req, res, next) =
 // @desc     Get User Feed
 // @route    GET /api/v1/feed/:postId/like
 // @access   Private
-// export const likePost = asyncHandler(async (req, res, next) => {
-//   console.log("hitting like post");
-//   const { postId } = req.params;
-//   const user = await getAuthUser(req, next);
-//   const userId = user._id;
-//   const post = await Post.findById(postId);
-//   if (!post) {
-//     return next(new ErrorResponse(`Post Not Found`, 404));
-//   }
-//   // Remove user from dislikes if present
-//   post.reactions.dislikes = post.reactions.dislikes.filter(
-//     (id) => id.toString() !== userId.toString()
-//   );
-//   // Toggle like
-//   if (post.reactions.likes.some((id) => id.toString() === userId.toString())) {
-//     post.reactions.likes = post.reactions.likes.filter(
-//       (id) => id.toString() !== userId.toString()
-//     );
-//   } else {
-//     post.reactions.likes.push(userId);
-//   }
-//   await post.save();
-//   baseResponseHandler({
-//     message: `Post Liked Successfully`,
-//     res,
-//     statusCode: 200,
-//     success: true,
-//     data: post.reactions
-//   });
-// });
 exports.likePost = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     console.log("hitting like post");
     const { postId } = req.params;
@@ -224,13 +194,11 @@ exports.likePost = (0, express_async_handler_1.default)((req, res, next) => __aw
     const hasLiked = post.reactions.likes.some((id) => id.toString() === userId.toString());
     const update = hasLiked
         ? {
-            // User already liked → remove from likes
             $pull: { "reactions.likes": userId },
         }
         : {
-            // User not liked yet → add to likes
             $addToSet: { "reactions.likes": userId },
-            $pull: { "reactions.dislikes": userId }, // Also remove from dislikes if any
+            $pull: { "reactions.dislikes": userId },
         };
     const updatedPost = yield Post_1.default.findByIdAndUpdate(postId, update, {
         new: true,
@@ -323,32 +291,6 @@ exports.likeComment = (0, express_async_handler_1.default)((req, res, next) => _
 // @desc      Make Comment On A Post
 // @route     /posts/:postId/comments
 // @access    Private
-// export const commentOnPost = asyncHandler(async (req, res, next) => {
-//   console.log("hitting comment on post");
-//   const { postId } = req.params;
-//   const { text } = req.body;
-//   const user = await getAuthUser(req, next);
-//   const post = await Post.findById(postId);
-//   if (!post) {
-//     return next(new ErrorResponse(`Post Not Found`, 404))
-//   }
-//   const newComment = {
-//     user: user._id,
-//     text,
-//     likes: [],
-//     replies: [],
-//     createdAt: new Date(),
-//   };
-//   post.comments.push(newComment);
-//   await post.save();
-//   baseResponseHandler({
-//     message: `Comment Added Successfully`,
-//     res,
-//     statusCode: 200,
-//     success: true,
-//     data: post.comments
-//   })
-// });
 exports.commentOnPost = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { postId } = req.params;
     const { text } = req.body;
@@ -376,27 +318,33 @@ exports.commentOnPost = (0, express_async_handler_1.default)((req, res, next) =>
 // @route     /posts/:postId/dislike
 // @access    Private
 exports.dislikePost = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    console.log("hitting dislike post");
     const { postId } = req.params;
     const userId = req.user._id;
     const post = yield Post_1.default.findById(postId);
     if (!post) {
         return next(new ErrorResponse_1.default(`Post Not Found`, 404));
     }
-    // Remove user from likes if present
-    post.reactions.likes = post.reactions.likes.filter((id) => id.toString() !== userId.toString());
-    // Toggle dislike
-    if (post.reactions.dislikes.some(id => id.toString() === userId.toString())) {
-        post.reactions.dislikes = post.reactions.dislikes.filter((id) => id.toString() !== userId.toString());
-    }
-    else {
-        post.reactions.dislikes.push(userId);
-    }
-    yield post.save();
+    const hasDisliked = post.reactions.dislikes.some((id) => id.toString() === userId.toString());
+    const update = hasDisliked
+        ? {
+            // User already disliked → remove from dislikes
+            $pull: { "reactions.dislikes": userId },
+        }
+        : {
+            // User not disliked yet → add to dislikes
+            $addToSet: { "reactions.dislikes": userId },
+            $pull: { "reactions.likes": userId }, // Remove from likes if any
+        };
+    const updatedPost = yield Post_1.default.findByIdAndUpdate(postId, update, {
+        new: true,
+        runValidators: true,
+    });
     (0, BaseResponseHandler_1.default)({
         message: `Post Disliked Successfully`,
         res,
         statusCode: 200,
         success: true,
-        data: post.reactions,
+        data: updatedPost === null || updatedPost === void 0 ? void 0 : updatedPost.reactions,
     });
 }));

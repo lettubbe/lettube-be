@@ -260,47 +260,6 @@ export const uploadFeedPost = asyncHandler(async (req, res, next) => {
 // @route    GET /api/v1/feed/:postId/like
 // @access   Private
 
-// export const likePost = asyncHandler(async (req, res, next) => {
-
-//   console.log("hitting like post");
-  
-//   const { postId } = req.params;
-  
-//   const user = await getAuthUser(req, next);
-
-//   const userId = user._id;
-
-//   const post = await Post.findById(postId);
-
-//   if (!post) {
-//     return next(new ErrorResponse(`Post Not Found`, 404));
-//   }
-
-//   // Remove user from dislikes if present
-//   post.reactions.dislikes = post.reactions.dislikes.filter(
-//     (id) => id.toString() !== userId.toString()
-//   );
-
-//   // Toggle like
-//   if (post.reactions.likes.some((id) => id.toString() === userId.toString())) {
-//     post.reactions.likes = post.reactions.likes.filter(
-//       (id) => id.toString() !== userId.toString()
-//     );
-//   } else {
-//     post.reactions.likes.push(userId);
-//   }
-
-//   await post.save();
-
-//   baseResponseHandler({
-//     message: `Post Liked Successfully`,
-//     res,
-//     statusCode: 200,
-//     success: true,
-//     data: post.reactions
-//   });
-// });
-
 export const likePost = asyncHandler(async (req, res, next) => {
   console.log("hitting like post");
 
@@ -319,13 +278,11 @@ export const likePost = asyncHandler(async (req, res, next) => {
 
   const update = hasLiked
     ? {
-        // User already liked → remove from likes
         $pull: { "reactions.likes": userId },
       }
     : {
-        // User not liked yet → add to likes
         $addToSet: { "reactions.likes": userId },
-        $pull: { "reactions.dislikes": userId }, // Also remove from dislikes if any
+        $pull: { "reactions.dislikes": userId },
       };
 
   const updatedPost = await Post.findByIdAndUpdate(postId, update, {
@@ -443,42 +400,6 @@ export const likeComment = asyncHandler(async (req, res, next) => {
 // @route     /posts/:postId/comments
 // @access    Private
 
-// export const commentOnPost = asyncHandler(async (req, res, next) => {
-
-//   console.log("hitting comment on post");
-
-//   const { postId } = req.params;
-//   const { text } = req.body;
-
-//   const user = await getAuthUser(req, next);
-
-//   const post = await Post.findById(postId);
-
-//   if (!post) {
-//     return next(new ErrorResponse(`Post Not Found`, 404))
-//   }
-
-//   const newComment = {
-//     user: user._id,
-//     text,
-//     likes: [],
-//     replies: [],
-//     createdAt: new Date(),
-//   };
-
-//   post.comments.push(newComment);
-//   await post.save();
-
-//   baseResponseHandler({
-//     message: `Comment Added Successfully`,
-//     res,
-//     statusCode: 200,
-//     success: true,
-//     data: post.comments
-//   })
-
-// });
-
 export const commentOnPost = asyncHandler(async (req, res, next) => {
 
   const { postId } = req.params;
@@ -513,42 +434,47 @@ export const commentOnPost = asyncHandler(async (req, res, next) => {
   });
 });
 
-
 // @desc      Dislike A Post
 // @route     /posts/:postId/dislike
 // @access    Private
 
 export const dislikePost = asyncHandler(async (req, res, next) => {
+  console.log("hitting dislike post");
+
   const { postId } = req.params;
   const userId = req.user._id;
 
   const post = await Post.findById(postId);
-
   if (!post) {
     return next(new ErrorResponse(`Post Not Found`, 404));
   }
 
-  // Remove user from likes if present
-  post.reactions.likes = post.reactions.likes.filter(
-    (id) => id.toString() !== userId.toString()
+  const hasDisliked = post.reactions.dislikes.some(
+    (id) => id.toString() === userId.toString()
   );
 
-  // Toggle dislike
-  if (post.reactions.dislikes.some(id => id.toString() === userId.toString())) {
-    post.reactions.dislikes = post.reactions.dislikes.filter(
-      (id) => id.toString() !== userId.toString()
-    );
-  } else {
-    post.reactions.dislikes.push(userId);
-  }
+  const update = hasDisliked
+    ? {
+        // User already disliked → remove from dislikes
+        $pull: { "reactions.dislikes": userId },
+      }
+    : {
+        // User not disliked yet → add to dislikes
+        $addToSet: { "reactions.dislikes": userId },
+        $pull: { "reactions.likes": userId }, // Remove from likes if any
+      };
 
-  await post.save();
+  const updatedPost = await Post.findByIdAndUpdate(postId, update, {
+    new: true,
+    runValidators: true,
+  });
 
   baseResponseHandler({
     message: `Post Disliked Successfully`,
     res,
     statusCode: 200,
     success: true,
-    data: post.reactions,
+    data: updatedPost?.reactions,
   });
 });
+
