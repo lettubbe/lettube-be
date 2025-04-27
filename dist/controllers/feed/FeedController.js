@@ -77,7 +77,7 @@ exports.getUserFeeds = (0, express_async_handler_1.default)((req, res, next) => 
             },
         ],
     });
-    const posts = yield Post_1.default.paginate({ user: user._id }, options);
+    const posts = yield Post_1.default.paginate({}, options);
     console.log("posts", posts);
     const postsData = (0, paginate_1.transformPaginateResponse)(posts);
     // console.log("postsData", postsData);
