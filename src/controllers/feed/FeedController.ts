@@ -9,8 +9,7 @@ import {
   getPaginateOptions,
   transformPaginateResponse,
 } from "../../lib/utils/paginate";
-import Auth from "../../models/Auth";
-import { uploadFile, uploadFileFromFields } from "../../lib/utils/fileUpload";
+import { uploadFileFromFields } from "../../lib/utils/fileUpload";
 
 // @desc    Add Category to user Feed
 // @route   POST /api/v1/feed/category
@@ -97,7 +96,7 @@ export const getUserFeeds = asyncHandler(async (req, res, next) => {
 
   const postsData = transformPaginateResponse(posts);
 
-  console.log("postsData", postsData);
+  // console.log("postsData", postsData);
 
   baseResponseHandler({
     message: `User Feeds Retrived successfully`,
@@ -277,29 +276,67 @@ export const likePost = asyncHandler(async (req, res, next) => {
   );
 
   // Toggle like
-  if (post.reactions.likes.includes(userId)) {
-    post.reactions.likes.pull(userId);
+  if (post.reactions.likes.some((id) => id.toString() === userId.toString())) {
+    post.reactions.likes = post.reactions.likes.filter(
+      (id) => id.toString() !== userId.toString()
+    );
   } else {
     post.reactions.likes.push(userId);
   }
 
   await post.save();
-  res.status(200).json({ success: true, reactions: post.reactions });
 
   baseResponseHandler({
-    message: `Post Liked Successfullly`,
+    message: `Post Liked Successfully`,
     res,
     statusCode: 200,
     success: true,
     data: post.reactions
   });
-
 });
 
 // @desc      Liking a comment or reply to a comment
 // @route     /posts/:postId/comments/:commentId/replies/:replyId/like
 //            /posts/:postId/comments/:commentId/like
 // @access    Private
+
+export const replyToComment = asyncHandler(async (req, res, next) => {
+  const { postId, commentId } = req.params;
+
+  const { text } = req.body;
+
+  const user = await getAuthUser(req, next);
+
+  const post = await Post.findById(postId);
+
+  if (!post) {
+    return next(new ErrorResponse(`Post Not Found`, 404));
+  }
+
+  const comment = post.comments.find((c: any) => c._id.toString() === commentId);
+
+  if (!comment) {
+    return next(new ErrorResponse(`Comment not found`, 404));
+  }
+
+  const newReply = {
+    user: user._id,
+    text,
+    likes: [],
+    createdAt: new Date(),
+  };
+
+  comment.replies.push(newReply);
+  await post.save();
+
+  baseResponseHandler({
+    message: `Reply Done Successfully`,
+    res,
+    statusCode: 200,
+    success: true,
+    data: comment,
+  });
+});
 
 // @desc       Like A Comment
 // @route      /posts/:postId/comments/:commentId/replies
@@ -310,114 +347,124 @@ export const likeComment = asyncHandler(async (req, res, next) => {
   const userId = req.user._id;
 
   const post = await Post.findById(postId);
+
   if (!post) {
-    res.status(404);
-    throw new Error("Post not found");
+    return next(new ErrorResponse(`Post Not Found`, 404));
   }
 
-  const comment = post.comments.id(commentId);
+  const comment = post.comments.find((c: any) => c._id.toString() === commentId);
+
   if (!comment) {
-    res.status(404);
-    throw new Error("Comment not found");
+    return next(new ErrorResponse(`Comment Not Found`, 404));
   }
 
   if (replyId) {
     // Like a reply
-    const reply = comment.replies.id(replyId);
+    const reply = comment.replies.find((r: any) => r._id.toString() === replyId);
     if (!reply) {
-      res.status(404);
-      throw new Error("Reply not found");
+      return next(new ErrorResponse(`Reply not found`, 404));
     }
 
-    if (reply.likes.includes(userId)) {
-      reply.likes.pull(userId);
+    if (reply.likes.some(id => id.toString() === userId.toString())) {
+      reply.likes = reply.likes.filter(id => id.toString() !== userId.toString());
     } else {
       reply.likes.push(userId);
     }
 
-
   } else {
-    // Like a comment
-    if (comment.likes.includes(userId)) {
-      comment.likes.pull(userId);
+    if (comment.likes.some(id => id.toString() === userId.toString())) {
+      comment.likes = comment.likes.filter(id => id.toString() !== userId.toString());
     } else {
       comment.likes.push(userId);
     }
   }
 
   await post.save();
-  res.status(200).json({ success: true, comment });
-});
 
+  baseResponseHandler({
+    message: `Post Liked Successfully`,
+    res,
+    statusCode: 201,
+    success: true,
+    data: comment
+  })
 
-export const replyToComment = asyncHandler(async (req, res) => {
-  const { postId, commentId } = req.params;
-  const { text } = req.body;
-  const userId = req.user._id;
-
-  const post = await Post.findById(postId);
-  if (!post) {
-    res.status(404);
-    throw new Error("Post not found");
-  }
-
-  const comment = post.comments.id(commentId);
-  if (!comment) {
-    res.status(404);
-    throw new Error("Comment not found");
-  }
-
-  const newReply = {
-    user: userId,
-    text,
-    likes: [],
-    createdAt: new Date(),
-  };
-
-  comment.replies.push(newReply);
-  await post.save();
-
-  res.status(201).json({ success: true, comment });
 });
 
 // @desc      Make Comment On A Post
 // @route     /posts/:postId/comments
 // @access    Private
 
+// export const commentOnPost = asyncHandler(async (req, res, next) => {
+
+//   console.log("hitting comment on post");
+
+//   const { postId } = req.params;
+//   const { text } = req.body;
+
+//   const user = await getAuthUser(req, next);
+
+//   const post = await Post.findById(postId);
+
+//   if (!post) {
+//     return next(new ErrorResponse(`Post Not Found`, 404))
+//   }
+
+//   const newComment = {
+//     user: user._id,
+//     text,
+//     likes: [],
+//     replies: [],
+//     createdAt: new Date(),
+//   };
+
+//   post.comments.push(newComment);
+//   await post.save();
+
+//   baseResponseHandler({
+//     message: `Comment Added Successfully`,
+//     res,
+//     statusCode: 200,
+//     success: true,
+//     data: post.comments
+//   })
+
+// });
+
 export const commentOnPost = asyncHandler(async (req, res, next) => {
+
   const { postId } = req.params;
   const { text } = req.body;
-  const userId = req.user._id;
 
-  if (!text) {
-    return next(new ErrorResponse(`Comment text is required"`, 404))
-  }
-
-  const post = await Post.findById(postId);
-
-  if (!post) {
-    return next(new ErrorResponse(`Post Not Found`, 404))
-  }
+  const user = await getAuthUser(req, next);
 
   const newComment = {
-    user: userId,
+    user: user._id,
     text,
     likes: [],
     replies: [],
+    createdAt: new Date(),
   };
 
-  post.comments.push(newComment);
-  await post.save();
+  const post = await Post.findByIdAndUpdate(
+    postId,
+    { $push: { comments: newComment } },
+    { new: true, runValidators: true }
+  );
+
+  if (!post) {
+    return next(new ErrorResponse(`Post Not Found`, 404));
+  }
 
   baseResponseHandler({
     message: `Comment Added Successfully`,
     res,
     statusCode: 200,
     success: true,
-    data: post.comments
-  })
-
+    data: post.comments,
+  });
 });
+
 
 // @desc      Dislike A Post
 // @route     /posts/:postId/dislike
@@ -439,8 +486,10 @@ export const dislikePost = asyncHandler(async (req, res, next) => {
   );
 
   // Toggle dislike
-  if (post.reactions.dislikes.includes(userId)) {
-    post.reactions.dislikes.pull(userId);
+  if (post.reactions.dislikes.some(id => id.toString() === userId.toString())) {
+    post.reactions.dislikes = post.reactions.dislikes.filter(
+      (id) => id.toString() !== userId.toString()
+    );
   } else {
     post.reactions.dislikes.push(userId);
   }
@@ -453,6 +502,5 @@ export const dislikePost = asyncHandler(async (req, res, next) => {
     statusCode: 200,
     success: true,
     data: post.reactions,
-  })
-
+  });
 });

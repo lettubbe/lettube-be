@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.likePost = exports.uploadFeedPost = exports.getContacts = exports.getUserUploadedFeeds = exports.getUserFeeds = exports.createCategoryFeeds = void 0;
+exports.dislikePost = exports.commentOnPost = exports.likeComment = exports.replyToComment = exports.likePost = exports.uploadFeedPost = exports.getContacts = exports.getUserUploadedFeeds = exports.getUserFeeds = exports.createCategoryFeeds = void 0;
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const Feed_1 = __importDefault(require("../../models/Feed"));
 const BaseResponseHandler_1 = __importDefault(require("../../messages/BaseResponseHandler"));
@@ -80,7 +80,7 @@ exports.getUserFeeds = (0, express_async_handler_1.default)((req, res, next) => 
     const posts = yield Post_1.default.paginate({ user: user._id }, options);
     console.log("posts", posts);
     const postsData = (0, paginate_1.transformPaginateResponse)(posts);
-    console.log("postsData", postsData);
+    // console.log("postsData", postsData);
     (0, BaseResponseHandler_1.default)({
         message: `User Feeds Retrived successfully`,
         res,
@@ -182,23 +182,184 @@ exports.uploadFeedPost = (0, express_async_handler_1.default)((req, res, next) =
 // @desc     Get User Feed
 // @route    GET /api/v1/feed/:postId/like
 // @access   Private
-exports.likePost = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+exports.likePost = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { postId } = req.params;
     const userId = req.user._id;
     const post = yield Post_1.default.findById(postId);
     if (!post) {
-        res.status(404);
-        throw new Error("Post not found");
+        return next(new ErrorResponse_1.default(`Post Not Found`, 404));
     }
     // Remove user from dislikes if present
     post.reactions.dislikes = post.reactions.dislikes.filter((id) => id.toString() !== userId.toString());
     // Toggle like
-    if (post.reactions.likes.includes(userId)) {
-        post.reactions.likes.pull(userId);
+    if (post.reactions.likes.some((id) => id.toString() === userId.toString())) {
+        post.reactions.likes = post.reactions.likes.filter((id) => id.toString() !== userId.toString());
     }
     else {
         post.reactions.likes.push(userId);
     }
     yield post.save();
-    res.status(200).json({ success: true, reactions: post.reactions });
+    (0, BaseResponseHandler_1.default)({
+        message: `Post Liked Successfully`,
+        res,
+        statusCode: 200,
+        success: true,
+        data: post.reactions
+    });
+}));
+// @desc      Liking a comment or reply to a comment
+// @route     /posts/:postId/comments/:commentId/replies/:replyId/like
+//            /posts/:postId/comments/:commentId/like
+// @access    Private
+exports.replyToComment = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const { postId, commentId } = req.params;
+    const { text } = req.body;
+    const user = yield (0, utils_1.getAuthUser)(req, next);
+    const post = yield Post_1.default.findById(postId);
+    if (!post) {
+        return next(new ErrorResponse_1.default(`Post Not Found`, 404));
+    }
+    const comment = post.comments.find((c) => c._id.toString() === commentId);
+    if (!comment) {
+        return next(new ErrorResponse_1.default(`Comment not found`, 404));
+    }
+    const newReply = {
+        user: user._id,
+        text,
+        likes: [],
+        createdAt: new Date(),
+    };
+    comment.replies.push(newReply);
+    yield post.save();
+    (0, BaseResponseHandler_1.default)({
+        message: `Reply Done Successfully`,
+        res,
+        statusCode: 200,
+        success: true,
+        data: comment,
+    });
+}));
+// @desc       Like A Comment
+// @route      /posts/:postId/comments/:commentId/replies
+// @access     Private
+exports.likeComment = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const { postId, commentId, replyId } = req.params;
+    const userId = req.user._id;
+    const post = yield Post_1.default.findById(postId);
+    if (!post) {
+        return next(new ErrorResponse_1.default(`Post Not Found`, 404));
+    }
+    const comment = post.comments.find((c) => c._id.toString() === commentId);
+    if (!comment) {
+        return next(new ErrorResponse_1.default(`Comment Not Found`, 404));
+    }
+    if (replyId) {
+        // Like a reply
+        const reply = comment.replies.find((r) => r._id.toString() === replyId);
+        if (!reply) {
+            return next(new ErrorResponse_1.default(`Reply not found`, 404));
+        }
+        if (reply.likes.some(id => id.toString() === userId.toString())) {
+            reply.likes = reply.likes.filter(id => id.toString() !== userId.toString());
+        }
+        else {
+            reply.likes.push(userId);
+        }
+    }
+    else {
+        if (comment.likes.some(id => id.toString() === userId.toString())) {
+            comment.likes = comment.likes.filter(id => id.toString() !== userId.toString());
+        }
+        else {
+            comment.likes.push(userId);
+        }
+    }
+    yield post.save();
+    (0, BaseResponseHandler_1.default)({
+        message: `Post Liked Successfully`,
+        res,
+        statusCode: 201,
+        success: true,
+        data: comment
+    });
+}));
+// @desc      Make Comment On A Post
+// @route     /posts/:postId/comments
+// @access    Private
+// export const commentOnPost = asyncHandler(async (req, res, next) => {
+//   console.log("hitting comment on post");
+//   const { postId } = req.params;
+//   const { text } = req.body;
+//   const user = await getAuthUser(req, next);
+//   const post = await Post.findById(postId);
+//   if (!post) {
+//     return next(new ErrorResponse(`Post Not Found`, 404))
+//   }
+//   const newComment = {
+//     user: user._id,
+//     text,
+//     likes: [],
+//     replies: [],
+//     createdAt: new Date(),
+//   };
+//   post.comments.push(newComment);
+//   await post.save();
+//   baseResponseHandler({
+//     message: `Comment Added Successfully`,
+//     res,
+//     statusCode: 200,
+//     success: true,
+//     data: post.comments
+//   })
+// });
+exports.commentOnPost = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const { postId } = req.params;
+    const { text } = req.body;
+    const user = yield (0, utils_1.getAuthUser)(req, next);
+    const newComment = {
+        user: user._id,
+        text,
+        likes: [],
+        replies: [],
+        createdAt: new Date(),
+    };
+    const post = yield Post_1.default.findByIdAndUpdate(postId, { $push: { comments: newComment } }, { new: true, runValidators: true });
+    if (!post) {
+        return next(new ErrorResponse_1.default(`Post Not Found`, 404));
+    }
+    (0, BaseResponseHandler_1.default)({
+        message: `Comment Added Successfully`,
+        res,
+        statusCode: 200,
+        success: true,
+        data: post.comments,
+    });
+}));
+// @desc      Dislike A Post
+// @route     /posts/:postId/dislike
+// @access    Private
+exports.dislikePost = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const { postId } = req.params;
+    const userId = req.user._id;
+    const post = yield Post_1.default.findById(postId);
+    if (!post) {
+        return next(new ErrorResponse_1.default(`Post Not Found`, 404));
+    }
+    // Remove user from likes if present
+    post.reactions.likes = post.reactions.likes.filter((id) => id.toString() !== userId.toString());
+    // Toggle dislike
+    if (post.reactions.dislikes.some(id => id.toString() === userId.toString())) {
+        post.reactions.dislikes = post.reactions.dislikes.filter((id) => id.toString() !== userId.toString());
+    }
+    else {
+        post.reactions.dislikes.push(userId);
+    }
+    yield post.save();
+    (0, BaseResponseHandler_1.default)({
+        message: `Post Disliked Successfully`,
+        res,
+        statusCode: 200,
+        success: true,
+        data: post.reactions,
+    });
 }));

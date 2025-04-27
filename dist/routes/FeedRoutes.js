@@ -42,6 +42,7 @@ const phoneContactsValidationSchema_1 = __importStar(require("../middleware/vali
 const categoryValidationSchema_1 = __importStar(require("../middleware/validation/feeds/categoryValidationSchema"));
 const FeedController_1 = require("../controllers/feed/FeedController");
 const multer_1 = __importDefault(require("../middleware/multer"));
+const commentOnPostValidationSchema_1 = __importStar(require("../middleware/validation/feeds/commentOnPostValidationSchema"));
 const router = express_1.default.Router();
 // validatePostFeed(validatePostFeedSchema),
 router.post("/category", [(0, categoryValidationSchema_1.default)(categoryValidationSchema_1.validateAddCategoryFeedSchema), protect_1.protect], FeedController_1.createCategoryFeeds);
@@ -49,4 +50,10 @@ router.post("/contacts", [(0, phoneContactsValidationSchema_1.default)(phoneCont
 router.get("/", protect_1.protect, FeedController_1.getUserFeeds);
 router.get("/uploads", protect_1.protect, FeedController_1.getUserUploadedFeeds);
 router.post("/upload", [protect_1.protect, multer_1.default.fields([{ name: "thumbnailImage" }, { name: "postVideo" }])], FeedController_1.uploadFeedPost);
+router.patch("/posts/:postId/like", protect_1.protect, FeedController_1.likePost);
+router.patch("/posts/:postId/dislike", protect_1.protect, FeedController_1.dislikePost);
+router.patch("/posts/:postId/comments", [protect_1.protect, (0, commentOnPostValidationSchema_1.default)(commentOnPostValidationSchema_1.validatePostCommentSchema)], FeedController_1.commentOnPost);
+router.post("/posts/:postId/comments/:commentId/replies", protect_1.protect, FeedController_1.replyToComment);
+router.post("/posts/:postId/comments/:commentId/like", protect_1.protect, FeedController_1.likeComment);
+router.post("/posts/:postId/comments/:commentId/replies/:replyId/like", protect_1.protect, FeedController_1.likeComment);
 exports.default = router;

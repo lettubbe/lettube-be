@@ -73,7 +73,7 @@ export interface IPost extends Document {
   visibility: string;
   description: string;
   comments: {
-    user: Types.ObjectId;
+    user?: Types.ObjectId;
     text: string;
     likes: Types.ObjectId[];
     replies: {
