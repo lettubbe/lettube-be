@@ -260,40 +260,88 @@ export const uploadFeedPost = asyncHandler(async (req, res, next) => {
 // @route    GET /api/v1/feed/:postId/like
 // @access   Private
 
+// export const likePost = asyncHandler(async (req, res, next) => {
+
+//   console.log("hitting like post");
+  
+//   const { postId } = req.params;
+  
+//   const user = await getAuthUser(req, next);
+
+//   const userId = user._id;
+
+//   const post = await Post.findById(postId);
+
+//   if (!post) {
+//     return next(new ErrorResponse(`Post Not Found`, 404));
+//   }
+
+//   // Remove user from dislikes if present
+//   post.reactions.dislikes = post.reactions.dislikes.filter(
+//     (id) => id.toString() !== userId.toString()
+//   );
+
+//   // Toggle like
+//   if (post.reactions.likes.some((id) => id.toString() === userId.toString())) {
+//     post.reactions.likes = post.reactions.likes.filter(
+//       (id) => id.toString() !== userId.toString()
+//     );
+//   } else {
+//     post.reactions.likes.push(userId);
+//   }
+
+//   await post.save();
+
+//   baseResponseHandler({
+//     message: `Post Liked Successfully`,
+//     res,
+//     statusCode: 200,
+//     success: true,
+//     data: post.reactions
+//   });
+// });
+
 export const likePost = asyncHandler(async (req, res, next) => {
+  console.log("hitting like post");
+
   const { postId } = req.params;
-  const userId = req.user._id;
+  const user = await getAuthUser(req, next);
+  const userId = user._id;
 
   const post = await Post.findById(postId);
-
   if (!post) {
     return next(new ErrorResponse(`Post Not Found`, 404));
   }
 
-  // Remove user from dislikes if present
-  post.reactions.dislikes = post.reactions.dislikes.filter(
-    (id) => id.toString() !== userId.toString()
+  const hasLiked = post.reactions.likes.some(
+    (id) => id.toString() === userId.toString()
   );
 
-  // Toggle like
-  if (post.reactions.likes.some((id) => id.toString() === userId.toString())) {
-    post.reactions.likes = post.reactions.likes.filter(
-      (id) => id.toString() !== userId.toString()
-    );
-  } else {
-    post.reactions.likes.push(userId);
-  }
+  const update = hasLiked
+    ? {
+        // User already liked → remove from likes
+        $pull: { "reactions.likes": userId },
+      }
+    : {
+        // User not liked yet → add to likes
+        $addToSet: { "reactions.likes": userId },
+        $pull: { "reactions.dislikes": userId }, // Also remove from dislikes if any
+      };
 
-  await post.save();
+  const updatedPost = await Post.findByIdAndUpdate(postId, update, {
+    new: true,
+    runValidators: true, // optional, but nice
+  });
 
   baseResponseHandler({
     message: `Post Liked Successfully`,
     res,
     statusCode: 200,
     success: true,
-    data: post.reactions
+    data: updatedPost?.reactions,
   });
 });
+
 
 // @desc      Liking a comment or reply to a comment
 // @route     /posts/:postId/comments/:commentId/replies/:replyId/like
