@@ -52,6 +52,7 @@ router.get("/uploads", protect_1.protect, FeedController_1.getUserUploadedFeeds)
 router.post("/upload", [protect_1.protect, multer_1.default.fields([{ name: "thumbnailImage" }, { name: "postVideo" }])], FeedController_1.uploadFeedPost);
 router.patch("/posts/:postId/like", protect_1.protect, FeedController_1.likePost);
 router.patch("/posts/:postId/dislike", protect_1.protect, FeedController_1.dislikePost);
+router.get("/posts/:postId/comments", protect_1.protect, FeedController_1.getPostComments);
 router.patch("/posts/:postId/comments", [protect_1.protect, (0, commentOnPostValidationSchema_1.default)(commentOnPostValidationSchema_1.validatePostCommentSchema)], FeedController_1.commentOnPost);
 router.patch("/posts/:postId/comments/:commentId/replies", protect_1.protect, FeedController_1.replyToComment);
 router.patch("/posts/:postId/comments/:commentId/like", protect_1.protect, FeedController_1.likeComment);

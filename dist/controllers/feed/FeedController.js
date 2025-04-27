@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.dislikePost = exports.commentOnPost = exports.likeComment = exports.replyToComment = exports.likePost = exports.uploadFeedPost = exports.getContacts = exports.getUserUploadedFeeds = exports.getUserFeeds = exports.createCategoryFeeds = void 0;
+exports.dislikePost = exports.commentOnPost = exports.getPostComments = exports.likeComment = exports.replyToComment = exports.likePost = exports.uploadFeedPost = exports.getContacts = exports.getUserPublicUploadedFeeds = exports.getUserUploadedFeeds = exports.getUserFeeds = exports.createCategoryFeeds = void 0;
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const Feed_1 = __importDefault(require("../../models/Feed"));
 const BaseResponseHandler_1 = __importDefault(require("../../messages/BaseResponseHandler"));
@@ -66,7 +66,6 @@ exports.createCategoryFeeds = (0, express_async_handler_1.default)((req, res, ne
 // @route   GET /api/v1/feed/
 // @access  private
 exports.getUserFeeds = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    console.log("hitting getting user feeds");
     const user = yield (0, utils_1.getAuthUser)(req, next);
     console.log("user", user);
     const { page, limit } = req.query;
@@ -98,6 +97,22 @@ exports.getUserUploadedFeeds = (0, express_async_handler_1.default)((req, res, n
     const { page, limit } = req.params;
     const options = (0, paginate_1.getPaginateOptions)(page, limit);
     const posts = yield Post_1.default.paginate({ user: user._id }, options);
+    const postsTransformedData = (0, paginate_1.transformPaginateResponse)(posts);
+    (0, BaseResponseHandler_1.default)({
+        message: `User Feeds Retrived successfully`,
+        res,
+        statusCode: 200,
+        success: true,
+        data: postsTransformedData,
+    });
+}));
+// @desc     Get User Feed
+// @route   GET /api/v1/feed/uploads/user/public
+// @access  private
+exports.getUserPublicUploadedFeeds = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const { page, limit, userId } = req.params;
+    const options = (0, paginate_1.getPaginateOptions)(page, limit);
+    const posts = yield Post_1.default.paginate({ user: userId }, options);
     const postsTransformedData = (0, paginate_1.transformPaginateResponse)(posts);
     (0, BaseResponseHandler_1.default)({
         message: `User Feeds Retrived successfully`,
@@ -248,114 +263,9 @@ exports.replyToComment = (0, express_async_handler_1.default)((req, res, next) =
 // @desc       Like A Comment
 // @route      /posts/:postId/comments/:commentId/replies
 // @access     Private
-// export const likeComment = asyncHandler(async (req, res, next) => {
-//   const { postId, commentId, replyId } = req.params;
-//   const userId = req.user._id;
-//   const post = await Post.findById(postId);
-//   if (!post) {
-//     return next(new ErrorResponse(`Post Not Found`, 404));
-//   }
-//   const comment = post.comments.find((c: any) => c._id.toString() === commentId);
-//   if (!comment) {
-//     return next(new ErrorResponse(`Comment Not Found`, 404));
-//   }
-//   if (replyId) {
-//     // Like a reply
-//     const reply = comment.replies.find((r: any) => r._id.toString() === replyId);
-//     if (!reply) {
-//       return next(new ErrorResponse(`Reply not found`, 404));
-//     }
-//     if (reply.likes.some(id => id.toString() === userId.toString())) {
-//       reply.likes = reply.likes.filter(id => id.toString() !== userId.toString());
-//     } else {
-//       reply.likes.push(userId);
-//     }
-//   } else {
-//     if (comment.likes.some(id => id.toString() === userId.toString())) {
-//       comment.likes = comment.likes.filter(id => id.toString() !== userId.toString());
-//     } else {
-//       comment.likes.push(userId);
-//     }
-//   }
-//   await post.save();
-//   baseResponseHandler({
-//     message: `Post Liked Successfully`,
-//     res,
-//     statusCode: 201,
-//     success: true,
-//     data: comment
-//   })
-// });
-// export const likeComment = asyncHandler(async (req, res, next) => {
-//   const { postId, commentId, replyId } = req.params;
-//   const userId = req.user._id;
-//   const post = await Post.findById(postId);
-//   if (!post) {
-//     return next(new ErrorResponse(`Post Not Found`, 404));
-//   }
-//   const comment = post.comments.find((c: any) => c._id.toString() === commentId);
-//   if (!comment) {
-//     return next(new ErrorResponse(`Comment Not Found`, 404));
-//   }
-//   if (replyId) {
-//     // --- Like/Unlike a REPLY ---
-//     const reply = comment.replies.find((r: any) => r._id.toString() === replyId);
-//     if (!reply) {
-//       return next(new ErrorResponse(`Reply Not Found`, 404));
-//     }
-//     const alreadyLiked = reply.likes.some(id => id.toString() === userId.toString());
-//     const update = alreadyLiked
-//       ? { $pull: { "comments.$[comment].replies.$[reply].likes": userId } }
-//       : { $addToSet: { "comments.$[comment].replies.$[reply].likes": userId } };
-//     await Post.updateOne(
-//       {
-//         _id: postId,
-//         "comments._id": commentId,
-//         "comments.replies._id": replyId,
-//       },
-//       update,
-//       {
-//         arrayFilters: [
-//           { "comment._id": commentId },
-//           { "reply._id": replyId },
-//         ],
-//       }
-//     );
-//     const updatedPost = await Post.findById(postId); // <-- Fetch the updated post!
-//     return baseResponseHandler({
-//       res,
-//       statusCode: 200,
-//       success: true,
-//       message: alreadyLiked ? "Reply Unliked Successfully" : "Reply Liked Successfully",
-//       data: updatedPost?.comments, // Return updated comments
-//     });
-//   } else {
-//     // --- Like/Unlike a COMMENT ---
-//     const alreadyLiked = comment.likes.some(id => id.toString() === userId.toString());
-//     const update = alreadyLiked
-//       ? { $pull: { "comments.$.likes": userId } }
-//       : { $addToSet: { "comments.$.likes": userId } };
-//     await Post.updateOne(
-//       {
-//         _id: postId,
-//         "comments._id": commentId,
-//       },
-//       update
-//     );
-//     const updatedPost = await Post.findById(postId); // <-- Fetch the updated post!
-//     return baseResponseHandler({
-//       res,
-//       statusCode: 200,
-//       success: true,
-//       message: alreadyLiked ? "Comment Unliked Successfully" : "Comment Liked Successfully",
-//       data: updatedPost?.comments, // Return updated post
-//     });
-//   }
-// });
 exports.likeComment = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { postId, commentId, replyId } = req.params;
     const user = yield (0, utils_1.getAuthUser)(req, next);
-    console.log("logged in user", user);
     const userId = user._id;
     const post = yield Post_1.default.findById(postId);
     if (!post) {
@@ -405,6 +315,46 @@ exports.likeComment = (0, express_async_handler_1.default)((req, res, next) => _
         success: true,
         message: "Action performed successfully",
         data: updatedPost === null || updatedPost === void 0 ? void 0 : updatedPost.comments,
+    });
+}));
+// @desc      get Comments On A Post
+// @route     GET /posts/:postId/comments
+// @access    Private
+exports.getPostComments = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const { postId } = req.params;
+    const { page = 1, limit = 10 } = req.query;
+    const post = yield Post_1.default.findById(postId)
+        .populate("comments.user comments.replies.user", "username avatar");
+    if (!post) {
+        return next(new ErrorResponse_1.default("Post Not Found", 404));
+    }
+    const comments = post.comments || [];
+    const options = (0, paginate_1.getPaginateOptions)(page, limit);
+    const startIndex = (options.page - 1) * options.limit;
+    const endIndex = options.page * options.limit;
+    // Sort manually since we are working inside arrays
+    const sortedComments = [...comments].sort((a, b) => {
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+    const paginatedComments = sortedComments.slice(startIndex, endIndex);
+    const paginationResult = {
+        docs: paginatedComments,
+        totalDocs: comments.length,
+        limit: options.limit,
+        totalPages: Math.ceil(comments.length / options.limit),
+        page: options.page,
+        pagingCounter: startIndex + 1,
+        hasPrevPage: options.page > 1,
+        hasNextPage: endIndex < comments.length,
+        prevPage: options.page > 1 ? options.page - 1 : null,
+        nextPage: endIndex < comments.length ? options.page + 1 : null,
+    };
+    (0, BaseResponseHandler_1.default)({
+        message: "Post Comments Retrieved Successfully",
+        res,
+        statusCode: 200,
+        success: true,
+        data: (0, paginate_1.transformPaginateResponse)(paginationResult),
     });
 }));
 // @desc      Make Comment On A Post
