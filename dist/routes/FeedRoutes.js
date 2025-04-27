@@ -53,7 +53,7 @@ router.post("/upload", [protect_1.protect, multer_1.default.fields([{ name: "thu
 router.patch("/posts/:postId/like", protect_1.protect, FeedController_1.likePost);
 router.patch("/posts/:postId/dislike", protect_1.protect, FeedController_1.dislikePost);
 router.patch("/posts/:postId/comments", [protect_1.protect, (0, commentOnPostValidationSchema_1.default)(commentOnPostValidationSchema_1.validatePostCommentSchema)], FeedController_1.commentOnPost);
-router.post("/posts/:postId/comments/:commentId/replies", protect_1.protect, FeedController_1.replyToComment);
-router.post("/posts/:postId/comments/:commentId/like", protect_1.protect, FeedController_1.likeComment);
-router.post("/posts/:postId/comments/:commentId/replies/:replyId/like", protect_1.protect, FeedController_1.likeComment);
+router.patch("/posts/:postId/comments/:commentId/replies", protect_1.protect, FeedController_1.replyToComment);
+router.patch("/posts/:postId/comments/:commentId/like", protect_1.protect, FeedController_1.likeComment);
+router.patch("/posts/:postId/comments/:commentId/replies/:replyId/like", protect_1.protect, FeedController_1.likeComment);
 exports.default = router;

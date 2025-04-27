@@ -15,6 +15,7 @@ export const validatePostCommentSchema = Joi.object({
 
 const validatePostComment = (schema: Joi.ObjectSchema) => {
     return (req: Request, res: Response, next: NextFunction) => {
+        console.log("post commet validation")
         const { error } = schema.validate(req.body);
         if (error) {
             return next(new ErrorResponse(error.details[0].message, 400));

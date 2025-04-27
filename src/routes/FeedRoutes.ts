@@ -19,9 +19,9 @@ router.post("/upload", [protect, upload.fields([{ name: "thumbnailImage" }, {nam
 router.patch("/posts/:postId/like", protect, likePost);
 router.patch("/posts/:postId/dislike", protect, dislikePost);
 router.patch("/posts/:postId/comments", [protect, validatePostComment(validatePostCommentSchema)], commentOnPost);
-router.post("/posts/:postId/comments/:commentId/replies", protect, replyToComment);
-router.post("/posts/:postId/comments/:commentId/like", protect, likeComment);
-router.post("/posts/:postId/comments/:commentId/replies/:replyId/like", protect, likeComment);
+router.patch("/posts/:postId/comments/:commentId/replies", protect, replyToComment);
+router.patch("/posts/:postId/comments/:commentId/like", protect, likeComment);
+router.patch("/posts/:postId/comments/:commentId/replies/:replyId/like", protect, likeComment);
 
 
 

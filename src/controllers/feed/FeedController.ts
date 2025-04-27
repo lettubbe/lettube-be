@@ -10,6 +10,7 @@ import {
   transformPaginateResponse,
 } from "../../lib/utils/paginate";
 import { uploadFileFromFields } from "../../lib/utils/fileUpload";
+import mongoose from "mongoose"; // make sure mongoose is imported
 
 // @desc    Add Category to user Feed
 // @route   POST /api/v1/feed/category
@@ -299,7 +300,6 @@ export const likePost = asyncHandler(async (req, res, next) => {
   });
 });
 
-
 // @desc      Liking a comment or reply to a comment
 // @route     /posts/:postId/comments/:commentId/replies/:replyId/like
 //            /posts/:postId/comments/:commentId/like
@@ -347,9 +347,143 @@ export const replyToComment = asyncHandler(async (req, res, next) => {
 // @route      /posts/:postId/comments/:commentId/replies
 // @access     Private
 
+// export const likeComment = asyncHandler(async (req, res, next) => {
+//   const { postId, commentId, replyId } = req.params;
+//   const userId = req.user._id;
+
+//   const post = await Post.findById(postId);
+
+//   if (!post) {
+//     return next(new ErrorResponse(`Post Not Found`, 404));
+//   }
+
+//   const comment = post.comments.find((c: any) => c._id.toString() === commentId);
+
+//   if (!comment) {
+//     return next(new ErrorResponse(`Comment Not Found`, 404));
+//   }
+
+//   if (replyId) {
+//     // Like a reply
+//     const reply = comment.replies.find((r: any) => r._id.toString() === replyId);
+//     if (!reply) {
+//       return next(new ErrorResponse(`Reply not found`, 404));
+//     }
+
+//     if (reply.likes.some(id => id.toString() === userId.toString())) {
+//       reply.likes = reply.likes.filter(id => id.toString() !== userId.toString());
+//     } else {
+//       reply.likes.push(userId);
+//     }
+
+//   } else {
+//     if (comment.likes.some(id => id.toString() === userId.toString())) {
+//       comment.likes = comment.likes.filter(id => id.toString() !== userId.toString());
+//     } else {
+//       comment.likes.push(userId);
+//     }
+//   }
+
+//   await post.save();
+
+//   baseResponseHandler({
+//     message: `Post Liked Successfully`,
+//     res,
+//     statusCode: 201,
+//     success: true,
+//     data: comment
+//   })
+
+// });
+
+// export const likeComment = asyncHandler(async (req, res, next) => {
+//   const { postId, commentId, replyId } = req.params;
+//   const userId = req.user._id;
+
+//   const post = await Post.findById(postId);
+
+//   if (!post) {
+//     return next(new ErrorResponse(`Post Not Found`, 404));
+//   }
+
+//   const comment = post.comments.find((c: any) => c._id.toString() === commentId);
+
+//   if (!comment) {
+//     return next(new ErrorResponse(`Comment Not Found`, 404));
+//   }
+
+//   if (replyId) {
+//     // --- Like/Unlike a REPLY ---
+//     const reply = comment.replies.find((r: any) => r._id.toString() === replyId);
+
+//     if (!reply) {
+//       return next(new ErrorResponse(`Reply Not Found`, 404));
+//     }
+
+//     const alreadyLiked = reply.likes.some(id => id.toString() === userId.toString());
+
+//     const update = alreadyLiked
+//       ? { $pull: { "comments.$[comment].replies.$[reply].likes": userId } }
+//       : { $addToSet: { "comments.$[comment].replies.$[reply].likes": userId } };
+
+//     await Post.updateOne(
+//       {
+//         _id: postId,
+//         "comments._id": commentId,
+//         "comments.replies._id": replyId,
+//       },
+//       update,
+//       {
+//         arrayFilters: [
+//           { "comment._id": commentId },
+//           { "reply._id": replyId },
+//         ],
+//       }
+//     );
+
+//     const updatedPost = await Post.findById(postId); // <-- Fetch the updated post!
+
+//     return baseResponseHandler({
+//       res,
+//       statusCode: 200,
+//       success: true,
+//       message: alreadyLiked ? "Reply Unliked Successfully" : "Reply Liked Successfully",
+//       data: updatedPost?.comments, // Return updated comments
+//     });
+
+//   } else {
+//     // --- Like/Unlike a COMMENT ---
+//     const alreadyLiked = comment.likes.some(id => id.toString() === userId.toString());
+
+//     const update = alreadyLiked
+//       ? { $pull: { "comments.$.likes": userId } }
+//       : { $addToSet: { "comments.$.likes": userId } };
+
+//     await Post.updateOne(
+//       {
+//         _id: postId,
+//         "comments._id": commentId,
+//       },
+//       update
+//     );
+
+//     const updatedPost = await Post.findById(postId); // <-- Fetch the updated post!
+
+//     return baseResponseHandler({
+//       res,
+//       statusCode: 200,
+//       success: true,
+//       message: alreadyLiked ? "Comment Unliked Successfully" : "Comment Liked Successfully",
+//       data: updatedPost?.comments, // Return updated post
+//     });
+//   }
+// });
+
 export const likeComment = asyncHandler(async (req, res, next) => {
   const { postId, commentId, replyId } = req.params;
-  const userId = req.user._id;
+  const user = await getAuthUser(req, next);
+
+  const userId = user._id;
 
   const post = await Post.findById(postId);
 
@@ -363,38 +497,66 @@ export const likeComment = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse(`Comment Not Found`, 404));
   }
 
+  const userObjectId = new mongoose.Types.ObjectId(userId); // <- ensure correct type
+
   if (replyId) {
-    // Like a reply
+    // Like/Unlike a REPLY
     const reply = comment.replies.find((r: any) => r._id.toString() === replyId);
+
     if (!reply) {
-      return next(new ErrorResponse(`Reply not found`, 404));
+      return next(new ErrorResponse(`Reply Not Found`, 404));
     }
 
-    if (reply.likes.some(id => id.toString() === userId.toString())) {
-      reply.likes = reply.likes.filter(id => id.toString() !== userId.toString());
-    } else {
-      reply.likes.push(userId);
-    }
+    const alreadyLiked = reply.likes.some(id => id.toString() === userId.toString());
+
+    const update = alreadyLiked
+      ? { $pull: { "comments.$[comment].replies.$[reply].likes": userObjectId } }
+      : { $addToSet: { "comments.$[comment].replies.$[reply].likes": userObjectId } };
+
+    await Post.updateOne(
+      {
+        _id: postId,
+        "comments._id": commentId,
+        "comments.replies._id": replyId,
+      },
+      update,
+      {
+        arrayFilters: [
+          { "comment._id": new mongoose.Types.ObjectId(commentId) },
+          { "reply._id": new mongoose.Types.ObjectId(replyId) },
+        ],
+      }
+    );
 
   } else {
-    if (comment.likes.some(id => id.toString() === userId.toString())) {
-      comment.likes = comment.likes.filter(id => id.toString() !== userId.toString());
-    } else {
-      comment.likes.push(userId);
-    }
+    // Like/Unlike a COMMENT
+    const alreadyLiked = comment.likes.some(id => id.toString() === userId.toString());
+
+    const update = alreadyLiked
+      ? { $pull: { "comments.$.likes": userObjectId } }
+      : { $addToSet: { "comments.$.likes": userObjectId } };
+
+    await Post.updateOne(
+      {
+        _id: postId,
+        "comments._id": commentId,
+      },
+      update
+    );
   }
 
-  await post.save();
+  const updatedPost = await Post.findById(postId);
 
-  baseResponseHandler({
-    message: `Post Liked Successfully`,
+  return baseResponseHandler({
     res,
-    statusCode: 201,
+    statusCode: 200,
     success: true,
-    data: comment
-  })
-
+    message: "Action performed successfully",
+    data: updatedPost?.comments,
+  });
 });
+
+
 
 // @desc      Make Comment On A Post
 // @route     /posts/:postId/comments
