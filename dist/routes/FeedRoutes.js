@@ -49,6 +49,7 @@ router.post("/category", [(0, categoryValidationSchema_1.default)(categoryValida
 router.post("/contacts", [(0, phoneContactsValidationSchema_1.default)(phoneContactsValidationSchema_1.validatePhoneContactsSchema), protect_1.protect], FeedController_1.getContacts);
 router.get("/", protect_1.protect, FeedController_1.getUserFeeds);
 router.get("/uploads", protect_1.protect, FeedController_1.getUserUploadedFeeds);
+router.get("/uploads/public", protect_1.protect, FeedController_1.getUserPublicUploadedFeeds);
 router.post("/upload", [protect_1.protect, multer_1.default.fields([{ name: "thumbnailImage" }, { name: "postVideo" }])], FeedController_1.uploadFeedPost);
 router.patch("/posts/:postId/like", protect_1.protect, FeedController_1.likePost);
 router.patch("/posts/:postId/dislike", protect_1.protect, FeedController_1.dislikePost);
