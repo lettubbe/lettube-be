@@ -16,10 +16,16 @@ exports.uploadFileFromFields = exports.uploadFile = void 0;
 const uuid_1 = require("uuid");
 const ErrorResponse_1 = __importDefault(require("../../messages/ErrorResponse"));
 const s3_1 = require("./s3");
-const uploadFile = (req, next, folder) => __awaiter(void 0, void 0, void 0, function* () {
+const uploadFile = (req_1, next_1, folder_1, ...args_1) => __awaiter(void 0, [req_1, next_1, folder_1, ...args_1], void 0, function* (req, next, folder, optional = false) {
     const file = req.file;
     console.log("upload file", file);
+    // if (!file) {
+    //   return next(new ErrorResponse("No file uploaded", 400));
+    // }
     if (!file) {
+        if (optional) {
+            return null;
+        }
         return next(new ErrorResponse_1.default("No file uploaded", 400));
     }
     console.log("file", file);
@@ -36,13 +42,14 @@ const uploadFile = (req, next, folder) => __awaiter(void 0, void 0, void 0, func
     }
     catch (error) {
         console.log("error uploading profile picture", error);
-        next(new ErrorResponse_1.default("Error uploading file", 500));
+        return next(new ErrorResponse_1.default("Error uploading file", 500));
     }
 });
 exports.uploadFile = uploadFile;
 const uploadFileFromFields = (req, next, folder, fieldName) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     const files = req.files;
+    console.log("files", files);
     // Ensure files is the expected shape
     if (!files || typeof files !== "object" || Array.isArray(files)) {
         return next(new ErrorResponse_1.default(`Invalid file format for field "${fieldName}"`, 400));
@@ -64,7 +71,7 @@ const uploadFileFromFields = (req, next, folder, fieldName) => __awaiter(void 0,
     }
     catch (error) {
         console.error("Error uploading file to S3:", error);
-        next(new ErrorResponse_1.default("Error uploading file", 500));
+        return next(new ErrorResponse_1.default("Error uploading file", 500));
     }
 });
 exports.uploadFileFromFields = uploadFileFromFields;

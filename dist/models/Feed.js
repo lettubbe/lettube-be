@@ -9,6 +9,6 @@ const FeedSchema = new mongoose_1.Schema({
     },
     categories: [String],
     excludedCategories: [String],
-});
+}, { timestamps: true });
 const Feed = (0, mongoose_1.model)("feed", FeedSchema);
 exports.default = Feed;

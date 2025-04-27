@@ -6,7 +6,7 @@ export const getAuthUser = async (req: any, next: NextFunction): Promise<any> =>
 
  const userId = req.user.id;
 
- console.log("user", req.user);
+//  console.log("user", req.user);
 
   if (!userId) {
     return next(new ErrorResponse(`User Id is required`, 400));
@@ -14,7 +14,7 @@ export const getAuthUser = async (req: any, next: NextFunction): Promise<any> =>
 
   const user = await User.findOne({ _id: userId });
 
-  console.log("logged in user", user);
+  // console.log("logged in user", user);
 
   if (!user) {
     return next(new ErrorResponse(`User Id is required`, 400));

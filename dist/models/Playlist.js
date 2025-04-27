@@ -29,7 +29,7 @@ const playlistSchema = new mongoose_1.Schema({
         type: String,
         enum: ["private", "public"],
     },
-});
+}, { timestamps: true });
 playlistSchema.plugin(mongoose_paginate_v2_1.default);
 const Playlist = (0, mongoose_1.model)("playlist", playlistSchema);
 exports.default = Playlist;

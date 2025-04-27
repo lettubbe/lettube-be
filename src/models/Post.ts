@@ -8,13 +8,13 @@ const postSchema = new Schema<IPost>({
       required: true,
     },
     category: String,
-    // thumbnail: {
-    //   type: String,
-    //   // required: [true, "Thumbnail is required"],
-    // },
+    thumbnail: {
+      type: String,
+      required: [true, "Thumbnail is required"],
+    },
     videoUrl: {
       type: String,
-      // required: [true, "Video URL is required"],
+      required: [true, "Video URL is required"],
     },
     description: {
       type: String,
@@ -73,7 +73,7 @@ export interface IPost extends Document {
   visibility: string;
   description: string;
   comments: {
-    user: Types.ObjectId;
+    user?: Types.ObjectId;
     text: string;
     likes: Types.ObjectId[];
     replies: {

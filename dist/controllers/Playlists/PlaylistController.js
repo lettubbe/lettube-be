@@ -26,7 +26,7 @@ const paginate_1 = require("../../lib/utils/paginate");
 exports.createPlaylist = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     console.log("hitting creating playlist");
     const user = yield (0, utils_1.getAuthUser)(req, next);
-    const { name, description } = req.body;
+    const { name, description, visibility } = req.body;
     const playlistCoverPhoto = yield (0, fileUpload_1.uploadFile)(req, next, `playlistCoversPhotos/${user._id}`);
     if (!playlistCoverPhoto) {
         return next(new ErrorResponse_1.default(`Failed to upload Cover Photo`, 400));
@@ -34,8 +34,9 @@ exports.createPlaylist = (0, express_async_handler_1.default)((req, res, next) =
     const playlist = yield Playlist_1.default.create({
         name,
         user: user._id,
+        visibility,
         description: description ? description : null,
-        coverPhoto: playlistCoverPhoto
+        coverPhoto: playlistCoverPhoto,
     });
     (0, BaseResponseHandler_1.default)({
         message: `Playlist Created Successfully`,
@@ -51,10 +52,10 @@ exports.createPlaylist = (0, express_async_handler_1.default)((req, res, next) =
 exports.getPlaylists = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const user = yield (0, utils_1.getAuthUser)(req, next);
     const { limit = 10, page = 1 } = req.params;
-    const { search = '' } = req.query;
+    const { search = "" } = req.query;
     const options = (0, paginate_1.getPaginateOptions)(page, limit);
     const query = Object.assign({ user: user._id }, (search && {
-        name: { $regex: search, $options: 'i' }
+        name: { $regex: search, $options: "i" },
     }));
     const playlists = yield Playlist_1.default.paginate(query, options);
     const playlistData = (0, paginate_1.transformPaginateResponse)(playlists);
@@ -63,7 +64,7 @@ exports.getPlaylists = (0, express_async_handler_1.default)((req, res, next) => 
         res,
         statusCode: 200,
         success: true,
-        data: playlistData
+        data: playlistData,
     });
 }));
 // @route   PATCH /api/v1/playlist/:playlistId
@@ -72,8 +73,7 @@ exports.getPlaylists = (0, express_async_handler_1.default)((req, res, next) => 
 exports.getPlaylist = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { playlistId } = req.params;
     // const playlist = await Playlist.findById(playlistId).populate("user");
-    const playlist = yield Playlist_1.default.findById(playlistId)
-        .populate("user", "-password");
+    const playlist = yield Playlist_1.default.findById(playlistId).populate("user", "-password");
     if (!playlist) {
         return next(new ErrorResponse_1.default(`Playlist not found`, 404));
     }
@@ -82,7 +82,7 @@ exports.getPlaylist = (0, express_async_handler_1.default)((req, res, next) => _
         res,
         statusCode: 200,
         success: true,
-        data: playlist
+        data: playlist,
     });
 }));
 // @route   PATCH /api/v1/playlist/video
@@ -123,20 +123,24 @@ exports.updatePlaylist = (0, express_async_handler_1.default)((req, res, next) =
     const playlistData = {
         name,
         description,
-        visibility
+        visibility,
     };
     const user = yield (0, utils_1.getAuthUser)(req, next);
-    const playlistCoverPhoto = yield (0, fileUpload_1.uploadFile)(req, next, `playlistCoversPhotos/${user._id}`);
-    if (!playlistCoverPhoto) {
-        return next(new ErrorResponse_1.default(`Error Occured When uploading photo`, 500));
-    }
+    const playlistCoverPhoto = yield (0, fileUpload_1.uploadFile)(req, next, `playlistCoversPhotos/${user._id}`, true);
     const playlist = yield Playlist_1.default.findByIdAndUpdate(playlistId, playlistData, {
-        new: true
+        new: true,
     });
     if (!playlist) {
         return next(new ErrorResponse_1.default(`No Playlist found`, 404));
     }
-    playlist.coverPhoto = playlistCoverPhoto;
+    if (playlistCoverPhoto) {
+        playlist.coverPhoto = playlistCoverPhoto;
+        yield playlist.save();
+    }
+    // if(!playlistCoverPhoto){
+    //     return next(new ErrorResponse(`Error Occured When uploading photo`, 500));
+    // }
+    //   playlist.coverPhoto = playlistCoverPhoto;
     yield playlist.save();
     (0, BaseResponseHandler_1.default)({
         message: `Playlist Updated Successfullly`,

@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const crypto_1 = __importDefault(require("crypto"));
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const mongoose_1 = require("mongoose");
+const mongoose_paginate_v2_1 = __importDefault(require("mongoose-paginate-v2"));
 const UserSchema = new mongoose_1.Schema({
     firstName: {
         type: String,
@@ -80,7 +81,8 @@ const UserSchema = new mongoose_1.Schema({
         type: Date,
         default: Date.now(),
     },
-});
+}, { timestamps: true });
+UserSchema.plugin(mongoose_paginate_v2_1.default);
 UserSchema.pre(/^find/, function (next) {
     // Use correct typing for `this`
     const query = this;

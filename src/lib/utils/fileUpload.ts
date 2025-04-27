@@ -16,15 +16,23 @@ interface FieldsRequest extends Request {
 export const uploadFile = async (
   req: FileRequest,
   next: NextFunction,
-  folder: string
+  folder: string,
+  optional: boolean = false
 ) => {
   const file = req.file;
 
   console.log("upload file", file);
 
+  // if (!file) {
+  //   return next(new ErrorResponse("No file uploaded", 400));
+  // }
+
   if (!file) {
+    if (optional) {
+      return null;
+    }
     return next(new ErrorResponse("No file uploaded", 400));
-  }
+  }  
 
   console.log("file", file);
 
@@ -42,7 +50,7 @@ export const uploadFile = async (
     return uploadResult.Location;
   } catch (error) {
     console.log("error uploading profile picture", error);
-    next(new ErrorResponse("Error uploading file", 500));
+    return next(new ErrorResponse("Error uploading file", 500));
   }
 };
 
@@ -53,6 +61,8 @@ export const uploadFileFromFields = async (
     fieldName: string
   ) => {
     const files = req.files;
+
+    console.log("files", files);
   
     // Ensure files is the expected shape
     if (!files || typeof files !== "object" || Array.isArray(files)) {
@@ -79,6 +89,7 @@ export const uploadFileFromFields = async (
       return uploadResult.Location;
     } catch (error) {
       console.error("Error uploading file to S3:", error);
-      next(new ErrorResponse("Error uploading file", 500));
+      return next(new ErrorResponse("Error uploading file", 500));
     }
-  };
+
+};
