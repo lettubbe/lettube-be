@@ -90,7 +90,7 @@ export const getUserFeeds = asyncHandler(async (req, res, next) => {
     ],
   });
 
-  const posts = await Post.paginate({ user: user._id }, options);
+  const posts = await Post.paginate({}, options);
 
   console.log("posts", posts);
 
