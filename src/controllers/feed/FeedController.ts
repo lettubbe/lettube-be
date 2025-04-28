@@ -137,8 +137,11 @@ export const getUserUploadedFeeds = asyncHandler(async (req, res, next) => {
 // @access  private
 
 export const getUserPublicUploadedFeeds = asyncHandler(async (req, res, next) => {
+
+  const { userId } = req.query;
   
-  const { page, limit, userId } = req.params;
+  const { page, limit } = req.params;
+
 
   const options = getPaginateOptions(page, limit);
 

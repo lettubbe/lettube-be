@@ -111,7 +111,8 @@ exports.getUserUploadedFeeds = (0, express_async_handler_1.default)((req, res, n
 // @route   GET /api/v1/feed/uploads/user/public
 // @access  private
 exports.getUserPublicUploadedFeeds = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    const { page, limit, userId } = req.params;
+    const { userId } = req.query;
+    const { page, limit } = req.params;
     const options = (0, paginate_1.getPaginateOptions)(page, limit);
     const posts = yield Post_1.default.paginate({ user: userId }, options);
     const postsTransformedData = (0, paginate_1.transformPaginateResponse)(posts);
