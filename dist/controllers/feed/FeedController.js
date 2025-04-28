@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.dislikePost = exports.commentOnPost = exports.getPostComments = exports.likeComment = exports.replyToComment = exports.likePost = exports.uploadFeedPost = exports.getContacts = exports.getUserPublicUploadedFeeds = exports.getUserUploadedFeeds = exports.getUserFeeds = exports.createCategoryFeeds = void 0;
+exports.bookmarkPost = exports.dislikePost = exports.commentOnPost = exports.getPostComments = exports.likeComment = exports.replyToComment = exports.likePost = exports.uploadFeedPost = exports.getContacts = exports.getUserPublicUploadedFeeds = exports.getUserUploadedFeeds = exports.getUserFeeds = exports.createCategoryFeeds = void 0;
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const Feed_1 = __importDefault(require("../../models/Feed"));
 const BaseResponseHandler_1 = __importDefault(require("../../messages/BaseResponseHandler"));
@@ -23,6 +23,7 @@ const Post_1 = __importDefault(require("../../models/Post"));
 const paginate_1 = require("../../lib/utils/paginate");
 const fileUpload_1 = require("../../lib/utils/fileUpload");
 const mongoose_1 = __importDefault(require("mongoose")); // make sure mongoose is imported
+const Playlist_1 = __importDefault(require("../../models/Playlist"));
 // @desc    Add Category to user Feed
 // @route   POST /api/v1/feed/category
 // @access  Private
@@ -82,7 +83,7 @@ exports.getUserFeeds = (0, express_async_handler_1.default)((req, res, next) => 
     const postsData = (0, paginate_1.transformPaginateResponse)(posts);
     // console.log("postsData", postsData);
     (0, BaseResponseHandler_1.default)({
-        message: `User Feeds Retrived successfully`,
+        message: `User Feeds Retrieved successfully`,
         res,
         statusCode: 200,
         success: true,
@@ -99,7 +100,7 @@ exports.getUserUploadedFeeds = (0, express_async_handler_1.default)((req, res, n
     const posts = yield Post_1.default.paginate({ user: user._id }, options);
     const postsTransformedData = (0, paginate_1.transformPaginateResponse)(posts);
     (0, BaseResponseHandler_1.default)({
-        message: `User Feeds Retrived successfully`,
+        message: `User Feeds Retrieved successfully`,
         res,
         statusCode: 200,
         success: true,
@@ -115,7 +116,7 @@ exports.getUserPublicUploadedFeeds = (0, express_async_handler_1.default)((req, 
     const posts = yield Post_1.default.paginate({ user: userId }, options);
     const postsTransformedData = (0, paginate_1.transformPaginateResponse)(posts);
     (0, BaseResponseHandler_1.default)({
-        message: `User Feeds Retrived successfully`,
+        message: `User Feeds Retrieved successfully`,
         res,
         statusCode: 200,
         success: true,
@@ -154,15 +155,15 @@ exports.uploadFeedPost = (0, express_async_handler_1.default)((req, res, next) =
     const user = yield (0, utils_1.getAuthUser)(req, next);
     let tagsArray;
     console.log("body", req.body);
-    const thumbnailImage = yield (0, fileUpload_1.uploadFileFromFields)(req, next, `feedThunbnail/${user._id}/thumbnails`, "thumbnailImage");
+    const thumbnailImage = yield (0, fileUpload_1.uploadFileFromFields)(req, next, `feedThumbnail/${user._id}/thumbnails`, "thumbnailImage");
     const postVideo = yield (0, fileUpload_1.uploadFileFromFields)(req, next, `feedVideos/${user._id}/videos`, "postVideo");
-    const { tags, category, description, visibility, isCommentsAllowed } = req.body;
+    const { tags, category, description, visibility, playlistId, isCommentsAllowed } = req.body;
     console.log("tags", tags);
     if (!thumbnailImage) {
-        return next(new ErrorResponse_1.default(`Error Occured when uploading Thumbnail. Please Check your connection and try again`, 500));
+        return next(new ErrorResponse_1.default(`Error Occurred when uploading Thumbnail. Please Check your connection and try again`, 500));
     }
     if (!postVideo) {
-        return next(new ErrorResponse_1.default(`Error Occured when uploading Video. Please Check your connection and try again`, 500));
+        return next(new ErrorResponse_1.default(`Error Occurred when uploading Video. Please Check your connection and try again`, 500));
     }
     // tagsArray =
     //   typeof tags === "string" ? JSON.parse(tags.replace(/'/g, '"')) : tags;
@@ -187,6 +188,14 @@ exports.uploadFeedPost = (0, express_async_handler_1.default)((req, res, next) =
         thumbnail: thumbnailImage,
     };
     const post = yield Post_1.default.create(postFeed);
+    if (playlistId) {
+        const playlist = yield Playlist_1.default.findById(playlistId);
+        if (!playlist) {
+            return next(new ErrorResponse_1.default("Playlist not found", 404));
+        }
+        playlist.videos.push(post._id);
+        yield playlist.save();
+    }
     (0, BaseResponseHandler_1.default)({
         message: "Post Created Successfully",
         res,
@@ -199,7 +208,6 @@ exports.uploadFeedPost = (0, express_async_handler_1.default)((req, res, next) =
 // @route    GET /api/v1/feed/:postId/like
 // @access   Private
 exports.likePost = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    console.log("hitting like post");
     const { postId } = req.params;
     const user = yield (0, utils_1.getAuthUser)(req, next);
     const userId = user._id;
@@ -416,4 +424,9 @@ exports.dislikePost = (0, express_async_handler_1.default)((req, res, next) => _
         success: true,
         data: updatedPost === null || updatedPost === void 0 ? void 0 : updatedPost.reactions,
     });
+}));
+// @desc      Bookmark Video 
+// @route     /posts/:postId/bookmark
+// @access    Private
+exports.bookmarkPost = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
 }));

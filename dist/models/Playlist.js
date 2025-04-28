@@ -22,9 +22,10 @@ const playlistSchema = new mongoose_1.Schema({
     description: {
         type: String,
     },
-    videos: {
-        type: [String],
-    },
+    videos: [{
+            type: mongoose_1.Schema.Types.ObjectId,
+            ref: "post",
+        }],
     visibility: {
         type: String,
         enum: ["private", "public"],
