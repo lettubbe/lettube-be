@@ -1,4 +1,4 @@
-import { model, Schema, Document, Model } from "mongoose";
+import { model, Schema, Document, Model, Types } from "mongoose";
 import mongoosePaginate from "mongoose-paginate-v2";
 
 const playlistSchema = new Schema({
@@ -18,9 +18,10 @@ const playlistSchema = new Schema({
   description: {
     type: String,
   },
-  videos: {
-    type: [String],
-  },
+  videos: [{
+    type: Schema.Types.ObjectId,
+    ref: "post",  
+  }],
   visibility: {
     type: String,
     enum: ["private", "public"],
@@ -31,7 +32,7 @@ export interface IPlaylist extends Document {
   name: string;
   coverPhoto: string;
   description: string | null;
-  videos: string[];
+  videos: Types.ObjectId[];
 }
 
 export interface IPlaylistModel extends Model<IPlaylist> {

@@ -11,6 +11,7 @@ import {
 } from "../../lib/utils/paginate";
 import { uploadFileFromFields } from "../../lib/utils/fileUpload";
 import mongoose from "mongoose"; // make sure mongoose is imported
+import Playlist from "../../models/Playlist";
 
 // @desc    Add Category to user Feed
 // @route   POST /api/v1/feed/category
@@ -99,7 +100,7 @@ export const getUserFeeds = asyncHandler(async (req, res, next) => {
   // console.log("postsData", postsData);
 
   baseResponseHandler({
-    message: `User Feeds Retrived successfully`,
+    message: `User Feeds Retrieved successfully`,
     res,
     statusCode: 200,
     success: true,
@@ -123,7 +124,7 @@ export const getUserUploadedFeeds = asyncHandler(async (req, res, next) => {
   const postsTransformedData = transformPaginateResponse(posts);
 
   baseResponseHandler({
-    message: `User Feeds Retrived successfully`,
+    message: `User Feeds Retrieved successfully`,
     res,
     statusCode: 200,
     success: true,
@@ -146,7 +147,7 @@ export const getUserPublicUploadedFeeds = asyncHandler(async (req, res, next) =>
   const postsTransformedData = transformPaginateResponse(posts);
 
   baseResponseHandler({
-    message: `User Feeds Retrived successfully`,
+    message: `User Feeds Retrieved successfully`,
     res,
     statusCode: 200,
     success: true,
@@ -204,7 +205,7 @@ export const uploadFeedPost = asyncHandler(async (req, res, next) => {
   const thumbnailImage = await uploadFileFromFields(
     req,
     next,
-    `feedThunbnail/${user._id}/thumbnails`,
+    `feedThumbnail/${user._id}/thumbnails`,
     "thumbnailImage"
   );
 
@@ -215,7 +216,7 @@ export const uploadFeedPost = asyncHandler(async (req, res, next) => {
     "postVideo"
   );
 
-  const { tags, category, description, visibility, isCommentsAllowed } =
+  const { tags, category, description, visibility, playlistId, isCommentsAllowed } =
     req.body;
 
   console.log("tags", tags);
@@ -223,7 +224,7 @@ export const uploadFeedPost = asyncHandler(async (req, res, next) => {
   if (!thumbnailImage) {
     return next(
       new ErrorResponse(
-        `Error Occured when uploading Thumbnail. Please Check your connection and try again`,
+        `Error Occurred when uploading Thumbnail. Please Check your connection and try again`,
         500
       )
     );
@@ -232,11 +233,11 @@ export const uploadFeedPost = asyncHandler(async (req, res, next) => {
   if (!postVideo) {
     return next(
       new ErrorResponse(
-        `Error Occured when uploading Video. Please Check your connection and try again`,
+        `Error Occurred when uploading Video. Please Check your connection and try again`,
         500
       )
     );
-  }
+  }  
 
   // tagsArray =
   //   typeof tags === "string" ? JSON.parse(tags.replace(/'/g, '"')) : tags;
@@ -270,6 +271,16 @@ export const uploadFeedPost = asyncHandler(async (req, res, next) => {
 
   const post = await Post.create(postFeed);
 
+  if (playlistId) {
+    const playlist = await Playlist.findById(playlistId);
+    if (!playlist) {
+      return next(new ErrorResponse("Playlist not found", 404));
+    }
+  
+    playlist.videos.push(post._id); 
+    await playlist.save();
+  }
+
   baseResponseHandler({
     message: "Post Created Successfully",
     res,
@@ -284,7 +295,6 @@ export const uploadFeedPost = asyncHandler(async (req, res, next) => {
 // @access   Private
 
 export const likePost = asyncHandler(async (req, res, next) => {
-  console.log("hitting like post");
 
   const { postId } = req.params;
   const user = await getAuthUser(req, next);
@@ -577,5 +587,13 @@ export const dislikePost = asyncHandler(async (req, res, next) => {
     success: true,
     data: updatedPost?.reactions,
   });
+});
+
+// @desc      Bookmark Video 
+// @route     /posts/:postId/bookmark
+// @access    Private
+
+export const bookmarkPost = asyncHandler(async (req, res, next) => {
+  
 });
 

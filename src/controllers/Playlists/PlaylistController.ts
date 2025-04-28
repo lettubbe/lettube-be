@@ -132,12 +132,9 @@ export const uploadVideoToPlaylist = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("Failed to upload video", 500));
   }
 
-  // if(!playlistCoverPhoto){
-  //     return next(new ErrorResponse(`Failed to upload Cover Photo`, 400));
-  // }
-
   // Add the video URL to the beginning of the playlist's videos array
-  playlist.videos.unshift(uploadedVideo);
+  // playlist.videos.unshift({});
+  // playlist.videos.unshift(uploadedVideo);
 
   await playlist.save();
 
@@ -186,16 +183,10 @@ export const updatePlaylist = asyncHandler(async (req, res, next) => {
     await playlist.save();
   }
 
-  // if(!playlistCoverPhoto){
-  //     return next(new ErrorResponse(`Error Occured When uploading photo`, 500));
-  // }
-
-  //   playlist.coverPhoto = playlistCoverPhoto;
-
   await playlist.save();
 
   baseResponseHandler({
-    message: `Playlist Updated Successfullly`,
+    message: `Playlist Updated Successfully`,
     res,
     statusCode: 200,
     success: true,
@@ -225,13 +216,13 @@ export const updatePlaylistCoverPhoto = asyncHandler(async (req, res, next) => {
   );
 
   if (!playlistCoverPhoto) {
-    return next(new ErrorResponse(`Error Occured When uploading photo`, 404));
+    return next(new ErrorResponse(`Error Occurred When uploading photo`, 404));
   }
 
   playlist.coverPhoto = playlistCoverPhoto;
 
   baseResponseHandler({
-    message: `Playlist Updated Successfullly`,
+    message: `Playlist Updated Successfully`,
     res,
     statusCode: 200,
     success: true,
