@@ -465,7 +465,7 @@ export const likeComment = asyncHandler(async (req, res, next) => {
 
 export const getPostComments = asyncHandler(async (req, res, next) => {
   const { postId } = req.params;
-  const { page = 1, limit = 10 } = req.query;
+  const { page = 1, limit = 10, searchTerm } = req.query;
 
   const post = await Post.findById(postId)
     .populate("comments.user comments.replies.user", "username profilePicture");
