@@ -35,6 +35,7 @@ const postSchema = new Schema<IPost>({
       dislikes: [{ type: Schema.Types.ObjectId, ref: "user" }], 
       shares: { type: Number, default: 0 }, 
       views: { type: Number, default: 0 },
+      bookmarks: [{ type: Schema.Types.ObjectId, ref: "user" }], // Add this line
     },
     comments: [
       {
@@ -66,6 +67,7 @@ export interface IPost extends Document {
     dislikes: Types.ObjectId[];
     shares: number;
     views: number;
+    bookmarks: Types.ObjectId[]; // Add this line
   };
   category: string;
   isCommentsAllowed: boolean;
@@ -107,6 +109,12 @@ export interface IPostModel extends Model<IPost> {
 }
 
 postSchema.plugin(mongoosePaginate);
+
+// Add text index for comments and replies
+postSchema.index({
+  'comments.text': 'text',
+  'comments.replies.text': 'text'
+});
 
 const Post = model<IPost, IPostModel>("post", postSchema);
 

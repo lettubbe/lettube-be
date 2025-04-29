@@ -139,7 +139,7 @@ export const getUserUploadedFeeds = asyncHandler(async (req, res, next) => {
 export const getUserPublicUploadedFeeds = asyncHandler(async (req, res, next) => {
 
   const { userId } = req.query;
-  
+
   const { page, limit } = req.params;
 
 
@@ -240,7 +240,7 @@ export const uploadFeedPost = asyncHandler(async (req, res, next) => {
         500
       )
     );
-  }  
+  }
 
   // tagsArray =
   //   typeof tags === "string" ? JSON.parse(tags.replace(/'/g, '"')) : tags;
@@ -279,8 +279,8 @@ export const uploadFeedPost = asyncHandler(async (req, res, next) => {
     if (!playlist) {
       return next(new ErrorResponse("Playlist not found", 404));
     }
-  
-    playlist.videos.push(post._id); 
+
+    playlist.videos.push(post._id);
     await playlist.save();
   }
 
@@ -314,12 +314,12 @@ export const likePost = asyncHandler(async (req, res, next) => {
 
   const update = hasLiked
     ? {
-        $pull: { "reactions.likes": userId },
-      }
+      $pull: { "reactions.likes": userId },
+    }
     : {
-        $addToSet: { "reactions.likes": userId },
-        $pull: { "reactions.dislikes": userId },
-      };
+      $addToSet: { "reactions.likes": userId },
+      $pull: { "reactions.dislikes": userId },
+    };
 
   const updatedPost = await Post.findByIdAndUpdate(postId, update, {
     new: true,
@@ -465,9 +465,17 @@ export const likeComment = asyncHandler(async (req, res, next) => {
 
 export const getPostComments = asyncHandler(async (req, res, next) => {
   const { postId } = req.params;
-  const { page = 1, limit = 10, searchTerm } = req.query;
+  const { page = 1, limit = 10, search = "" } = req.query;
 
-  const post = await Post.findById(postId)
+  const query: mongoose.FilterQuery<typeof Post> = { _id: postId };
+  if (search) {
+    query.$or = [
+      { 'comments.text': { $regex: search, $options: 'i' } },
+      { 'comments.replies.text': { $regex: search, $options: 'i' } }
+    ];
+  }
+
+  const post = await Post.findOne(query)
     .populate("comments.user comments.replies.user", "username profilePicture");
 
   if (!post) {
@@ -477,7 +485,6 @@ export const getPostComments = asyncHandler(async (req, res, next) => {
   const comments = post.comments || [];
 
   const options = getPaginateOptions(page, limit);
-
   const startIndex = (options.page - 1) * options.limit;
   const endIndex = options.page * options.limit;
 
@@ -569,14 +576,14 @@ export const dislikePost = asyncHandler(async (req, res, next) => {
 
   const update = hasDisliked
     ? {
-        // User already disliked → remove from dislikes
-        $pull: { "reactions.dislikes": userId },
-      }
+      // User already disliked → remove from dislikes
+      $pull: { "reactions.dislikes": userId },
+    }
     : {
-        // User not disliked yet → add to dislikes
-        $addToSet: { "reactions.dislikes": userId },
-        $pull: { "reactions.likes": userId }, // Remove from likes if any
-      };
+      // User not disliked yet → add to dislikes
+      $addToSet: { "reactions.dislikes": userId },
+      $pull: { "reactions.likes": userId }, // Remove from likes if any
+    };
 
   const updatedPost = await Post.findByIdAndUpdate(postId, update, {
     new: true,
@@ -597,6 +604,44 @@ export const dislikePost = asyncHandler(async (req, res, next) => {
 // @access    Private
 
 export const bookmarkPost = asyncHandler(async (req, res, next) => {
-  
+  const { postId } = req.params;
+  const user = await getAuthUser(req, next);
+  const userId = user._id;
+
+  // Check if post exists and if user has bookmarked it using MongoDB query
+  const post = await Post.findOne({
+    _id: postId,
+    'reactions.bookmarks': userId
+  });
+
+  if (!post) {
+    const postExists = await Post.findById(postId);
+    if (!postExists) {
+      return next(new ErrorResponse(`Post Not Found`, 404));
+    }
+  }
+
+  const hasBookmarked = !!post; // Convert to boolean
+
+  const update = hasBookmarked
+    ? {
+      $pull: { "reactions.bookmarks": userId },
+    }
+    : {
+      $addToSet: { "reactions.bookmarks": userId },
+    };
+
+  const updatedPost = await Post.findByIdAndUpdate(postId, update, {
+    new: true,
+    runValidators: true,
+  });
+
+  baseResponseHandler({
+    message: hasBookmarked ? 'Post Unbookmarked Successfully' : 'Post Bookmarked Successfully',
+    res,
+    statusCode: 200,
+    success: true,
+    data: updatedPost?.reactions,
+  });
 });
 

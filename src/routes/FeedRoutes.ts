@@ -20,7 +20,8 @@ router.post("/upload", [protect, upload.fields([{ name: "thumbnailImage" }, {nam
 router.patch("/posts/:postId/like", protect, likePost);
 router.patch("/posts/:postId/dislike", protect, dislikePost);
 router.get("/posts/:postId/comments", protect, getPostComments);
-router.get("/posts/:postId/bookmark", protect, bookmarkPost);
+// Change from GET to PATCH for bookmark endpoint
+router.patch("/posts/:postId/bookmark", protect, bookmarkPost);
 router.patch("/posts/:postId/comments", [protect, validatePostComment(validatePostCommentSchema)], commentOnPost);
 router.patch("/posts/:postId/comments/:commentId/replies", protect, replyToComment);
 router.patch("/posts/:postId/comments/:commentId/like", protect, likeComment);
