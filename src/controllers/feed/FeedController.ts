@@ -10,8 +10,9 @@ import {
   transformPaginateResponse,
 } from "../../lib/utils/paginate";
 import { uploadFileFromFields } from "../../lib/utils/fileUpload";
-import mongoose from "mongoose"; // make sure mongoose is imported
+import mongoose, { Types } from "mongoose"; // make sure mongoose is imported
 import Playlist from "../../models/Playlist";
+import Bookmark from "../../models/Bookmark";
 
 // @desc    Add Category to user Feed
 // @route   POST /api/v1/feed/category
@@ -74,39 +75,7 @@ export const createCategoryFeeds = asyncHandler(async (req, res, next) => {
 // @route   GET /api/v1/feed/
 // @access  private
 
-export const getUserFeeds = asyncHandler(async (req, res, next) => {
 
-  const user = await getAuthUser(req, next);
-
-  console.log("user", user);
-
-  const { page, limit } = req.query;
-
-  const options = getPaginateOptions(page, limit, {
-    populate: [
-      {
-        path: "user",
-        select: "username firstName lastName profilePicture",
-      },
-    ],
-  });
-
-  const posts = await Post.paginate({}, options);
-
-  console.log("posts", posts);
-
-  const postsData = transformPaginateResponse(posts);
-
-  // console.log("postsData", postsData);
-
-  baseResponseHandler({
-    message: `User Feeds Retrieved successfully`,
-    res,
-    statusCode: 200,
-    success: true,
-    data: postsData,
-  });
-});
 
 // @desc     Get User Feed
 // @route   GET /api/v1/feed/uploads
@@ -467,53 +436,131 @@ export const getPostComments = asyncHandler(async (req, res, next) => {
   const { postId } = req.params;
   const { page = 1, limit = 10, search = "" } = req.query;
 
-  const query: mongoose.FilterQuery<typeof Post> = { _id: postId };
-  if (search) {
-    query.$or = [
-      { 'comments.text': { $regex: search, $options: 'i' } },
-      { 'comments.replies.text': { $regex: search, $options: 'i' } }
-    ];
-  }
-
-  const post = await Post.findOne(query)
-    .populate("comments.user comments.replies.user", "username profilePicture");
-
-  if (!post) {
+  // First check if post exists
+  const postExists = await Post.findById(postId);
+  if (!postExists) {
     return next(new ErrorResponse("Post Not Found", 404));
   }
 
-  const comments = post.comments || [];
+  // Build the aggregation pipeline
+  const pipeline: any[] = [
+    { $match: { _id: new Types.ObjectId(postId) } },
+    { $unwind: "$comments" }
+  ];
 
-  const options = getPaginateOptions(page, limit);
-  const startIndex = (options.page - 1) * options.limit;
-  const endIndex = options.page * options.limit;
+  // Add search condition if search term exists
+  if (search) {
+    pipeline.push({
+      $match: {
+        $or: [
+          { "comments.text": { $regex: search, $options: "i" } },
+          { "comments.replies.text": { $regex: search, $options: "i" } }
+        ]
+      }
+    });
+  }
 
-  // Sort manually since we are working inside arrays
-  const sortedComments = [...comments].sort((a, b) => {
-    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-  });
+  // Add sorting, pagination and population with field filtering
+  pipeline.push(
+    { $sort: { "comments.createdAt": -1 } },
+    { $skip: Math.max(0, (Number(page || 1) - 1) * Number(limit)) },
+    { $limit: Number(limit) },
+    {
+      $lookup: {
+        from: "users",
+        localField: "comments.user",
+        foreignField: "_id",
+        as: "comments.user",
+        pipeline: [
+          {
+            $project: {
+              password: 0,
+              email: 0,
+              isDeleted: 0,
+              __v: 0,
+              date: 0
+            }
+          }
+        ]
+      }
+    },
+    { $unwind: "$comments.user" },
+    {
+      $lookup: {
+        from: "users",
+        localField: "comments.replies.user",
+        foreignField: "_id",
+        as: "comments.replies.user",
+        pipeline: [
+          {
+            $project: {
+              password: 0,
+              email: 0,
+              isDeleted: 0,
+              __v: 0,
+              date: 0
+            }
+          }
+        ]
+      }
+    },
+    {
+      $group: {
+        _id: "$_id",
+        comments: { $push: "$comments" },
+        totalComments: { $sum: 1 }
+      }
+    }
+  );
 
-  const paginatedComments = sortedComments.slice(startIndex, endIndex);
+  // Execute the aggregation
+  const result = await Post.aggregate(pipeline);
 
-  const paginationResult = {
-    docs: paginatedComments,
-    totalDocs: comments.length,
-    limit: options.limit,
-    totalPages: Math.ceil(comments.length / options.limit),
-    page: options.page,
-    pagingCounter: startIndex + 1,
-    hasPrevPage: options.page > 1,
-    hasNextPage: endIndex < comments.length,
-    prevPage: options.page > 1 ? options.page - 1 : null,
-    nextPage: endIndex < comments.length ? options.page + 1 : null,
-  };
+  // Handle empty results
+  if (result.length === 0 || !result[0].comments || result[0].comments.length === 0) {
+    return baseResponseHandler({
+      message: "No Comments Found",
+      res,
+      statusCode: 200,
+      success: true,
+      data: transformPaginateResponse({
+        docs: [],
+        totalDocs: 0,
+        limit: Number(limit),
+        totalPages: 0,
+        page: Number(page),
+        pagingCounter: 0,
+        hasPrevPage: false,
+        hasNextPage: false,
+        prevPage: null,
+        nextPage: null,
+      }),
+    });
+  }
+
+  // Calculate pagination info
+  const totalComments = result[0].totalComments;
+  const totalPages = Math.ceil(totalComments / Number(limit));
+  const hasNextPage = Number(page) < totalPages;
+  const hasPrevPage = Number(page) > 1;
 
   baseResponseHandler({
     message: "Post Comments Retrieved Successfully",
     res,
     statusCode: 200,
     success: true,
-    data: transformPaginateResponse(paginationResult),
+    data: transformPaginateResponse({
+      docs: result[0].comments,
+      totalDocs: totalComments,
+      limit: Number(limit),
+      totalPages: totalPages,
+      page: Number(page),
+      pagingCounter: (Number(page) - 1) * Number(limit) + 1,
+      hasPrevPage: hasPrevPage,
+      hasNextPage: hasNextPage,
+      prevPage: hasPrevPage ? Number(page) - 1 : null,
+      nextPage: hasNextPage ? Number(page) + 1 : null,
+    }),
   });
 });
 
@@ -602,46 +649,143 @@ export const dislikePost = asyncHandler(async (req, res, next) => {
 // @desc      Bookmark Video 
 // @route     /posts/:postId/bookmark
 // @access    Private
-
 export const bookmarkPost = asyncHandler(async (req, res, next) => {
   const { postId } = req.params;
   const user = await getAuthUser(req, next);
   const userId = user._id;
 
-  // Check if post exists and if user has bookmarked it using MongoDB query
-  const post = await Post.findOne({
-    _id: postId,
-    'reactions.bookmarks': userId
-  });
-
+  // Check if post exists
+  const post = await Post.findById(postId);
   if (!post) {
-    const postExists = await Post.findById(postId);
-    if (!postExists) {
-      return next(new ErrorResponse(`Post Not Found`, 404));
-    }
+    return next(new ErrorResponse(`Post Not Found`, 404));
   }
 
-  const hasBookmarked = !!post; // Convert to boolean
+  // Check if already bookmarked
+  const existingBookmark = await Bookmark.findOne({ user: userId, post: postId });
 
-  const update = hasBookmarked
-    ? {
-      $pull: { "reactions.bookmarks": userId },
-    }
-    : {
-      $addToSet: { "reactions.bookmarks": userId },
-    };
+  if (existingBookmark) {
+    // Remove bookmark
+    await Bookmark.deleteOne({ _id: existingBookmark._id });
 
-  const updatedPost = await Post.findByIdAndUpdate(postId, update, {
-    new: true,
-    runValidators: true,
+    baseResponseHandler({
+      message: 'Post Unbookmarked Successfully',
+      res,
+      statusCode: 200,
+      success: true,
+      data: { isBookmarked: false }
+    });
+  } else {
+    // Add new bookmark
+    const bookmark = await Bookmark.create({ user: userId, post: postId });
+
+    baseResponseHandler({
+      message: 'Post Bookmarked Successfully',
+      res,
+      statusCode: 200,
+      success: true,
+      data: { isBookmarked: true }
+    });
+  }
+});
+
+// @desc      Get User's Bookmarked Posts
+// @route     GET /posts/bookmarks
+// @access    Private
+export const getBookmarkedPosts = asyncHandler(async (req, res, next) => {
+  const user = await getAuthUser(req, next);
+  const { page, limit } = req.query;
+
+  const options = getPaginateOptions(page, limit, {
+    populate: {
+      path: 'post',
+      populate: {
+        path: 'user',
+        select: 'username firstName lastName profilePicture'
+      }
+    },
+    sort: { createdAt: -1 }
   });
 
+  const bookmarks = await Bookmark.paginate({ user: user._id }, options);
+
+  // Transform the response to return posts with isBookmarked flag
+  const transformedData = {
+    ...bookmarks,
+    docs: bookmarks.docs.map(bookmark => ({
+      ...(bookmark.post as any)?.toObject(),
+      isBookmarked: true
+    }))
+  };
+
   baseResponseHandler({
-    message: hasBookmarked ? 'Post Unbookmarked Successfully' : 'Post Bookmarked Successfully',
+    message: 'Bookmarked Posts Retrieved Successfully',
     res,
     statusCode: 200,
     success: true,
-    data: updatedPost?.reactions,
+    data: transformPaginateResponse(transformedData)
+  });
+});
+
+// Modify getUserFeeds to include isBookmarked flag
+export const getUserFeeds = asyncHandler(async (req, res, next) => {
+  const user = await getAuthUser(req, next);
+  const { page, limit } = req.query;
+
+  const options = getPaginateOptions(page, limit, {
+    populate: [
+      {
+        path: "user",
+        select: "username firstName lastName profilePicture",
+      },
+    ],
+  });
+
+  const posts = await Post.paginate({}, options);
+
+  // Get user's bookmarks for these posts
+  const bookmarks = await Bookmark.find({
+    user: user._id,
+    post: { $in: posts.docs.map(post => (post as any)._id) }
+  });
+
+  const bookmarkedPostIds = new Set(bookmarks.map(b => b.post.toString()));
+
+  // Transform and clean up the response data
+  const cleanPosts = {
+    ...posts,
+    docs: posts.docs.map(post => {
+      const postObj = (post as any).toObject();
+      return {
+        _id: postObj._id,
+        user: {
+          _id: postObj.user._id,
+          username: postObj.user.username,
+          firstName: postObj.user.firstName,
+          lastName: postObj.user.lastName,
+          profilePicture: postObj.user.profilePicture
+        },
+        category: postObj.category,
+        thumbnail: postObj.thumbnail,
+        videoUrl: postObj.videoUrl,
+        description: postObj.description,
+        visibility: postObj.visibility,
+        tags: postObj.tags,
+        isCommentsAllowed: postObj.isCommentsAllowed,
+        reactions: postObj.reactions,
+        comments: postObj.comments,
+        createdAt: postObj.createdAt,
+        updatedAt: postObj.updatedAt,
+        isBookmarked: bookmarkedPostIds.has(postObj._id.toString())
+      };
+    })
+  };
+
+  baseResponseHandler({
+    message: `User Feeds Retrieved successfully`,
+    res,
+    statusCode: 200,
+    success: true,
+    data: transformPaginateResponse(cleanPosts)
   });
 });
 

@@ -30,12 +30,12 @@ const postSchema = new Schema<IPost>({
       type: Boolean,
       default: true
     },
+    // In the reactions object, remove the bookmarks array
     reactions: {
       likes: [{ type: Schema.Types.ObjectId, ref: "user" }], 
       dislikes: [{ type: Schema.Types.ObjectId, ref: "user" }], 
       shares: { type: Number, default: 0 }, 
       views: { type: Number, default: 0 },
-      bookmarks: [{ type: Schema.Types.ObjectId, ref: "user" }], // Add this line
     },
     comments: [
       {
