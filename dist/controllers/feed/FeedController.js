@@ -333,7 +333,7 @@ exports.getPostComments = (0, express_async_handler_1.default)((req, res, next) 
     const { postId } = req.params;
     const { page = 1, limit = 10 } = req.query;
     const post = yield Post_1.default.findById(postId)
-        .populate("comments.user comments.replies.user", "username avatar");
+        .populate("comments.user comments.replies.user", "username profilePicture");
     if (!post) {
         return next(new ErrorResponse_1.default("Post Not Found", 404));
     }
