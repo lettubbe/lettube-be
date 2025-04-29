@@ -468,7 +468,7 @@ export const getPostComments = asyncHandler(async (req, res, next) => {
   const { page = 1, limit = 10 } = req.query;
 
   const post = await Post.findById(postId)
-    .populate("comments.user comments.replies.user", "username avatar");
+    .populate("comments.user comments.replies.user", "username profilePicture");
 
   if (!post) {
     return next(new ErrorResponse("Post Not Found", 404));
