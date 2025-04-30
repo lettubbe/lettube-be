@@ -9,47 +9,47 @@ import {
   getAuthUser,
   removeSensitiveFields,
 } from "../../lib/utils/utils";
-
+import Subscription from "../../models/Subscription";
 
 // @route   /api/v1/profile/upload/profilePhoto
 // @desc    Upload Profile Picture
 // @access  Private/public
 
 export const updateProfilePhoto = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
-    const { email, phoneNumber } = req.body;
+  const { email, phoneNumber } = req.body;
 
-    const authUser = await getAuthUser(req, next);
+  const authUser = await getAuthUser(req, next);
 
-    const query = buildUserAuthTypeQuery(email, phoneNumber, authUser._id);
+  const query = buildUserAuthTypeQuery(email, phoneNumber, authUser._id);
 
-    const user = await User.findOne(query);
+  const user = await User.findOne(query);
 
-    if (!user) {
-      return next(new ErrorResponse(`User Not Found`, 404));
-    }
-
-    const picture = await uploadFile(req, next, `profilePicture/${user._id}`);
-
-    if (!picture) {
-      return next(new ErrorResponse(`Failed to upload profile picture`, 500));
-    }
-
-    user.profilePicture = picture;
-
-    await user.save();
-
-    const userData: Partial<typeof user> = removeSensitiveFields(user, [
-      "password",
-    ]);
-
-    baseResponseHandler({
-      res,
-      statusCode: 200,
-      message: `Profile Picture Uploaded Successfully`,
-      success: true,
-      data: userData,
-    });
+  if (!user) {
+    return next(new ErrorResponse(`User Not Found`, 404));
   }
+
+  const picture = await uploadFile(req, next, `profilePicture/${user._id}`);
+
+  if (!picture) {
+    return next(new ErrorResponse(`Failed to upload profile picture`, 500));
+  }
+
+  user.profilePicture = picture;
+
+  await user.save();
+
+  const userData: Partial<typeof user> = removeSensitiveFields(user, [
+    "password",
+  ]);
+
+  baseResponseHandler({
+    res,
+    statusCode: 200,
+    message: `Profile Picture Uploaded Successfully`,
+    success: true,
+    data: userData,
+  });
+}
 );
 
 // @route   /api/v1/profile/upload/coverPhoto
@@ -107,10 +107,10 @@ export const updateProfileDetails = asyncHandler(async (req, res, next) => {
   if (firstName) profile.firstName = firstName;
   if (lastName) profile.lastName = lastName;
   if (websiteLink) profile.websiteLink = websiteLink;
-  if(displayName) profile.displayName = displayName;
-  if(username) profile.username = username;
+  if (displayName) profile.displayName = displayName;
+  if (username) profile.username = username;
 
-  
+
 
   await profile.save();
 
@@ -150,23 +150,30 @@ export const getUserProfile = asyncHandler(async (req, res, next) => {
 // @access  Private
 
 export const getUserPublicProfile = asyncHandler(async (req, res, next) => {
-
   const { userId } = req.params;
 
   const user = await User.findById(userId).select("-password");
-  
+
   if (!user) {
     return next(new ErrorResponse(`User Not Found`, 404));
   }
-  
+
+  // Get subscriber count
+  const subscriberCount = await Subscription.countDocuments({ subscribedTo: userId });
+
   const userData = removeSensitiveFields(user, ["password"]);
-  
+
+  // Add subscriber count to response
+  const responseData = {
+    ...userData,
+    subscriberCount
+  };
+
   baseResponseHandler({
     res,
     statusCode: 200,
     message: `User Profile retrived Successfully`,
     success: true,
-    data: userData
+    data: responseData
   });
-
 });
