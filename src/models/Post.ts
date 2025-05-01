@@ -30,6 +30,7 @@ const postSchema = new Schema<IPost>({
       type: Boolean,
       default: true
     },
+    // In the reactions object, remove the bookmarks array
     reactions: {
       likes: [{ type: Schema.Types.ObjectId, ref: "user" }], 
       dislikes: [{ type: Schema.Types.ObjectId, ref: "user" }], 
@@ -66,6 +67,7 @@ export interface IPost extends Document {
     dislikes: Types.ObjectId[];
     shares: number;
     views: number;
+    bookmarks: Types.ObjectId[]; // Add this line
   };
   category: string;
   isCommentsAllowed: boolean;
@@ -107,6 +109,12 @@ export interface IPostModel extends Model<IPost> {
 }
 
 postSchema.plugin(mongoosePaginate);
+
+// Add text index for comments and replies
+postSchema.index({
+  'comments.text': 'text',
+  'comments.replies.text': 'text'
+});
 
 const Post = model<IPost, IPostModel>("post", postSchema);
 
