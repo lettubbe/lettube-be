@@ -10,7 +10,7 @@ import {
   transformPaginateResponse,
 } from "../../lib/utils/paginate";
 import { uploadFileFromFields } from "../../lib/utils/fileUpload";
-import mongoose from "mongoose"; // make sure mongoose is imported
+import mongoose from "mongoose"; 
 import Playlist from "../../models/Playlist";
 
 // @desc    Add Category to user Feed
