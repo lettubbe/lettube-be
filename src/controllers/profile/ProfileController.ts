@@ -134,13 +134,14 @@ export const getUserProfile = asyncHandler(async (req, res, next) => {
   const user = await getAuthUser(req, next);
 
   const userData = removeSensitiveFields(user, ["password"]);
+  const subscriberCount = await Subscription.countDocuments({ subscribedTo: user._id });
 
   baseResponseHandler({
     res,
     statusCode: 200,
     message: `User Profile retrived Successfully`,
     success: true,
-    data: userData
+    data: { ...userData, subscriberCount }
   })
 
 });

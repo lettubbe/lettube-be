@@ -166,7 +166,6 @@ export const getContacts = asyncHandler(async (req, res, next) => {
 // @access   Private
 
 export const uploadFeedPost = asyncHandler(async (req, res, next) => {
-  console.log("hitting upload feed post");
 
   const user = await getAuthUser(req, next);
 
@@ -190,8 +189,6 @@ export const uploadFeedPost = asyncHandler(async (req, res, next) => {
 
   const { tags, category, description, visibility, playlistId, isCommentsAllowed } =
     req.body;
-
-  console.log("tags", tags);
 
   if (!thumbnailImage) {
     return next(
