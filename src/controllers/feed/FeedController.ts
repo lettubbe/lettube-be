@@ -723,6 +723,10 @@ export const getBookmarkedPosts = asyncHandler(async (req, res, next) => {
   });
 });
 
+// @desc      Get User's Feed Posts
+// @route     GET /posts/feed
+// @access    Private
+
 // Modify getUserFeeds to include isBookmarked flag
 export const getUserFeeds = asyncHandler(async (req, res, next) => {
   const user = await getAuthUser(req, next);
