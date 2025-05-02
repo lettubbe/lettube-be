@@ -13,6 +13,8 @@ import { uploadFileFromFields } from "../../lib/utils/fileUpload";
 import mongoose, { Types } from "mongoose"; // make sure mongoose is imported
 import Playlist from "../../models/Playlist";
 import Bookmark from "../../models/Bookmark";
+import Notification from "../../models/Notifications";
+import NotificationService from "../../services/notificationService";
 
 // @desc    Add Category to user Feed
 // @route   POST /api/v1/feed/category
@@ -590,6 +592,9 @@ export const commentOnPost = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse(`Post Not Found`, 404));
   }
 
+  // NotificationService.se
+  // Notification.create({  });
+
   baseResponseHandler({
     message: `Comment Added Successfully`,
     res,
@@ -727,7 +732,6 @@ export const getBookmarkedPosts = asyncHandler(async (req, res, next) => {
 // @route     GET /posts/feed
 // @access    Private
 
-// Modify getUserFeeds to include isBookmarked flag
 export const getUserFeeds = asyncHandler(async (req, res, next) => {
   const user = await getAuthUser(req, next);
   const { page, limit } = req.query;
