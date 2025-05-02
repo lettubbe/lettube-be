@@ -19,6 +19,7 @@ const User_1 = __importDefault(require("../../models/User"));
 const BaseResponseHandler_1 = __importDefault(require("../../messages/BaseResponseHandler"));
 const fileUpload_1 = require("../../lib/utils/fileUpload");
 const utils_1 = require("../../lib/utils/utils");
+const Subscription_1 = __importDefault(require("../../models/Subscription"));
 // @route   /api/v1/profile/upload/profilePhoto
 // @desc    Upload Profile Picture
 // @access  Private/public
@@ -111,12 +112,13 @@ exports.updateProfileDetails = (0, express_async_handler_1.default)((req, res, n
 exports.getUserProfile = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const user = yield (0, utils_1.getAuthUser)(req, next);
     const userData = (0, utils_1.removeSensitiveFields)(user, ["password"]);
+    const subscriberCount = yield Subscription_1.default.countDocuments({ subscribedTo: user._id });
     (0, BaseResponseHandler_1.default)({
         res,
         statusCode: 200,
         message: `User Profile retrived Successfully`,
         success: true,
-        data: userData
+        data: Object.assign(Object.assign({}, userData), { subscriberCount })
     });
 }));
 // @route   /api/v1/profile/:userId/userProfile
@@ -128,12 +130,16 @@ exports.getUserPublicProfile = (0, express_async_handler_1.default)((req, res, n
     if (!user) {
         return next(new ErrorResponse_1.default(`User Not Found`, 404));
     }
+    // Get subscriber count
+    const subscriberCount = yield Subscription_1.default.countDocuments({ subscribedTo: userId });
     const userData = (0, utils_1.removeSensitiveFields)(user, ["password"]);
+    // Add subscriber count to response
+    const responseData = Object.assign(Object.assign({}, userData), { subscriberCount });
     (0, BaseResponseHandler_1.default)({
         res,
         statusCode: 200,
         message: `User Profile retrived Successfully`,
         success: true,
-        data: userData
+        data: responseData
     });
 }));

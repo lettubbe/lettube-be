@@ -172,7 +172,7 @@ exports.updatePlaylistCoverPhoto = (0, express_async_handler_1.default)((req, re
 // @access  Private
 exports.getPlaylistVideos = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { playlistId } = req.params;
-    const playlist = yield Playlist_1.default.findById(playlistId);
+    const playlist = yield Playlist_1.default.findById(playlistId).populate('videos');
     if (!playlist) {
         return next(new ErrorResponse_1.default(`No Playlist found`, 404));
     }

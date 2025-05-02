@@ -34,6 +34,7 @@ const postSchema = new mongoose_1.Schema({
         type: Boolean,
         default: true
     },
+    // In the reactions object, remove the bookmarks array
     reactions: {
         likes: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "user" }],
         dislikes: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "user" }],
@@ -58,5 +59,10 @@ const postSchema = new mongoose_1.Schema({
     ],
 }, { timestamps: true });
 postSchema.plugin(mongoose_paginate_v2_1.default);
+// Add text index for comments and replies
+postSchema.index({
+    'comments.text': 'text',
+    'comments.replies.text': 'text'
+});
 const Post = (0, mongoose_1.model)("post", postSchema);
 exports.default = Post;

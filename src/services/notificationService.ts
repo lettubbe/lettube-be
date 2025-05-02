@@ -1,10 +1,13 @@
 import axios from "axios";
 import mailjet from "../providers/mailjetProvider";
 import {
+  IPushNotificationBody,
   MailOptions,
   SmsOptions,
 } from "../lib/interfaces/notification.interface";
 import config from "../config";
+import expo from "../providers/expoProvider";
+import Device from "../models/Devices";
 
 const KNOWN_ERRORS = [
   "messaging/invalid-argument",
@@ -64,6 +67,60 @@ class NotificationService {
       console.log("request sms", request);
     } catch (err: any) {
       console.log("sendSms Error:", err.response.data.message);
+    }
+  }
+
+  public static async sendNotification(
+    userId: string,
+    input: IPushNotificationBody
+  ) {
+    
+    const device = await Device.findOne({ userId });
+
+    // if (device) {
+    //   console.log("expo push notification ran", device.deviceToken);
+    //   expo.sendPushNotificationsAsync([
+    //     {
+    //       to: device.deviceToken,
+    //       title: input.title,
+    //       body: input.description,
+    //       data: { screen: "/rides-request" }
+    //     },
+    //   ]);
+    // }
+
+    
+    if (device) {
+      // console.log("device 12345", device);
+      // Construct the notification payload
+      const notificationPayload = {
+        to: device.deviceToken,
+        title: input.title,
+        body: input.description,
+        data: {
+          ...input.metadata,              
+        },
+      };
+
+      // console.log("notificationPayload", notificationPayload);
+  
+      // Send the notification via Expo Push API
+      // await expo.sendPushNotificationsAsync([notificationPayload]);
+
+      try {
+      
+        
+        const response = await expo.sendPushNotificationsAsync([notificationPayload]);
+        // console.log("response expo", response);
+
+        // const receipts = await expo.getPushNotificationReceiptsAsync(['019478ca-c108-7fa5-873b-c40aa61d8f45']);
+
+        // console.log("receipts", receipts);
+
+      } catch (error) {
+        console.error("Failed to send notification:", error);
+      }
+      
     }
   }
 }
