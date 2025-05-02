@@ -1,6 +1,13 @@
-import { NextFunction } from "express";
-import ErrorResponse from "../../messages/ErrorResponse";
 import User from "../../models/User";
+import { NextFunction } from "express";
+import axios from "axios";
+import fs from "fs";
+import tmp from "tmp";
+import ffmpeg from "fluent-ffmpeg";
+import ffprobeStatic from "ffprobe-static";
+import ErrorResponse from "../../messages/ErrorResponse";
+
+ffmpeg.setFfprobePath(ffprobeStatic.path);
 
 export const getAuthUser = async (req: any, next: NextFunction): Promise<any> => {
 
@@ -47,13 +54,33 @@ export const normalizePhoneNumber = (phoneNumber: string) => {
   return phoneNumber.replace(/\D/g, '').slice(-10); 
 };
 
-// function assignDefinedFields<T>(target: T, updates: Partial<T>) {
-//   for (const key in updates) {
-//     if (updates[key as keyof T] !== undefined) {
-//       target[key as keyof T] = updates[key as keyof T]!;
-//     }
-//   }
-// }
+export const getRemoteVideoDuration = async (url: string): Promise<number> => {
+  return new Promise(async (resolve, reject) => {
+    const tmpFile = tmp.fileSync({ postfix: ".mp4" });
 
-// assignDefinedFields(user, { firstName, lastName, dob, age, username });
+    try {
+      const writer = fs.createWriteStream(tmpFile.name);
+      const response = await axios.get(url, { responseType: "stream" });
 
+      response.data.pipe(writer);
+
+      writer.on("finish", () => {
+        ffmpeg.ffprobe(tmpFile.name, (err, metadata) => {
+          tmpFile.removeCallback(); // Clean up temp file
+          if (err) return reject(err);
+          const duration = metadata.format.duration;
+          if (!duration) return reject(new Error("Could not extract duration"));
+          resolve(duration);
+        });
+      });
+
+      writer.on("error", (err) => {
+        tmpFile.removeCallback();
+        reject(err);
+      });
+    } catch (error) {
+      tmpFile.removeCallback();
+      reject(error);
+    }
+  });
+};

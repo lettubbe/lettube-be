@@ -1,7 +1,7 @@
 import asyncHandler from "express-async-handler";
 import Feed from "../../models/Feed";
 import baseResponseHandler from "../../messages/BaseResponseHandler";
-import { getAuthUser, normalizePhoneNumber } from "../../lib/utils/utils";
+import { getAuthUser, getRemoteVideoDuration, normalizePhoneNumber } from "../../lib/utils/utils";
 import ErrorResponse from "../../messages/ErrorResponse";
 import User from "../../models/User";
 import Post from "../../models/Post";
@@ -227,12 +227,15 @@ export const uploadFeedPost = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse(`tags is required`, 400));
   }
 
+  const duration = await getRemoteVideoDuration(postVideo);
+
   const postFeed = {
     user: user._id,
     tags: tagsArray,
     category,
     description,
     visibility,
+    duration,
     isCommentsAllowed: isCommentsAllowedBool,
     videoUrl: postVideo,
     thumbnail: thumbnailImage,
