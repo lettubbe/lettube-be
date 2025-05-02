@@ -15,6 +15,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const axios_1 = __importDefault(require("axios"));
 const mailjetProvider_1 = __importDefault(require("../providers/mailjetProvider"));
 const config_1 = __importDefault(require("../config"));
+const expoProvider_1 = __importDefault(require("../providers/expoProvider"));
+const Devices_1 = __importDefault(require("../models/Devices"));
 const KNOWN_ERRORS = [
     "messaging/invalid-argument",
     "messaging/registration-token-not-registered",
@@ -69,6 +71,44 @@ class NotificationService {
             }
             catch (err) {
                 console.log("sendSms Error:", err.response.data.message);
+            }
+        });
+    }
+    static sendNotification(userId, input) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const device = yield Devices_1.default.findOne({ userId });
+            // if (device) {
+            //   console.log("expo push notification ran", device.deviceToken);
+            //   expo.sendPushNotificationsAsync([
+            //     {
+            //       to: device.deviceToken,
+            //       title: input.title,
+            //       body: input.description,
+            //       data: { screen: "/rides-request" }
+            //     },
+            //   ]);
+            // }
+            if (device) {
+                // console.log("device 12345", device);
+                // Construct the notification payload
+                const notificationPayload = {
+                    to: device.deviceToken,
+                    title: input.title,
+                    body: input.description,
+                    data: Object.assign({}, input.metadata),
+                };
+                // console.log("notificationPayload", notificationPayload);
+                // Send the notification via Expo Push API
+                // await expo.sendPushNotificationsAsync([notificationPayload]);
+                try {
+                    const response = yield expoProvider_1.default.sendPushNotificationsAsync([notificationPayload]);
+                    // console.log("response expo", response);
+                    // const receipts = await expo.getPushNotificationReceiptsAsync(['019478ca-c108-7fa5-873b-c40aa61d8f45']);
+                    // console.log("receipts", receipts);
+                }
+                catch (error) {
+                    console.error("Failed to send notification:", error);
+                }
             }
         });
     }

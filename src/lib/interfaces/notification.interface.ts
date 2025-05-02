@@ -9,9 +9,16 @@ export type SmsOptions = {
     text: string;
 };
 
-export interface PushNotificationBody {
+// export interface PushNotificationBody {
+//     title: string
+//     description: string,
+//     type: string
+//     metadata: Record<string, string>;
+// }
+
+export interface IPushNotificationBody {
     title: string
     description: string,
-    type: string
-    metadata: Record<string, string>;
+    type?: string,
+    metadata?: Record<string, string | unknown>;
 }

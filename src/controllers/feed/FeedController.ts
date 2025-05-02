@@ -435,6 +435,7 @@ export const getPostComments = asyncHandler(async (req, res, next) => {
 
   // First check if post exists
   const postExists = await Post.findById(postId);
+  
   if (!postExists) {
     return next(new ErrorResponse("Post Not Found", 404));
   }
