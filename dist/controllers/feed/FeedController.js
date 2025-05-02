@@ -162,14 +162,12 @@ exports.getContacts = (0, express_async_handler_1.default)((req, res, next) => _
 // @route    GET /api/v1/feed/upload
 // @access   Private
 exports.uploadFeedPost = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    console.log("hitting upload feed post");
     const user = yield (0, utils_1.getAuthUser)(req, next);
     let tagsArray;
     console.log("body", req.body);
     const thumbnailImage = yield (0, fileUpload_1.uploadFileFromFields)(req, next, `feedThumbnail/${user._id}/thumbnails`, "thumbnailImage");
     const postVideo = yield (0, fileUpload_1.uploadFileFromFields)(req, next, `feedVideos/${user._id}/videos`, "postVideo");
     const { tags, category, description, visibility, playlistId, isCommentsAllowed } = req.body;
-    console.log("tags", tags);
     if (!thumbnailImage) {
         return next(new ErrorResponse_1.default(`Error Occurred when uploading Thumbnail. Please Check your connection and try again`, 500));
     }
