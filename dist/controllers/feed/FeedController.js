@@ -333,6 +333,8 @@ exports.replyToComment = (0, express_async_handler_1.default)((req, res, next) =
     };
     comment.replies.push(newReply);
     yield post.save();
+    yield Notifications_1.default.create({ userId: comment.user, actorIds: [user._id], type: "comment", videoId: postId, createdAt: new Date(), read: false });
+    yield notificationService_1.default.sendNotification(comment.user, {});
     (0, BaseResponseHandler_1.default)({
         message: `Reply Done Successfully`,
         res,

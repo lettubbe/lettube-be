@@ -76,23 +76,8 @@ class NotificationService {
   ) {
     
     const device = await Device.findOne({ userId });
-
-    // if (device) {
-    //   console.log("expo push notification ran", device.deviceToken);
-    //   expo.sendPushNotificationsAsync([
-    //     {
-    //       to: device.deviceToken,
-    //       title: input.title,
-    //       body: input.description,
-    //       data: { screen: "/rides-request" }
-    //     },
-    //   ]);
-    // }
-
     
     if (device) {
-      // console.log("device 12345", device);
-      // Construct the notification payload
       const notificationPayload = {
         to: device.deviceToken,
         title: input.title,
@@ -102,16 +87,11 @@ class NotificationService {
         },
       };
 
-      // console.log("notificationPayload", notificationPayload);
-  
-      // Send the notification via Expo Push API
-      // await expo.sendPushNotificationsAsync([notificationPayload]);
-
       try {
       
         
         const response = await expo.sendPushNotificationsAsync([notificationPayload]);
-        // console.log("response expo", response);
+        console.log("response expo", response);
 
         // const receipts = await expo.getPushNotificationReceiptsAsync(['019478ca-c108-7fa5-873b-c40aa61d8f45']);
 
