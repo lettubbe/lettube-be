@@ -1,7 +1,11 @@
 import asyncHandler from "express-async-handler";
 import Feed from "../../models/Feed";
 import baseResponseHandler from "../../messages/BaseResponseHandler";
-import { getAuthUser, getRemoteVideoDuration, normalizePhoneNumber } from "../../lib/utils/utils";
+import {
+  getAuthUser,
+  getRemoteVideoDuration,
+  normalizePhoneNumber,
+} from "../../lib/utils/utils";
 import ErrorResponse from "../../messages/ErrorResponse";
 import User from "../../models/User";
 import Post from "../../models/Post";
@@ -74,12 +78,6 @@ export const createCategoryFeeds = asyncHandler(async (req, res, next) => {
 });
 
 // @desc     Get User Feed
-// @route   GET /api/v1/feed/
-// @access  private
-
-
-
-// @desc     Get User Feed
 // @route   GET /api/v1/feed/uploads
 // @access  private
 
@@ -107,27 +105,27 @@ export const getUserUploadedFeeds = asyncHandler(async (req, res, next) => {
 // @route   GET /api/v1/feed/uploads/user/public
 // @access  private
 
-export const getUserPublicUploadedFeeds = asyncHandler(async (req, res, next) => {
+export const getUserPublicUploadedFeeds = asyncHandler(
+  async (req, res, next) => {
+    const { userId } = req.query;
 
-  const { userId } = req.query;
+    const { page, limit } = req.params;
 
-  const { page, limit } = req.params;
+    const options = getPaginateOptions(page, limit);
 
+    const posts = await Post.paginate({ user: userId }, options);
 
-  const options = getPaginateOptions(page, limit);
+    const postsTransformedData = transformPaginateResponse(posts);
 
-  const posts = await Post.paginate({ user: userId }, options);
-
-  const postsTransformedData = transformPaginateResponse(posts);
-
-  baseResponseHandler({
-    message: `User Feeds Retrieved successfully`,
-    res,
-    statusCode: 200,
-    success: true,
-    data: postsTransformedData,
-  });
-});
+    baseResponseHandler({
+      message: `User Feeds Retrieved successfully`,
+      res,
+      statusCode: 200,
+      success: true,
+      data: postsTransformedData,
+    });
+  }
+);
 
 // @desc     Get User Feed
 // @route    GET /api/v1/feed/phoneNumbers
@@ -168,7 +166,6 @@ export const getContacts = asyncHandler(async (req, res, next) => {
 // @access   Private
 
 export const uploadFeedPost = asyncHandler(async (req, res, next) => {
-
   const user = await getAuthUser(req, next);
 
   let tagsArray;
@@ -189,8 +186,14 @@ export const uploadFeedPost = asyncHandler(async (req, res, next) => {
     "postVideo"
   );
 
-  const { tags, category, description, visibility, playlistId, isCommentsAllowed } =
-    req.body;
+  const {
+    tags,
+    category,
+    description,
+    visibility,
+    playlistId,
+    isCommentsAllowed,
+  } = req.body;
 
   if (!thumbnailImage) {
     return next(
@@ -269,12 +272,12 @@ export const uploadFeedPost = asyncHandler(async (req, res, next) => {
 // @access   Private
 
 export const likePost = asyncHandler(async (req, res, next) => {
-
   const { postId } = req.params;
   const user = await getAuthUser(req, next);
   const userId = user._id;
 
   const post = await Post.findById(postId);
+
   if (!post) {
     return next(new ErrorResponse(`Post Not Found`, 404));
   }
@@ -285,17 +288,52 @@ export const likePost = asyncHandler(async (req, res, next) => {
 
   const update = hasLiked
     ? {
-      $pull: { "reactions.likes": userId },
-    }
+        $pull: { "reactions.likes": userId },
+      }
     : {
-      $addToSet: { "reactions.likes": userId },
-      $pull: { "reactions.dislikes": userId },
-    };
+        $addToSet: { "reactions.likes": userId },
+        $pull: { "reactions.dislikes": userId },
+      };
 
   const updatedPost = await Post.findByIdAndUpdate(postId, update, {
     new: true,
-    runValidators: true, // optional, but nice
+    runValidators: true,
   });
+
+  if (!hasLiked) {
+    const existing = await Notification.findOne({
+      userId: post.user,
+      type: "like",
+      videoId: postId,
+    });
+
+    if (existing) {
+      if (!existing.actorIds.includes(user._id)) {
+        existing.actorIds.push(user._id);
+        existing.createdAt = new Date();
+        await existing.save();
+
+        await NotificationService.sendNotification(post.user as any, {
+          title: `{existing.actorIds.length} liked your post`,
+          description: `${user.username} liked your post`,
+        });
+      }
+    } else {
+      await Notification.create({
+        userId: post.user,
+        actorIds: [user._id],
+        type: "like",
+        videoId: postId,
+        createdAt: new Date(),
+        read: false,
+      });
+    }
+
+    await NotificationService.sendNotification(post.user as any, {
+      title: `${user.username} liked your post`,
+      description: `${user.username} Just liked your post`,
+    });
+  }
 
   baseResponseHandler({
     message: `Post Liked Successfully`,
@@ -303,6 +341,44 @@ export const likePost = asyncHandler(async (req, res, next) => {
     statusCode: 200,
     success: true,
     data: updatedPost?.reactions,
+  });
+});
+
+// @desc     Get User Feed
+// @route    GET /api/v1/feed/notifications
+// @access   Private
+
+export const getFeedNotifications = asyncHandler(async (req, res, next) => {
+  const user = await getAuthUser(req, next);
+  const { page, limit, type } = req.query;
+
+  const filter: any = {
+    userId: user._id, 
+  };
+
+  // If type is provided and valid, add it to the filter
+  if (type && ["like", "comment", "reply", "subscription"].includes(type as any)) {
+    filter.type = type;
+  }
+
+  const options = getPaginateOptions(page, limit, {
+    populate: [
+      {
+        path: "user",
+        select: "username firstName lastName profilePicture",
+      },
+    ],
+  });
+
+  const notificationsData = await Notification.paginate(filter, options);
+  const notifications = transformPaginateResponse(notificationsData);
+
+  baseResponseHandler({
+    message: `User Notifications Retrieved successfully`,
+    res,
+    statusCode: 200,
+    success: true,
+    data: notifications,
   });
 });
 
@@ -324,7 +400,9 @@ export const replyToComment = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse(`Post Not Found`, 404));
   }
 
-  const comment = post.comments.find((c: any) => c._id.toString() === commentId);
+  const comment = post.comments.find(
+    (c: any) => c._id.toString() === commentId
+  );
 
   if (!comment) {
     return next(new ErrorResponse(`Comment not found`, 404));
@@ -365,7 +443,9 @@ export const likeComment = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse(`Post Not Found`, 404));
   }
 
-  const comment = post.comments.find((c: any) => c._id.toString() === commentId);
+  const comment = post.comments.find(
+    (c: any) => c._id.toString() === commentId
+  );
 
   if (!comment) {
     return next(new ErrorResponse(`Comment Not Found`, 404));
@@ -375,17 +455,27 @@ export const likeComment = asyncHandler(async (req, res, next) => {
 
   if (replyId) {
     // Like/Unlike a REPLY
-    const reply = comment.replies.find((r: any) => r._id.toString() === replyId);
+    const reply = comment.replies.find(
+      (r: any) => r._id.toString() === replyId
+    );
 
     if (!reply) {
       return next(new ErrorResponse(`Reply Not Found`, 404));
     }
 
-    const alreadyLiked = reply.likes.some(id => id.toString() === userId.toString());
+    const alreadyLiked = reply.likes.some(
+      (id) => id.toString() === userId.toString()
+    );
 
     const update = alreadyLiked
-      ? { $pull: { "comments.$[comment].replies.$[reply].likes": userObjectId } }
-      : { $addToSet: { "comments.$[comment].replies.$[reply].likes": userObjectId } };
+      ? {
+          $pull: { "comments.$[comment].replies.$[reply].likes": userObjectId },
+        }
+      : {
+          $addToSet: {
+            "comments.$[comment].replies.$[reply].likes": userObjectId,
+          },
+        };
 
     await Post.updateOne(
       {
@@ -401,10 +491,11 @@ export const likeComment = asyncHandler(async (req, res, next) => {
         ],
       }
     );
-
   } else {
     // Like/Unlike a COMMENT
-    const alreadyLiked = comment.likes.some(id => id.toString() === userId.toString());
+    const alreadyLiked = comment.likes.some(
+      (id) => id.toString() === userId.toString()
+    );
 
     const update = alreadyLiked
       ? { $pull: { "comments.$.likes": userObjectId } }
@@ -440,7 +531,7 @@ export const getPostComments = asyncHandler(async (req, res, next) => {
 
   // First check if post exists
   const postExists = await Post.findById(postId);
-  
+
   if (!postExists) {
     return next(new ErrorResponse("Post Not Found", 404));
   }
@@ -448,7 +539,7 @@ export const getPostComments = asyncHandler(async (req, res, next) => {
   // Build the aggregation pipeline
   const pipeline: any[] = [
     { $match: { _id: new Types.ObjectId(postId) } },
-    { $unwind: "$comments" }
+    { $unwind: "$comments" },
   ];
 
   // Add search condition if search term exists
@@ -457,9 +548,9 @@ export const getPostComments = asyncHandler(async (req, res, next) => {
       $match: {
         $or: [
           { "comments.text": { $regex: search, $options: "i" } },
-          { "comments.replies.text": { $regex: search, $options: "i" } }
-        ]
-      }
+          { "comments.replies.text": { $regex: search, $options: "i" } },
+        ],
+      },
     });
   }
 
@@ -481,11 +572,11 @@ export const getPostComments = asyncHandler(async (req, res, next) => {
               email: 0,
               isDeleted: 0,
               __v: 0,
-              date: 0
-            }
-          }
-        ]
-      }
+              date: 0,
+            },
+          },
+        ],
+      },
     },
     { $unwind: "$comments.user" },
     {
@@ -501,18 +592,18 @@ export const getPostComments = asyncHandler(async (req, res, next) => {
               email: 0,
               isDeleted: 0,
               __v: 0,
-              date: 0
-            }
-          }
-        ]
-      }
+              date: 0,
+            },
+          },
+        ],
+      },
     },
     {
       $group: {
         _id: "$_id",
         comments: { $push: "$comments" },
-        totalComments: { $sum: 1 }
-      }
+        totalComments: { $sum: 1 },
+      },
     }
   );
 
@@ -520,7 +611,11 @@ export const getPostComments = asyncHandler(async (req, res, next) => {
   const result = await Post.aggregate(pipeline);
 
   // Handle empty results
-  if (result.length === 0 || !result[0].comments || result[0].comments.length === 0) {
+  if (
+    result.length === 0 ||
+    !result[0].comments ||
+    result[0].comments.length === 0
+  ) {
     return baseResponseHandler({
       message: "No Comments Found",
       res,
@@ -572,7 +667,6 @@ export const getPostComments = asyncHandler(async (req, res, next) => {
 // @access    Private
 
 export const commentOnPost = asyncHandler(async (req, res, next) => {
-
   const { postId } = req.params;
   const { text } = req.body;
 
@@ -613,7 +707,6 @@ export const commentOnPost = asyncHandler(async (req, res, next) => {
 // @access    Private
 
 export const dislikePost = asyncHandler(async (req, res, next) => {
-  
   const { postId } = req.params;
   const userId = req.user._id;
 
@@ -628,14 +721,14 @@ export const dislikePost = asyncHandler(async (req, res, next) => {
 
   const update = hasDisliked
     ? {
-      // User already disliked → remove from dislikes
-      $pull: { "reactions.dislikes": userId },
-    }
+        // User already disliked → remove from dislikes
+        $pull: { "reactions.dislikes": userId },
+      }
     : {
-      // User not disliked yet → add to dislikes
-      $addToSet: { "reactions.dislikes": userId },
-      $pull: { "reactions.likes": userId }, // Remove from likes if any
-    };
+        // User not disliked yet → add to dislikes
+        $addToSet: { "reactions.dislikes": userId },
+        $pull: { "reactions.likes": userId }, // Remove from likes if any
+      };
 
   const updatedPost = await Post.findByIdAndUpdate(postId, update, {
     new: true,
@@ -651,9 +744,10 @@ export const dislikePost = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc      Bookmark Video 
+// @desc      Bookmark Video
 // @route     /posts/:postId/bookmark
 // @access    Private
+
 export const bookmarkPost = asyncHandler(async (req, res, next) => {
   const { postId } = req.params;
   const user = await getAuthUser(req, next);
@@ -666,29 +760,32 @@ export const bookmarkPost = asyncHandler(async (req, res, next) => {
   }
 
   // Check if already bookmarked
-  const existingBookmark = await Bookmark.findOne({ user: userId, post: postId });
+  const existingBookmark = await Bookmark.findOne({
+    user: userId,
+    post: postId,
+  });
 
   if (existingBookmark) {
     // Remove bookmark
     await Bookmark.deleteOne({ _id: existingBookmark._id });
 
     baseResponseHandler({
-      message: 'Post Unbookmarked Successfully',
+      message: "Post Unbookmarked Successfully",
       res,
       statusCode: 200,
       success: true,
-      data: { isBookmarked: false }
+      data: { isBookmarked: false },
     });
   } else {
     // Add new bookmark
     const bookmark = await Bookmark.create({ user: userId, post: postId });
 
     baseResponseHandler({
-      message: 'Post Bookmarked Successfully',
+      message: "Post Bookmarked Successfully",
       res,
       statusCode: 200,
       success: true,
-      data: { isBookmarked: true }
+      data: { isBookmarked: true },
     });
   }
 });
@@ -696,19 +793,20 @@ export const bookmarkPost = asyncHandler(async (req, res, next) => {
 // @desc      Get User's Bookmarked Posts
 // @route     GET /posts/bookmarks
 // @access    Private
+
 export const getBookmarkedPosts = asyncHandler(async (req, res, next) => {
   const user = await getAuthUser(req, next);
   const { page, limit } = req.query;
 
   const options = getPaginateOptions(page, limit, {
     populate: {
-      path: 'post',
+      path: "post",
       populate: {
-        path: 'user',
-        select: 'username firstName lastName profilePicture'
-      }
+        path: "user",
+        select: "username firstName lastName profilePicture",
+      },
     },
-    sort: { createdAt: -1 }
+    sort: { createdAt: -1 },
   });
 
   const bookmarks = await Bookmark.paginate({ user: user._id }, options);
@@ -716,18 +814,18 @@ export const getBookmarkedPosts = asyncHandler(async (req, res, next) => {
   // Transform the response to return posts with isBookmarked flag
   const transformedData = {
     ...bookmarks,
-    docs: bookmarks.docs.map(bookmark => ({
+    docs: bookmarks.docs.map((bookmark) => ({
       ...(bookmark.post as any)?.toObject(),
-      isBookmarked: true
-    }))
+      isBookmarked: true,
+    })),
   };
 
   baseResponseHandler({
-    message: 'Bookmarked Posts Retrieved Successfully',
+    message: "Bookmarked Posts Retrieved Successfully",
     res,
     statusCode: 200,
     success: true,
-    data: transformPaginateResponse(transformedData)
+    data: transformPaginateResponse(transformedData),
   });
 });
 
@@ -753,15 +851,15 @@ export const getUserFeeds = asyncHandler(async (req, res, next) => {
   // Get user's bookmarks for these posts
   const bookmarks = await Bookmark.find({
     user: user._id,
-    post: { $in: posts.docs.map(post => (post as any)._id) }
+    post: { $in: posts.docs.map((post) => (post as any)._id) },
   });
 
-  const bookmarkedPostIds = new Set(bookmarks.map(b => b.post.toString()));
+  const bookmarkedPostIds = new Set(bookmarks.map((b) => b.post.toString()));
 
   // Transform and clean up the response data
   const cleanPosts = {
     ...posts,
-    docs: posts.docs.map(post => {
+    docs: posts.docs.map((post) => {
       const postObj = (post as any).toObject();
       return {
         _id: postObj._id,
@@ -770,7 +868,7 @@ export const getUserFeeds = asyncHandler(async (req, res, next) => {
           username: postObj.user.username,
           firstName: postObj.user.firstName,
           lastName: postObj.user.lastName,
-          profilePicture: postObj.user.profilePicture
+          profilePicture: postObj.user.profilePicture,
         },
         category: postObj.category,
         thumbnail: postObj.thumbnail,
@@ -783,9 +881,9 @@ export const getUserFeeds = asyncHandler(async (req, res, next) => {
         comments: postObj.comments,
         createdAt: postObj.createdAt,
         updatedAt: postObj.updatedAt,
-        isBookmarked: bookmarkedPostIds.has(postObj._id.toString())
+        isBookmarked: bookmarkedPostIds.has(postObj._id.toString()),
       };
-    })
+    }),
   };
 
   baseResponseHandler({
@@ -793,7 +891,7 @@ export const getUserFeeds = asyncHandler(async (req, res, next) => {
     res,
     statusCode: 200,
     success: true,
-    data: transformPaginateResponse(cleanPosts)
+    data: transformPaginateResponse(cleanPosts),
   });
 });
 
@@ -802,7 +900,6 @@ export const getUserFeeds = asyncHandler(async (req, res, next) => {
 // @access    Private
 
 export const deletePost = asyncHandler(async (req, res, next) => {
-
   const { postId } = req.params;
 
   const user = await getAuthUser(req, next);
@@ -813,9 +910,11 @@ export const deletePost = asyncHandler(async (req, res, next) => {
   if (!post) {
     return next(new ErrorResponse(`Post Not Found`, 404));
   }
-  
+
   if (post.user.toString() !== userId.toString()) {
-    return next(new ErrorResponse(`You are not authorized to delete this post`, 403));
+    return next(
+      new ErrorResponse(`You are not authorized to delete this post`, 403)
+    );
   }
 
   await Post.findByIdAndDelete(postId);
@@ -827,15 +926,18 @@ export const deletePost = asyncHandler(async (req, res, next) => {
     success: true,
     data: post,
   });
-
 });
 
 // @desc      Get User's Feed Posts
-// @route     GET /posts/feed/search?q=keyword
+// @route     GET /posts/feed/search?searchTerm=keyword
 // @access    Private
 
 export const searchPosts = asyncHandler(async (req, res, next) => {
-  const { searchTerm, page = 1, limit = 10 } = req.query as {
+  const {
+    searchTerm,
+    page = 1,
+    limit = 10,
+  } = req.query as {
     searchTerm?: string;
     page?: string;
     limit?: string;
@@ -864,7 +966,7 @@ export const searchPosts = asyncHandler(async (req, res, next) => {
       { description: { $regex: searchQuery, $options: "i" } },
       { tags: { $in: [new RegExp(searchQuery, "i")] } },
       { "comments.text": { $regex: searchQuery, $options: "i" } },
-      { "comments.replies.text": { $regex: searchQuery, $options: "i" } },
+      { "comments.replies.text": { $regex: searchQuery, $options: "i" } }
     );
 
     // If there are matching users, include their IDs in the filter
@@ -901,4 +1003,3 @@ export const searchPosts = asyncHandler(async (req, res, next) => {
     data: posts,
   });
 });
-

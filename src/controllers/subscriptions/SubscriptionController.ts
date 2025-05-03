@@ -3,6 +3,9 @@ import ErrorResponse from "../../messages/ErrorResponse";
 import Subscription from "../../models/Subscription";
 import { getAuthUser } from "../../lib/utils/utils";
 import baseResponseHandler from "../../messages/BaseResponseHandler";
+import NotificationService from "../../services/notificationService";
+import User from "../../models/User";
+import Notification from "../../models/Notifications";
 
 // @desc    Subscribe to a channel
 // @route   /api/v1/subscription/subscribe
@@ -19,6 +22,24 @@ export const subscribe = asyncHandler(async (req, res, next) => {
   const subscription = await Subscription.create({
     subscriber: user._id,
     subscribedTo: userId,
+  });
+
+  const subscribedUser = await User.findById(userId).select(
+    "firstName lastName username profilePicture");
+
+  if (!subscribedUser) {
+    return next(new ErrorResponse("Subscribed user not found", 404));
+  }
+
+  await NotificationService.sendNotification(userId as any, {
+    title: `New Subscription`,
+    description: `${user.username} Just Subscribed Your Channel`,
+  });
+
+  Notification.create({ 
+    userId,
+    type: "subscription",
+    read: false, 
   });
 
   baseResponseHandler({
@@ -52,8 +73,8 @@ export const unsubscribe = asyncHandler(async (req, res, next) => {
     res,
     statusCode: 200,
     success: true,
-    data: subscription
-  })
+    data: subscription,
+  });
 });
 
 // @desc    Get User Subscribers
@@ -92,11 +113,9 @@ export const getSubscribedTo = asyncHandler(async (req, res, next) => {
 // @access  Private
 
 export const bulkSubscribe = asyncHandler(async (req, res, next) => {
-  const { userIds } = req.body; 
+  const { userIds } = req.body;
 
-  console.log("userIds", userIds);
-
-  const subscriberId = await getAuthUser(req, next); 
+  const subscriberId = await getAuthUser(req, next);
 
   if (!Array.isArray(userIds)) {
     return next(new ErrorResponse("Invalid user IDs provided", 400));
@@ -118,8 +137,12 @@ export const bulkSubscribe = asyncHandler(async (req, res, next) => {
   // Bulk insert subscriptions, ignoring duplicates
   await Subscription.insertMany(subscriptions, { ordered: false });
 
-  res.status(201).json({
+  baseResponseHandler({
+    message: `Bulk subscription successful`,
+    res,
+    statusCode: 200,
     success: true,
-    message: "Bulk subscription successful",
+    data: `Bulk subscription successful`,
   });
+
 });
