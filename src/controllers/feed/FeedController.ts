@@ -440,7 +440,7 @@ export const getPostComments = asyncHandler(async (req, res, next) => {
 
   // First check if post exists
   const postExists = await Post.findById(postId);
-  
+
   if (!postExists) {
     return next(new ErrorResponse("Post Not Found", 404));
   }
@@ -448,73 +448,106 @@ export const getPostComments = asyncHandler(async (req, res, next) => {
   // Build the aggregation pipeline
   const pipeline: any[] = [
     { $match: { _id: new Types.ObjectId(postId) } },
-    { $unwind: "$comments" }
-  ];
+    { $unwind: "$comments" },
 
-  // Add search condition if search term exists
-  if (search) {
-    pipeline.push({
+    ...(search ? [{
       $match: {
         $or: [
           { "comments.text": { $regex: search, $options: "i" } },
           { "comments.replies.text": { $regex: search, $options: "i" } }
         ]
       }
-    });
-  }
-
-  // Add sorting, pagination and population with field filtering
-  pipeline.push(
+    }] : []),
+    // Add sorting and pagination
     { $sort: { "comments.createdAt": -1 } },
     { $skip: Math.max(0, (Number(page || 1) - 1) * Number(limit)) },
     { $limit: Number(limit) },
+
     {
       $lookup: {
         from: "users",
         localField: "comments.user",
         foreignField: "_id",
-        as: "comments.user",
-        pipeline: [
-          {
-            $project: {
-              password: 0,
-              email: 0,
-              isDeleted: 0,
-              __v: 0,
-              date: 0
-            }
-          }
-        ]
+        as: "comments.userDetails"
       }
     },
-    { $unwind: "$comments.user" },
+    { $unwind: "$comments.userDetails" },
+    // Unwind replies to process each reply
+    {
+      $addFields: {
+        "comments.replies": {
+          $cond: {
+            if: { $isArray: "$comments.replies" },
+            then: "$comments.replies",
+            else: []
+          }
+        }
+      }
+    },
+    {
+      $unwind: {
+        path: "$comments.replies",
+        preserveNullAndEmptyArrays: true
+      }
+    },
+    // Lookup for reply users
     {
       $lookup: {
         from: "users",
         localField: "comments.replies.user",
         foreignField: "_id",
-        as: "comments.replies.user",
-        pipeline: [
-          {
-            $project: {
-              password: 0,
-              email: 0,
-              isDeleted: 0,
-              __v: 0,
-              date: 0
-            }
-          }
-        ]
+        as: "comments.replies.userDetails"
       }
     },
     {
+      $unwind: {
+        path: "$comments.replies.userDetails",
+        preserveNullAndEmptyArrays: true
+      }
+    },
+    // Group replies back
+    {
       $group: {
-        _id: "$_id",
-        comments: { $push: "$comments" },
+        _id: {
+          postId: "$_id",
+          commentId: "$comments._id"
+        },
+        comment: { $first: "$comments" },
+        replies: {
+          $push: {
+            $cond: {
+              if: { $ifNull: ["$comments.replies", false] },
+              then: {
+                _id: "$comments.replies._id",
+                user: "$comments.replies.userDetails",
+                text: "$comments.replies.text",
+                likes: "$comments.replies.likes",
+                createdAt: "$comments.replies.createdAt"
+              },
+              else: "$$REMOVE"
+            }
+          }
+        }
+      }
+    },
+    // Final grouping
+    {
+      $group: {
+        _id: "$_id.postId",
+        comments: {
+          $push: {
+            _id: "$comment._id",
+            user: "$comment.userDetails",
+            text: "$comment.text",
+            likes: "$comment.likes",
+            replies: "$replies",
+            createdAt: "$comment.createdAt"
+          }
+        },
         totalComments: { $sum: 1 }
       }
     }
-  );
+  ];
 
   // Execute the aggregation
   const result = await Post.aggregate(pipeline);
@@ -613,7 +646,7 @@ export const commentOnPost = asyncHandler(async (req, res, next) => {
 // @access    Private
 
 export const dislikePost = asyncHandler(async (req, res, next) => {
-  
+
   const { postId } = req.params;
   const userId = req.user._id;
 
@@ -696,6 +729,7 @@ export const bookmarkPost = asyncHandler(async (req, res, next) => {
 // @desc      Get User's Bookmarked Posts
 // @route     GET /posts/bookmarks
 // @access    Private
+
 export const getBookmarkedPosts = asyncHandler(async (req, res, next) => {
   const user = await getAuthUser(req, next);
   const { page, limit } = req.query;
@@ -813,7 +847,7 @@ export const deletePost = asyncHandler(async (req, res, next) => {
   if (!post) {
     return next(new ErrorResponse(`Post Not Found`, 404));
   }
-  
+
   if (post.user.toString() !== userId.toString()) {
     return next(new ErrorResponse(`You are not authorized to delete this post`, 403));
   }
