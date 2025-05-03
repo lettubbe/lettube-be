@@ -30,6 +30,7 @@ const postSchema = new Schema<IPost>({
       type: Boolean,
       default: true
     },
+    duration: { type: Number, required: true },
     // In the reactions object, remove the bookmarks array
     reactions: {
       likes: [{ type: Schema.Types.ObjectId, ref: "user" }], 
@@ -61,6 +62,7 @@ export interface IPost extends Document {
   user: Types.ObjectId;
   categories: string[];
   thumbnail: string;
+  duration: number; 
   videoUrl: string;
   reactions: {
     likes: Types.ObjectId[];
