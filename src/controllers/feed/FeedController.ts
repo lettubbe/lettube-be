@@ -833,6 +833,7 @@ export const deletePost = asyncHandler(async (req, res, next) => {
 // @desc      Get User's Feed Posts
 // @route     GET /posts/feed/search?q=keyword
 // @access    Private
+
 export const searchPosts = asyncHandler(async (req, res, next) => {
   const { searchTerm, page = 1, limit = 10 } = req.query as {
     searchTerm?: string;
@@ -841,27 +842,55 @@ export const searchPosts = asyncHandler(async (req, res, next) => {
   };
 
   const searchQuery = searchTerm?.trim();
-
   const filter: any = {};
 
+  // Prepare list of OR filters
+  const orFilters: any[] = [];
+
   if (searchQuery) {
-    filter.$or = [
+    // 1. Search for users whose names match the searchTerm
+    const matchingUsers = await User.find({
+      $or: [
+        { firstName: { $regex: searchQuery, $options: "i" } },
+        { lastName: { $regex: searchQuery, $options: "i" } },
+        { username: { $regex: searchQuery, $options: "i" } },
+      ],
+    }).select("_id");
+
+    const userIds = matchingUsers.map((user) => user._id);
+
+    orFilters.push(
       { category: { $regex: searchQuery, $options: "i" } },
       { description: { $regex: searchQuery, $options: "i" } },
       { tags: { $in: [new RegExp(searchQuery, "i")] } },
       { "comments.text": { $regex: searchQuery, $options: "i" } },
       { "comments.replies.text": { $regex: searchQuery, $options: "i" } },
-    ];
+    );
+
+    // If there are matching users, include their IDs in the filter
+    if (userIds.length > 0) {
+      orFilters.push({ user: { $in: userIds } });
+    }
   }
 
-  filter.$or = [
-    { visibility: "public" },
-  ];
+  // Only public posts
+  filter.visibility = "public";
 
-  const options = getPaginateOptions(page, limit)
+  if (orFilters.length > 0) {
+    filter.$or = orFilters;
+  }
+
+  const options = getPaginateOptions(page, limit, {
+    populate: [
+      {
+        path: "user",
+        select: "username firstName lastName profilePicture",
+      },
+    ],
+    sort: { createdAt: -1 },
+  });
 
   const postsData = await Post.paginate(filter, options);
-
   const posts = transformPaginateResponse(postsData);
 
   baseResponseHandler({
@@ -870,6 +899,6 @@ export const searchPosts = asyncHandler(async (req, res, next) => {
     statusCode: 200,
     success: true,
     data: posts,
-  })
-  
+  });
 });
+

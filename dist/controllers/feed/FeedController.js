@@ -667,19 +667,38 @@ exports.searchPosts = (0, express_async_handler_1.default)((req, res, next) => _
     const { searchTerm, page = 1, limit = 10 } = req.query;
     const searchQuery = searchTerm === null || searchTerm === void 0 ? void 0 : searchTerm.trim();
     const filter = {};
+    // Prepare list of OR filters
+    const orFilters = [];
     if (searchQuery) {
-        filter.$or = [
-            { category: { $regex: searchQuery, $options: "i" } },
-            { description: { $regex: searchQuery, $options: "i" } },
-            { tags: { $in: [new RegExp(searchQuery, "i")] } },
-            { "comments.text": { $regex: searchQuery, $options: "i" } },
-            { "comments.replies.text": { $regex: searchQuery, $options: "i" } },
-        ];
+        // 1. Search for users whose names match the searchTerm
+        const matchingUsers = yield User_1.default.find({
+            $or: [
+                { firstName: { $regex: searchQuery, $options: "i" } },
+                { lastName: { $regex: searchQuery, $options: "i" } },
+                { username: { $regex: searchQuery, $options: "i" } },
+            ],
+        }).select("_id");
+        const userIds = matchingUsers.map((user) => user._id);
+        orFilters.push({ category: { $regex: searchQuery, $options: "i" } }, { description: { $regex: searchQuery, $options: "i" } }, { tags: { $in: [new RegExp(searchQuery, "i")] } }, { "comments.text": { $regex: searchQuery, $options: "i" } }, { "comments.replies.text": { $regex: searchQuery, $options: "i" } });
+        // If there are matching users, include their IDs in the filter
+        if (userIds.length > 0) {
+            orFilters.push({ user: { $in: userIds } });
+        }
     }
-    filter.$or = [
-        { visibility: "public" },
-    ];
-    const options = (0, paginate_1.getPaginateOptions)(page, limit);
+    // Only public posts
+    filter.visibility = "public";
+    if (orFilters.length > 0) {
+        filter.$or = orFilters;
+    }
+    const options = (0, paginate_1.getPaginateOptions)(page, limit, {
+        populate: [
+            {
+                path: "user",
+                select: "username firstName lastName profilePicture",
+            },
+        ],
+        sort: { createdAt: -1 },
+    });
     const postsData = yield Post_1.default.paginate(filter, options);
     const posts = (0, paginate_1.transformPaginateResponse)(postsData);
     (0, BaseResponseHandler_1.default)({
