@@ -1,40 +1,95 @@
 "use strict";
+// import { model, Schema } from "mongoose";
+// import { NotificationStatusEnum } from "../constants/enums/NotificationEnums";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-const mongoose_1 = require("mongoose");
-const NotificationEnums_1 = require("../constants/enums/NotificationEnums");
-const notificationSchema = new mongoose_1.Schema({
-    user: {
-        type: mongoose_1.Schema.Types.ObjectId,
-        ref: "user",
-        required: [true]
-    },
+exports.Notification = void 0;
+// const notificationSchema = new Schema({
+//     user: {
+//         type: Schema.Types.ObjectId,
+//         ref: "user",
+//         required: [true]
+//     },
+//     type: {
+//         type: String,
+//         required: [true, "Notification Type is required"]
+//     },
+//     status: {
+//         type: String,
+//         default: NotificationStatusEnum.UNREAD
+//     },
+//     title: {
+//         type: String,
+//         required: [true, "Notification Title is required"]
+//     },
+//     description: {
+//         type: String,
+//         required: [true, "Notification Description is required"]
+//     },
+//     link: {
+//         type: Boolean,
+//     },
+//     notificationType: {
+//         type: String
+//     },
+//     date: {
+//         type: String,
+//         default: Date.now()
+//     }
+// }, { timestamps: true });
+// const Notification = model("notification", notificationSchema);
+// export default Notification;
+const mongoose_1 = __importStar(require("mongoose"));
+const mongoose_paginate_v2_1 = __importDefault(require("mongoose-paginate-v2"));
+const NotificationSchema = new mongoose_1.Schema({
+    userId: { type: mongoose_1.Schema.Types.ObjectId, ref: "User", required: true },
+    actorIds: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "User" }],
     type: {
         type: String,
-        // enum: ["transactions", "activities"],
-        required: [true, "Notification Type is required"]
+        enum: ["like", "comment", "reply", "subscription"],
+        required: true,
     },
-    status: {
-        type: String,
-        default: NotificationEnums_1.NotificationStatusEnum.UNREAD
-    },
-    title: {
-        type: String,
-        required: [true, "Notification Title is required"]
-    },
-    description: {
-        type: String,
-        required: [true, "Notification Description is required"]
-    },
-    link: {
-        type: Boolean,
-    },
-    notificationType: {
-        type: String
-    },
-    date: {
-        type: String,
-        default: Date.now()
-    }
+    videoId: { type: mongoose_1.Schema.Types.ObjectId, ref: "Video", default: null },
+    commentId: { type: mongoose_1.Schema.Types.ObjectId, ref: "Comment", default: null },
+    text: { type: String },
+    metadata: { type: mongoose_1.Schema.Types.Mixed },
+    read: { type: Boolean, default: false },
 }, { timestamps: true });
-const Notification = (0, mongoose_1.model)("notification", notificationSchema);
-exports.default = Notification;
+NotificationSchema.plugin(mongoose_paginate_v2_1.default);
+exports.Notification = mongoose_1.default.model("notification", NotificationSchema);
+exports.default = exports.Notification;
