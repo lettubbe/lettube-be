@@ -45,7 +45,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deletePost = exports.getUserFeeds = exports.getBookmarkedPosts = exports.bookmarkPost = exports.dislikePost = exports.commentOnPost = exports.getPostComments = exports.likeComment = exports.replyToComment = exports.likePost = exports.uploadFeedPost = exports.getContacts = exports.getUserPublicUploadedFeeds = exports.getUserUploadedFeeds = exports.createCategoryFeeds = void 0;
+exports.searchPosts = exports.deletePost = exports.getUserFeeds = exports.getBookmarkedPosts = exports.bookmarkPost = exports.dislikePost = exports.commentOnPost = exports.getPostComments = exports.likeComment = exports.replyToComment = exports.likePost = exports.uploadFeedPost = exports.getContacts = exports.getUserPublicUploadedFeeds = exports.getUserUploadedFeeds = exports.createCategoryFeeds = void 0;
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const Feed_1 = __importDefault(require("../../models/Feed"));
 const BaseResponseHandler_1 = __importDefault(require("../../messages/BaseResponseHandler"));
@@ -661,5 +661,32 @@ exports.deletePost = (0, express_async_handler_1.default)((req, res, next) => __
     });
 }));
 // @desc      Get User's Feed Posts
-// @route     GET /posts/feed/search
+// @route     GET /posts/feed/search?q=keyword
 // @access    Private
+exports.searchPosts = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const { searchTerm, page = 1, limit = 10 } = req.query;
+    const searchQuery = searchTerm === null || searchTerm === void 0 ? void 0 : searchTerm.trim();
+    const filter = {};
+    if (searchQuery) {
+        filter.$or = [
+            { category: { $regex: searchQuery, $options: "i" } },
+            { description: { $regex: searchQuery, $options: "i" } },
+            { tags: { $in: [new RegExp(searchQuery, "i")] } },
+            { "comments.text": { $regex: searchQuery, $options: "i" } },
+            { "comments.replies.text": { $regex: searchQuery, $options: "i" } },
+        ];
+    }
+    filter.$or = [
+        { visibility: "public" },
+    ];
+    const options = (0, paginate_1.getPaginateOptions)(page, limit);
+    const postsData = yield Post_1.default.paginate(filter, options);
+    const posts = (0, paginate_1.transformPaginateResponse)(postsData);
+    (0, BaseResponseHandler_1.default)({
+        message: `Search Results for "${searchQuery}"`,
+        res,
+        statusCode: 200,
+        success: true,
+        data: posts,
+    });
+}));

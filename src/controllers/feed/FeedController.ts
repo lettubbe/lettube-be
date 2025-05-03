@@ -831,10 +831,45 @@ export const deletePost = asyncHandler(async (req, res, next) => {
 });
 
 // @desc      Get User's Feed Posts
-// @route     GET /posts/feed/search
+// @route     GET /posts/feed/search?q=keyword
 // @access    Private
-
 export const searchPosts = asyncHandler(async (req, res, next) => {
-  
+  const { searchTerm, page = 1, limit = 10 } = req.query as {
+    searchTerm?: string;
+    page?: string;
+    limit?: string;
+  };
 
+  const searchQuery = searchTerm?.trim();
+
+  const filter: any = {};
+
+  if (searchQuery) {
+    filter.$or = [
+      { category: { $regex: searchQuery, $options: "i" } },
+      { description: { $regex: searchQuery, $options: "i" } },
+      { tags: { $in: [new RegExp(searchQuery, "i")] } },
+      { "comments.text": { $regex: searchQuery, $options: "i" } },
+      { "comments.replies.text": { $regex: searchQuery, $options: "i" } },
+    ];
+  }
+
+  filter.$or = [
+    { visibility: "public" },
+  ];
+
+  const options = getPaginateOptions(page, limit)
+
+  const postsData = await Post.paginate(filter, options);
+
+  const posts = transformPaginateResponse(postsData);
+
+  baseResponseHandler({
+    message: `Search Results for "${searchQuery}"`,
+    res,
+    statusCode: 200,
+    success: true,
+    data: posts,
+  })
+  
 });
