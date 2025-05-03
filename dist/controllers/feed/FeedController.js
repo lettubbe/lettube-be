@@ -45,7 +45,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getUserFeeds = exports.getBookmarkedPosts = exports.bookmarkPost = exports.dislikePost = exports.commentOnPost = exports.getPostComments = exports.likeComment = exports.replyToComment = exports.likePost = exports.uploadFeedPost = exports.getContacts = exports.getUserPublicUploadedFeeds = exports.getUserUploadedFeeds = exports.createCategoryFeeds = void 0;
+exports.deletePost = exports.getUserFeeds = exports.getBookmarkedPosts = exports.bookmarkPost = exports.dislikePost = exports.commentOnPost = exports.getPostComments = exports.likeComment = exports.replyToComment = exports.likePost = exports.uploadFeedPost = exports.getContacts = exports.getUserPublicUploadedFeeds = exports.getUserUploadedFeeds = exports.createCategoryFeeds = void 0;
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const Feed_1 = __importDefault(require("../../models/Feed"));
 const BaseResponseHandler_1 = __importDefault(require("../../messages/BaseResponseHandler"));
@@ -470,6 +470,8 @@ exports.commentOnPost = (0, express_async_handler_1.default)((req, res, next) =>
     if (!post) {
         return next(new ErrorResponse_1.default(`Post Not Found`, 404));
     }
+    // NotificationService.se
+    // Notification.create({  });
     (0, BaseResponseHandler_1.default)({
         message: `Comment Added Successfully`,
         res,
@@ -579,7 +581,9 @@ exports.getBookmarkedPosts = (0, express_async_handler_1.default)((req, res, nex
         data: (0, paginate_1.transformPaginateResponse)(transformedData)
     });
 }));
-// Modify getUserFeeds to include isBookmarked flag
+// @desc      Get User's Feed Posts
+// @route     GET /posts/feed
+// @access    Private
 exports.getUserFeeds = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const user = yield (0, utils_1.getAuthUser)(req, next);
     const { page, limit } = req.query;
@@ -630,5 +634,28 @@ exports.getUserFeeds = (0, express_async_handler_1.default)((req, res, next) => 
         statusCode: 200,
         success: true,
         data: (0, paginate_1.transformPaginateResponse)(cleanPosts)
+    });
+}));
+// @desc      Get User's Feed Posts
+// @route     DELETE /posts/feed/:postId/
+// @access    Private
+exports.deletePost = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const { postId } = req.params;
+    const user = yield (0, utils_1.getAuthUser)(req, next);
+    const userId = user._id;
+    const post = yield Post_1.default.findById(postId);
+    if (!post) {
+        return next(new ErrorResponse_1.default(`Post Not Found`, 404));
+    }
+    if (post.user.toString() !== userId.toString()) {
+        return next(new ErrorResponse_1.default(`You are not authorized to delete this post`, 403));
+    }
+    yield Post_1.default.findByIdAndDelete(postId);
+    (0, BaseResponseHandler_1.default)({
+        message: `Post Deleted Successfully`,
+        res,
+        statusCode: 200,
+        success: true,
+        data: post,
     });
 }));

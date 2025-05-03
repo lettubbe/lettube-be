@@ -795,3 +795,35 @@ export const getUserFeeds = asyncHandler(async (req, res, next) => {
   });
 });
 
+// @desc      Get User's Feed Posts
+// @route     DELETE /posts/feed/:postId/
+// @access    Private
+
+export const deletePost = asyncHandler(async (req, res, next) => {
+
+  const { postId } = req.params;
+
+  const user = await getAuthUser(req, next);
+  const userId = user._id;
+
+  const post = await Post.findById(postId);
+
+  if (!post) {
+    return next(new ErrorResponse(`Post Not Found`, 404));
+  }
+  
+  if (post.user.toString() !== userId.toString()) {
+    return next(new ErrorResponse(`You are not authorized to delete this post`, 403));
+  }
+
+  await Post.findByIdAndDelete(postId);
+
+  baseResponseHandler({
+    message: `Post Deleted Successfully`,
+    res,
+    statusCode: 200,
+    success: true,
+    data: post,
+  });
+
+});
