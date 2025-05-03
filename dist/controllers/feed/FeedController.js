@@ -186,12 +186,14 @@ exports.uploadFeedPost = (0, express_async_handler_1.default)((req, res, next) =
     if (tagsArray.length == 0) {
         return next(new ErrorResponse_1.default(`tags is required`, 400));
     }
+    const duration = yield (0, utils_1.getRemoteVideoDuration)(postVideo);
     const postFeed = {
         user: user._id,
         tags: tagsArray,
         category,
         description,
         visibility,
+        duration,
         isCommentsAllowed: isCommentsAllowedBool,
         videoUrl: postVideo,
         thumbnail: thumbnailImage,
@@ -484,7 +486,6 @@ exports.commentOnPost = (0, express_async_handler_1.default)((req, res, next) =>
 // @route     /posts/:postId/dislike
 // @access    Private
 exports.dislikePost = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    console.log("hitting dislike post");
     const { postId } = req.params;
     const userId = req.user._id;
     const post = yield Post_1.default.findById(postId);
@@ -659,3 +660,6 @@ exports.deletePost = (0, express_async_handler_1.default)((req, res, next) => __
         data: post,
     });
 }));
+// @desc      Get User's Feed Posts
+// @route     GET /posts/feed/search
+// @access    Private

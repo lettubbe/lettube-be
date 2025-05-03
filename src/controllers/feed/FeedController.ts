@@ -613,8 +613,7 @@ export const commentOnPost = asyncHandler(async (req, res, next) => {
 // @access    Private
 
 export const dislikePost = asyncHandler(async (req, res, next) => {
-  console.log("hitting dislike post");
-
+  
   const { postId } = req.params;
   const userId = req.user._id;
 
@@ -828,5 +827,14 @@ export const deletePost = asyncHandler(async (req, res, next) => {
     success: true,
     data: post,
   });
+
+});
+
+// @desc      Get User's Feed Posts
+// @route     GET /posts/feed/search
+// @access    Private
+
+export const searchPosts = asyncHandler(async (req, res, next) => {
+  
 
 });
