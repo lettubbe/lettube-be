@@ -1,7 +1,7 @@
 import asyncHandler from "express-async-handler";
 import Feed from "../../models/Feed";
 import baseResponseHandler from "../../messages/BaseResponseHandler";
-import { getAuthUser, normalizePhoneNumber } from "../../lib/utils/utils";
+import { getAuthUser, getRemoteVideoDuration, normalizePhoneNumber } from "../../lib/utils/utils";
 import ErrorResponse from "../../messages/ErrorResponse";
 import User from "../../models/User";
 import Post from "../../models/Post";
@@ -13,6 +13,8 @@ import { uploadFileFromFields } from "../../lib/utils/fileUpload";
 import mongoose, { Types } from "mongoose"; // make sure mongoose is imported
 import Playlist from "../../models/Playlist";
 import Bookmark from "../../models/Bookmark";
+import Notification from "../../models/Notifications";
+import NotificationService from "../../services/notificationService";
 
 // @desc    Add Category to user Feed
 // @route   POST /api/v1/feed/category
@@ -227,12 +229,15 @@ export const uploadFeedPost = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse(`tags is required`, 400));
   }
 
+  const duration = await getRemoteVideoDuration(postVideo);
+
   const postFeed = {
     user: user._id,
     tags: tagsArray,
     category,
     description,
     visibility,
+    duration,
     isCommentsAllowed: isCommentsAllowedBool,
     videoUrl: postVideo,
     thumbnail: thumbnailImage,
@@ -591,6 +596,9 @@ export const commentOnPost = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse(`Post Not Found`, 404));
   }
 
+  // NotificationService.se
+  // Notification.create({  });
+
   baseResponseHandler({
     message: `Comment Added Successfully`,
     res,
@@ -605,8 +613,7 @@ export const commentOnPost = asyncHandler(async (req, res, next) => {
 // @access    Private
 
 export const dislikePost = asyncHandler(async (req, res, next) => {
-  console.log("hitting dislike post");
-
+  
   const { postId } = req.params;
   const userId = req.user._id;
 
@@ -724,7 +731,10 @@ export const getBookmarkedPosts = asyncHandler(async (req, res, next) => {
   });
 });
 
-// Modify getUserFeeds to include isBookmarked flag
+// @desc      Get User's Feed Posts
+// @route     GET /posts/feed
+// @access    Private
+
 export const getUserFeeds = asyncHandler(async (req, res, next) => {
   const user = await getAuthUser(req, next);
   const { page, limit } = req.query;
@@ -784,6 +794,111 @@ export const getUserFeeds = asyncHandler(async (req, res, next) => {
     statusCode: 200,
     success: true,
     data: transformPaginateResponse(cleanPosts)
+  });
+});
+
+// @desc      Get User's Feed Posts
+// @route     DELETE /posts/feed/:postId/
+// @access    Private
+
+export const deletePost = asyncHandler(async (req, res, next) => {
+
+  const { postId } = req.params;
+
+  const user = await getAuthUser(req, next);
+  const userId = user._id;
+
+  const post = await Post.findById(postId);
+
+  if (!post) {
+    return next(new ErrorResponse(`Post Not Found`, 404));
+  }
+  
+  if (post.user.toString() !== userId.toString()) {
+    return next(new ErrorResponse(`You are not authorized to delete this post`, 403));
+  }
+
+  await Post.findByIdAndDelete(postId);
+
+  baseResponseHandler({
+    message: `Post Deleted Successfully`,
+    res,
+    statusCode: 200,
+    success: true,
+    data: post,
+  });
+
+});
+
+// @desc      Get User's Feed Posts
+// @route     GET /posts/feed/search?q=keyword
+// @access    Private
+
+export const searchPosts = asyncHandler(async (req, res, next) => {
+  const { searchTerm, page = 1, limit = 10 } = req.query as {
+    searchTerm?: string;
+    page?: string;
+    limit?: string;
+  };
+
+  const searchQuery = searchTerm?.trim();
+  const filter: any = {};
+
+  // Prepare list of OR filters
+  const orFilters: any[] = [];
+
+  if (searchQuery) {
+    // 1. Search for users whose names match the searchTerm
+    const matchingUsers = await User.find({
+      $or: [
+        { firstName: { $regex: searchQuery, $options: "i" } },
+        { lastName: { $regex: searchQuery, $options: "i" } },
+        { username: { $regex: searchQuery, $options: "i" } },
+      ],
+    }).select("_id");
+
+    const userIds = matchingUsers.map((user) => user._id);
+
+    orFilters.push(
+      { category: { $regex: searchQuery, $options: "i" } },
+      { description: { $regex: searchQuery, $options: "i" } },
+      { tags: { $in: [new RegExp(searchQuery, "i")] } },
+      { "comments.text": { $regex: searchQuery, $options: "i" } },
+      { "comments.replies.text": { $regex: searchQuery, $options: "i" } },
+    );
+
+    // If there are matching users, include their IDs in the filter
+    if (userIds.length > 0) {
+      orFilters.push({ user: { $in: userIds } });
+    }
+  }
+
+  // Only public posts
+  filter.visibility = "public";
+
+  if (orFilters.length > 0) {
+    filter.$or = orFilters;
+  }
+
+  const options = getPaginateOptions(page, limit, {
+    populate: [
+      {
+        path: "user",
+        select: "username firstName lastName profilePicture",
+      },
+    ],
+    sort: { createdAt: -1 },
+  });
+
+  const postsData = await Post.paginate(filter, options);
+  const posts = transformPaginateResponse(postsData);
+
+  baseResponseHandler({
+    message: `Search Results for "${searchQuery}"`,
+    res,
+    statusCode: 200,
+    success: true,
+    data: posts,
   });
 });
 

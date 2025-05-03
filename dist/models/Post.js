@@ -34,6 +34,7 @@ const postSchema = new mongoose_1.Schema({
         type: Boolean,
         default: true
     },
+    duration: { type: Number, required: true },
     // In the reactions object, remove the bookmarks array
     reactions: {
         likes: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "user" }],
