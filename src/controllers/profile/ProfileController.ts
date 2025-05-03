@@ -1,8 +1,7 @@
-import asyncHandler from "express-async-handler";
-import ErrorResponse from "../../messages/ErrorResponse";
 import User from "../../models/User";
-import baseResponseHandler from "../../messages/BaseResponseHandler";
+import asyncHandler from "express-async-handler";
 import { uploadFile } from "../../lib/utils/fileUpload";
+import ErrorResponse from "../../messages/ErrorResponse";
 import { Request, Response, NextFunction } from "express";
 import {
   buildUserAuthTypeQuery,
@@ -10,12 +9,14 @@ import {
   removeSensitiveFields,
 } from "../../lib/utils/utils";
 import Subscription from "../../models/Subscription";
+import baseResponseHandler from "../../messages/BaseResponseHandler";
 
 // @route   /api/v1/profile/upload/profilePhoto
 // @desc    Upload Profile Picture
 // @access  Private/public
 
 export const updateProfilePhoto = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  
   const { email, phoneNumber } = req.body;
 
   const authUser = await getAuthUser(req, next);

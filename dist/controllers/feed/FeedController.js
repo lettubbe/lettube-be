@@ -45,7 +45,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getUserFeeds = exports.getBookmarkedPosts = exports.bookmarkPost = exports.dislikePost = exports.commentOnPost = exports.getPostComments = exports.likeComment = exports.replyToComment = exports.likePost = exports.uploadFeedPost = exports.getContacts = exports.getUserPublicUploadedFeeds = exports.getUserUploadedFeeds = exports.createCategoryFeeds = void 0;
+exports.searchPosts = exports.deletePost = exports.getUserFeeds = exports.getBookmarkedPosts = exports.bookmarkPost = exports.dislikePost = exports.commentOnPost = exports.getPostComments = exports.likeComment = exports.replyToComment = exports.likePost = exports.uploadFeedPost = exports.getContacts = exports.getUserPublicUploadedFeeds = exports.getUserUploadedFeeds = exports.createCategoryFeeds = void 0;
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const Feed_1 = __importDefault(require("../../models/Feed"));
 const BaseResponseHandler_1 = __importDefault(require("../../messages/BaseResponseHandler"));
@@ -186,12 +186,14 @@ exports.uploadFeedPost = (0, express_async_handler_1.default)((req, res, next) =
     if (tagsArray.length == 0) {
         return next(new ErrorResponse_1.default(`tags is required`, 400));
     }
+    const duration = yield (0, utils_1.getRemoteVideoDuration)(postVideo);
     const postFeed = {
         user: user._id,
         tags: tagsArray,
         category,
         description,
         visibility,
+        duration,
         isCommentsAllowed: isCommentsAllowedBool,
         videoUrl: postVideo,
         thumbnail: thumbnailImage,
@@ -470,6 +472,8 @@ exports.commentOnPost = (0, express_async_handler_1.default)((req, res, next) =>
     if (!post) {
         return next(new ErrorResponse_1.default(`Post Not Found`, 404));
     }
+    // NotificationService.se
+    // Notification.create({  });
     (0, BaseResponseHandler_1.default)({
         message: `Comment Added Successfully`,
         res,
@@ -482,7 +486,6 @@ exports.commentOnPost = (0, express_async_handler_1.default)((req, res, next) =>
 // @route     /posts/:postId/dislike
 // @access    Private
 exports.dislikePost = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    console.log("hitting dislike post");
     const { postId } = req.params;
     const userId = req.user._id;
     const post = yield Post_1.default.findById(postId);
@@ -579,7 +582,9 @@ exports.getBookmarkedPosts = (0, express_async_handler_1.default)((req, res, nex
         data: (0, paginate_1.transformPaginateResponse)(transformedData)
     });
 }));
-// Modify getUserFeeds to include isBookmarked flag
+// @desc      Get User's Feed Posts
+// @route     GET /posts/feed
+// @access    Private
 exports.getUserFeeds = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const user = yield (0, utils_1.getAuthUser)(req, next);
     const { page, limit } = req.query;
@@ -630,5 +635,77 @@ exports.getUserFeeds = (0, express_async_handler_1.default)((req, res, next) => 
         statusCode: 200,
         success: true,
         data: (0, paginate_1.transformPaginateResponse)(cleanPosts)
+    });
+}));
+// @desc      Get User's Feed Posts
+// @route     DELETE /posts/feed/:postId/
+// @access    Private
+exports.deletePost = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const { postId } = req.params;
+    const user = yield (0, utils_1.getAuthUser)(req, next);
+    const userId = user._id;
+    const post = yield Post_1.default.findById(postId);
+    if (!post) {
+        return next(new ErrorResponse_1.default(`Post Not Found`, 404));
+    }
+    if (post.user.toString() !== userId.toString()) {
+        return next(new ErrorResponse_1.default(`You are not authorized to delete this post`, 403));
+    }
+    yield Post_1.default.findByIdAndDelete(postId);
+    (0, BaseResponseHandler_1.default)({
+        message: `Post Deleted Successfully`,
+        res,
+        statusCode: 200,
+        success: true,
+        data: post,
+    });
+}));
+// @desc      Get User's Feed Posts
+// @route     GET /posts/feed/search?q=keyword
+// @access    Private
+exports.searchPosts = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const { searchTerm, page = 1, limit = 10 } = req.query;
+    const searchQuery = searchTerm === null || searchTerm === void 0 ? void 0 : searchTerm.trim();
+    const filter = {};
+    // Prepare list of OR filters
+    const orFilters = [];
+    if (searchQuery) {
+        // 1. Search for users whose names match the searchTerm
+        const matchingUsers = yield User_1.default.find({
+            $or: [
+                { firstName: { $regex: searchQuery, $options: "i" } },
+                { lastName: { $regex: searchQuery, $options: "i" } },
+                { username: { $regex: searchQuery, $options: "i" } },
+            ],
+        }).select("_id");
+        const userIds = matchingUsers.map((user) => user._id);
+        orFilters.push({ category: { $regex: searchQuery, $options: "i" } }, { description: { $regex: searchQuery, $options: "i" } }, { tags: { $in: [new RegExp(searchQuery, "i")] } }, { "comments.text": { $regex: searchQuery, $options: "i" } }, { "comments.replies.text": { $regex: searchQuery, $options: "i" } });
+        // If there are matching users, include their IDs in the filter
+        if (userIds.length > 0) {
+            orFilters.push({ user: { $in: userIds } });
+        }
+    }
+    // Only public posts
+    filter.visibility = "public";
+    if (orFilters.length > 0) {
+        filter.$or = orFilters;
+    }
+    const options = (0, paginate_1.getPaginateOptions)(page, limit, {
+        populate: [
+            {
+                path: "user",
+                select: "username firstName lastName profilePicture",
+            },
+        ],
+        sort: { createdAt: -1 },
+    });
+    const postsData = yield Post_1.default.paginate(filter, options);
+    const posts = (0, paginate_1.transformPaginateResponse)(postsData);
+    (0, BaseResponseHandler_1.default)({
+        message: `Search Results for "${searchQuery}"`,
+        res,
+        statusCode: 200,
+        success: true,
+        data: posts,
     });
 }));
