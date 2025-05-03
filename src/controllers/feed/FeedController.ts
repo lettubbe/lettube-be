@@ -19,6 +19,7 @@ import Playlist from "../../models/Playlist";
 import Bookmark from "../../models/Bookmark";
 import Notification from "../../models/Notifications";
 import NotificationService from "../../services/notificationService";
+import { IPushNotificationBody } from "../../lib/interfaces/notification.interface";
 
 // @desc    Add Category to user Feed
 // @route   POST /api/v1/feed/category
@@ -418,8 +419,45 @@ export const replyToComment = asyncHandler(async (req, res, next) => {
   comment.replies.push(newReply);
   await post.save();
 
-  await Notification.create({ userId: comment.user, actorIds: [user._id], type: "comment", videoId: postId, createdAt: new Date(), read: false });
-  // await NotificationService.sendNotification(comment.user as any, {});
+  const commentNotificationPayload: IPushNotificationBody  = {
+    title: `Reply to your comment`,
+    description: `${user.username} replied to your comment`,
+  }
+
+  const now = new Date();
+
+  const existingNotification = await Notification.findOne({
+    userId: comment.user,
+    type: 'comment',
+    commentId: commentId
+  });
+  
+  if (existingNotification) {
+    if (!existingNotification.actorIds.includes(user._id)) {
+      existingNotification.actorIds.push(user._id);
+      existingNotification.createdAt = now;
+      await existingNotification.save();
+
+      const existingCommentNotificationPayload: IPushNotificationBody  = {
+        title: `Reply to your comment`,
+        description: `${existingNotification.actorIds.length} replied to your comment`,
+      }
+
+      await NotificationService.sendNotification(comment.user as any, existingCommentNotificationPayload);
+    }
+  } else {
+    await Notification.create({
+      userId: comment.user,
+      actorIds: [user._id],
+      type: 'comment',
+      videoId: postId,
+      commentId: commentId,
+      read: false,
+    });
+
+    await NotificationService.sendNotification(comment.user as any, commentNotificationPayload);
+
+  }
 
   baseResponseHandler({
     message: `Reply Done Successfully`,
