@@ -371,6 +371,10 @@ export const getFeedNotifications = asyncHandler(async (req, res, next) => {
         path: "userId",
         select: "username firstName lastName profilePicture",
       },
+      {
+        path: "post",
+        select: "thumbnail",
+      },
     ],
   });
 

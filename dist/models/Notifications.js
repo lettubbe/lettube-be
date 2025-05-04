@@ -1,6 +1,4 @@
 "use strict";
-// import { model, Schema } from "mongoose";
-// import { NotificationStatusEnum } from "../constants/enums/NotificationEnums";
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     var desc = Object.getOwnPropertyDescriptor(m, k);
@@ -39,41 +37,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Notification = void 0;
-// const notificationSchema = new Schema({
-//     user: {
-//         type: Schema.Types.ObjectId,
-//         ref: "user",
-//         required: [true]
-//     },
-//     type: {
-//         type: String,
-//         required: [true, "Notification Type is required"]
-//     },
-//     status: {
-//         type: String,
-//         default: NotificationStatusEnum.UNREAD
-//     },
-//     title: {
-//         type: String,
-//         required: [true, "Notification Title is required"]
-//     },
-//     description: {
-//         type: String,
-//         required: [true, "Notification Description is required"]
-//     },
-//     link: {
-//         type: Boolean,
-//     },
-//     notificationType: {
-//         type: String
-//     },
-//     date: {
-//         type: String,
-//         default: Date.now()
-//     }
-// }, { timestamps: true });
-// const Notification = model("notification", notificationSchema);
-// export default Notification;
 const mongoose_1 = __importStar(require("mongoose"));
 const mongoose_paginate_v2_1 = __importDefault(require("mongoose-paginate-v2"));
 const NotificationSchema = new mongoose_1.Schema({

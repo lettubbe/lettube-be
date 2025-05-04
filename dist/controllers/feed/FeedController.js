@@ -259,6 +259,7 @@ exports.likePost = (0, express_async_handler_1.default)((req, res, next) => __aw
             yield Notifications_1.default.create({
                 userId: post.user,
                 actorIds: [user._id],
+                post,
                 type: "like",
                 videoId: postId,
                 createdAt: new Date(),
@@ -298,6 +299,10 @@ exports.getFeedNotifications = (0, express_async_handler_1.default)((req, res, n
                 path: "userId",
                 select: "username firstName lastName profilePicture",
             },
+            {
+                path: "post",
+                select: "thumbnail",
+            },
         ],
     });
     const notificationsData = yield Notifications_1.default.paginate(filter, options);
@@ -335,7 +340,7 @@ exports.replyToComment = (0, express_async_handler_1.default)((req, res, next) =
     };
     comment.replies.push(newReply);
     yield post.save();
-    yield Notifications_1.default.create({ userId: comment.user, actorIds: [user._id], type: "comment", videoId: postId, createdAt: new Date(), read: false });
+    yield Notifications_1.default.create({ userId: comment.user, actorIds: [user._id], post, type: "comment", videoId: postId, createdAt: new Date(), read: false });
     // await NotificationService.sendNotification(comment.user as any, {});
     (0, BaseResponseHandler_1.default)({
         message: `Reply Done Successfully`,
