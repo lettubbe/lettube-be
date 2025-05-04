@@ -1128,3 +1128,105 @@ export const searchPosts = asyncHandler(async (req, res, next) => {
     data: posts,
   });
 });
+
+// @desc      Get Viral Posts
+// @route     GET /api/v1/feed/viral
+// @access    Private
+export const getViralPosts = asyncHandler(async (req, res, next) => {
+  const { page, limit } = req.query;
+  const user = await getAuthUser(req, next);
+
+  // Calculate exactly 30 days ago
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+  const aggregatePipeline = [
+    {
+      $match: {
+        createdAt: { $gte: thirtyDaysAgo },
+        visibility: "public"
+      }
+    },
+    {
+      $addFields: {
+        likesCount: { $size: "$reactions.likes" },
+        commentsCount: { $size: "$comments" }
+      }
+    },
+    {
+      $sort: {
+        likesCount: -1,
+        commentsCount: -1
+      }
+    }
+  ] as unknown as mongoose.PipelineStage[];
+
+  const options = getPaginateOptions(page, limit, {
+    populate: [
+      {
+        path: "user",
+        select: "username firstName lastName profilePicture"
+      }
+    ]
+  });
+
+  const posts = await Post.aggregate(aggregatePipeline)
+    .skip(options.offset)
+    .limit(options.limit);
+
+  const totalDocs = await Post.countDocuments({
+    createdAt: { $gte: thirtyDaysAgo },
+    visibility: "public"
+  });
+
+  // Get user's bookmarks for these posts
+  const bookmarks = await Bookmark.find({
+    user: user._id,
+    post: { $in: posts.map(post => post._id) }
+  });
+
+  const bookmarkedPostIds = new Set(bookmarks.map(b => b.post.toString()));
+
+  // Transform the posts with consistent structure
+  const transformedPosts = posts.map(post => ({
+    _id: post._id,
+    user: {
+      _id: post.user._id,
+      username: post.user.username,
+      firstName: post.user.firstName,
+      lastName: post.user.lastName,
+      profilePicture: post.user.profilePicture
+    },
+    category: post.category,
+    thumbnail: post.thumbnail,
+    videoUrl: post.videoUrl,
+    description: post.description,
+    visibility: post.visibility,
+    tags: post.tags,
+    isCommentsAllowed: post.isCommentsAllowed,
+    reactions: post.reactions,
+    comments: post.comments,
+    createdAt: post.createdAt,
+    updatedAt: post.updatedAt,
+    isBookmarked: bookmarkedPostIds.has(post._id.toString()),
+    metrics: {
+      likesCount: post.likesCount,
+      commentsCount: post.commentsCount
+    }
+  }));
+
+  const paginatedResponse = {
+    docs: transformedPosts,
+    totalDocs,
+    limit: Number(options.limit),
+    page: Number(options.page),
+    totalPages: Math.ceil(totalDocs / Number(options.limit))
+  };
+
+  baseResponseHandler({
+    message: "Viral posts retrieved successfully",
+    res,
+    statusCode: 200,
+    success: true,
+    data: transformPaginateResponse(paginatedResponse)
+  });
+});
