@@ -322,6 +322,7 @@ export const likePost = asyncHandler(async (req, res, next) => {
       await Notification.create({
         userId: post.user,
         actorIds: [user._id],
+        post,
         type: "like",
         videoId: postId,
         createdAt: new Date(),
