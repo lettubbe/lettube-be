@@ -424,7 +424,7 @@ export const replyToComment = asyncHandler(async (req, res, next) => {
   comment.replies.push(newReply);
   await post.save();
 
-  await Notification.create({ userId: comment.user, actorIds: [user._id], type: "comment", videoId: postId, createdAt: new Date(), read: false });
+  await Notification.create({ userId: comment.user, actorIds: [user._id], post, type: "comment", videoId: postId, createdAt: new Date(), read: false });
   // await NotificationService.sendNotification(comment.user as any, {});
 
   baseResponseHandler({
