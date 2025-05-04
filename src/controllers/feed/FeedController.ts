@@ -349,6 +349,9 @@ export const likePost = asyncHandler(async (req, res, next) => {
 // @access   Private
 
 export const getFeedNotifications = asyncHandler(async (req, res, next) => {
+
+  console.log("hitting feed notifications");
+
   const user = await getAuthUser(req, next);
   const { page, limit, type } = req.query;
 
@@ -364,7 +367,7 @@ export const getFeedNotifications = asyncHandler(async (req, res, next) => {
   const options = getPaginateOptions(page, limit, {
     populate: [
       {
-        path: "user",
+        path: "userId",
         select: "username firstName lastName profilePicture",
       },
     ],
@@ -372,6 +375,8 @@ export const getFeedNotifications = asyncHandler(async (req, res, next) => {
 
   const notificationsData = await Notification.paginate(filter, options);
   const notifications = transformPaginateResponse(notificationsData);
+
+  console.log("notifications", notifications);
 
   baseResponseHandler({
     message: `User Notifications Retrieved successfully`,

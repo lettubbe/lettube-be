@@ -43,7 +43,7 @@ import mongoose, { Schema, Document, Model,model, Types } from "mongoose";
 import mongoosePaginate from "mongoose-paginate-v2";
 
 const NotificationSchema: Schema = new Schema<INotification>({
-  userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+  userId: { type: Schema.Types.ObjectId, ref: "user", required: true },
   actorIds: [{ type: Schema.Types.ObjectId, ref: "User" }],
   type: {
     type: String,

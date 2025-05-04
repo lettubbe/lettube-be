@@ -282,6 +282,7 @@ exports.likePost = (0, express_async_handler_1.default)((req, res, next) => __aw
 // @route    GET /api/v1/feed/notifications
 // @access   Private
 exports.getFeedNotifications = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    console.log("hitting feed notifications");
     const user = yield (0, utils_1.getAuthUser)(req, next);
     const { page, limit, type } = req.query;
     const filter = {
@@ -294,13 +295,14 @@ exports.getFeedNotifications = (0, express_async_handler_1.default)((req, res, n
     const options = (0, paginate_1.getPaginateOptions)(page, limit, {
         populate: [
             {
-                path: "user",
+                path: "userId",
                 select: "username firstName lastName profilePicture",
             },
         ],
     });
     const notificationsData = yield Notifications_1.default.paginate(filter, options);
     const notifications = (0, paginate_1.transformPaginateResponse)(notificationsData);
+    console.log("notifications", notifications);
     (0, BaseResponseHandler_1.default)({
         message: `User Notifications Retrieved successfully`,
         res,
@@ -334,7 +336,7 @@ exports.replyToComment = (0, express_async_handler_1.default)((req, res, next) =
     comment.replies.push(newReply);
     yield post.save();
     yield Notifications_1.default.create({ userId: comment.user, actorIds: [user._id], type: "comment", videoId: postId, createdAt: new Date(), read: false });
-    yield notificationService_1.default.sendNotification(comment.user, {});
+    // await NotificationService.sendNotification(comment.user as any, {});
     (0, BaseResponseHandler_1.default)({
         message: `Reply Done Successfully`,
         res,
@@ -421,62 +423,103 @@ exports.getPostComments = (0, express_async_handler_1.default)((req, res, next) 
     const pipeline = [
         { $match: { _id: new mongoose_1.Types.ObjectId(postId) } },
         { $unwind: "$comments" },
+        ...(search ? [{
+                $match: {
+                    $or: [
+                        { "comments.text": { $regex: search, $options: "i" } },
+                        { "comments.replies.text": { $regex: search, $options: "i" } }
+                    ]
+                }
+            }] : []),
+        // Add sorting and pagination
+        { $sort: { "comments.createdAt": -1 } },
+        { $skip: Math.max(0, (Number(page || 1) - 1) * Number(limit)) },
+        { $limit: Number(limit) },
+        {
+            $lookup: {
+                from: "users",
+                localField: "comments.user",
+                foreignField: "_id",
+                as: "comments.userDetails"
+            }
+        },
+        { $unwind: "$comments.userDetails" },
+        // Unwind replies to process each reply
+        {
+            $addFields: {
+                "comments.replies": {
+                    $cond: {
+                        if: { $isArray: "$comments.replies" },
+                        then: "$comments.replies",
+                        else: []
+                    }
+                }
+            }
+        },
+        {
+            $unwind: {
+                path: "$comments.replies",
+                preserveNullAndEmptyArrays: true
+            }
+        },
+        // Lookup for reply users
+        {
+            $lookup: {
+                from: "users",
+                localField: "comments.replies.user",
+                foreignField: "_id",
+                as: "comments.replies.userDetails"
+            }
+        },
+        {
+            $unwind: {
+                path: "$comments.replies.userDetails",
+                preserveNullAndEmptyArrays: true
+            }
+        },
+        // Group replies back
+        {
+            $group: {
+                _id: {
+                    postId: "$_id",
+                    commentId: "$comments._id"
+                },
+                comment: { $first: "$comments" },
+                replies: {
+                    $push: {
+                        $cond: {
+                            if: { $ifNull: ["$comments.replies", false] },
+                            then: {
+                                _id: "$comments.replies._id",
+                                user: "$comments.replies.userDetails",
+                                text: "$comments.replies.text",
+                                likes: "$comments.replies.likes",
+                                createdAt: "$comments.replies.createdAt"
+                            },
+                            else: "$$REMOVE"
+                        }
+                    }
+                }
+            }
+        },
+        // Final grouping
+        {
+            $group: {
+                _id: "$_id.postId",
+                comments: {
+                    $push: {
+                        _id: "$comment._id",
+                        user: "$comment.userDetails",
+                        text: "$comment.text",
+                        likes: "$comment.likes",
+                        replies: "$replies",
+                        createdAt: "$comment.createdAt"
+                    }
+                },
+                totalComments: { $sum: 1 }
+            }
+        }
     ];
-    // Add search condition if search term exists
-    if (search) {
-        pipeline.push({
-            $match: {
-                $or: [
-                    { "comments.text": { $regex: search, $options: "i" } },
-                    { "comments.replies.text": { $regex: search, $options: "i" } },
-                ],
-            },
-        });
-    }
-    // Add sorting, pagination and population with field filtering
-    pipeline.push({ $sort: { "comments.createdAt": -1 } }, { $skip: Math.max(0, (Number(page || 1) - 1) * Number(limit)) }, { $limit: Number(limit) }, {
-        $lookup: {
-            from: "users",
-            localField: "comments.user",
-            foreignField: "_id",
-            as: "comments.user",
-            pipeline: [
-                {
-                    $project: {
-                        password: 0,
-                        email: 0,
-                        isDeleted: 0,
-                        __v: 0,
-                        date: 0,
-                    },
-                },
-            ],
-        },
-    }, { $unwind: "$comments.user" }, {
-        $lookup: {
-            from: "users",
-            localField: "comments.replies.user",
-            foreignField: "_id",
-            as: "comments.replies.user",
-            pipeline: [
-                {
-                    $project: {
-                        password: 0,
-                        email: 0,
-                        isDeleted: 0,
-                        __v: 0,
-                        date: 0,
-                    },
-                },
-            ],
-        },
-    }, {
-        $group: {
-            _id: "$_id",
-            comments: { $push: "$comments" },
-            totalComments: { $sum: 1 },
-        },
-    });
     // Execute the aggregation
     const result = yield Post_1.default.aggregate(pipeline);
     // Handle empty results
