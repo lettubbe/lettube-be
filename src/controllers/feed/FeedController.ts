@@ -288,12 +288,12 @@ export const likePost = asyncHandler(async (req, res, next) => {
 
   const update = hasLiked
     ? {
-        $pull: { "reactions.likes": userId },
-      }
+      $pull: { "reactions.likes": userId },
+    }
     : {
-        $addToSet: { "reactions.likes": userId },
-        $pull: { "reactions.dislikes": userId },
-      };
+      $addToSet: { "reactions.likes": userId },
+      $pull: { "reactions.dislikes": userId },
+    };
 
   const updatedPost = await Post.findByIdAndUpdate(postId, update, {
     new: true,
@@ -357,7 +357,7 @@ export const getFeedNotifications = asyncHandler(async (req, res, next) => {
   const { page, limit, type } = req.query;
 
   const filter: any = {
-    userId: user._id, 
+    userId: user._id,
   };
 
   // If type is provided and valid, add it to the filter
@@ -482,13 +482,13 @@ export const likeComment = asyncHandler(async (req, res, next) => {
 
     const update = alreadyLiked
       ? {
-          $pull: { "comments.$[comment].replies.$[reply].likes": userObjectId },
-        }
+        $pull: { "comments.$[comment].replies.$[reply].likes": userObjectId },
+      }
       : {
-          $addToSet: {
-            "comments.$[comment].replies.$[reply].likes": userObjectId,
-          },
-        };
+        $addToSet: {
+          "comments.$[comment].replies.$[reply].likes": userObjectId,
+        },
+      };
 
     await Post.updateOne(
       {
@@ -504,8 +504,45 @@ export const likeComment = asyncHandler(async (req, res, next) => {
         ],
       }
     );
+
+
+    if (!alreadyLiked) {
+      const existing = await Notification.findOne({
+        userId: reply.user,
+        type: "like",
+        videoId: postId,
+        commentId: replyId,
+      });
+
+      if (existing) {
+        if (!existing.actorIds.includes(user._id)) {
+          existing.actorIds.push(user._id);
+          existing.createdAt = new Date();
+          await existing.save();
+
+          await NotificationService.sendNotification(reply.user as any, {
+            title: `${existing.actorIds.length} people liked your reply`,
+            description: `${user.username} liked your reply`,
+          });
+        }
+      } else {
+        await Notification.create({
+          userId: reply.user,
+          actorIds: [user._id],
+          type: "like",
+          videoId: postId,
+          commentId: replyId,
+          createdAt: new Date(),
+          read: false,
+        });
+
+        await NotificationService.sendNotification(reply.user as any, {
+          title: `${user.username} liked your reply`,
+          description: `${user.username} liked your reply to a comment`,
+        });
+      }
+    }
   } else {
-    // Like/Unlike a COMMENT
     const alreadyLiked = comment.likes.some(
       (id) => id.toString() === userId.toString()
     );
@@ -521,6 +558,44 @@ export const likeComment = asyncHandler(async (req, res, next) => {
       },
       update
     );
+
+
+    if (!alreadyLiked) {
+      const existing = await Notification.findOne({
+        userId: comment.user,
+        type: "like",
+        videoId: postId,
+        commentId: commentId,
+      });
+
+      if (existing) {
+        if (!existing.actorIds.includes(user._id)) {
+          existing.actorIds.push(user._id);
+          existing.createdAt = new Date();
+          await existing.save();
+
+          await NotificationService.sendNotification(comment.user as any, {
+            title: `${existing.actorIds.length} people liked your comment`,
+            description: `${user.username} liked your comment`,
+          });
+        }
+      } else {
+        await Notification.create({
+          userId: comment.user,
+          actorIds: [user._id],
+          type: "like",
+          videoId: postId,
+          commentId: commentId,
+          createdAt: new Date(),
+          read: false,
+        });
+
+        await NotificationService.sendNotification(comment.user as any, {
+          title: `${user.username} liked your comment`,
+          description: `${user.username} liked your comment on a post`,
+        });
+      }
+    }
   }
 
   const updatedPost = await Post.findById(postId);
@@ -736,8 +811,22 @@ export const commentOnPost = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse(`Post Not Found`, 404));
   }
 
-  // NotificationService.se
-  // Notification.create({  });
+  await Notification.create({
+    userId: post.user,
+    actorIds: [user._id],
+    type: "comment",
+    videoId: postId,
+    createdAt: new Date(),
+    read: false,
+  });
+
+
+  // Send push notification
+  await NotificationService.sendNotification(post.user as any, {
+    title: `${user.username} commented on your post`,
+    description: `${user.username} commented: ${text.substring(0, 50)}${text.length > 50 ? '...' : ''}`,
+  });
+
 
   baseResponseHandler({
     message: `Comment Added Successfully`,
@@ -767,14 +856,14 @@ export const dislikePost = asyncHandler(async (req, res, next) => {
 
   const update = hasDisliked
     ? {
-        // User already disliked → remove from dislikes
-        $pull: { "reactions.dislikes": userId },
-      }
+      // User already disliked → remove from dislikes
+      $pull: { "reactions.dislikes": userId },
+    }
     : {
-        // User not disliked yet → add to dislikes
-        $addToSet: { "reactions.dislikes": userId },
-        $pull: { "reactions.likes": userId }, // Remove from likes if any
-      };
+      // User not disliked yet → add to dislikes
+      $addToSet: { "reactions.dislikes": userId },
+      $pull: { "reactions.likes": userId }, // Remove from likes if any
+    };
 
   const updatedPost = await Post.findByIdAndUpdate(postId, update, {
     new: true,
@@ -1047,5 +1136,107 @@ export const searchPosts = asyncHandler(async (req, res, next) => {
     statusCode: 200,
     success: true,
     data: posts,
+  });
+});
+
+// @desc      Get Viral Posts
+// @route     GET /api/v1/feed/viral
+// @access    Private
+export const getViralPosts = asyncHandler(async (req, res, next) => {
+  const { page, limit } = req.query;
+  const user = await getAuthUser(req, next);
+
+  // Calculate exactly 30 days ago
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+  const aggregatePipeline = [
+    {
+      $match: {
+        createdAt: { $gte: thirtyDaysAgo },
+        visibility: "public"
+      }
+    },
+    {
+      $addFields: {
+        likesCount: { $size: "$reactions.likes" },
+        commentsCount: { $size: "$comments" }
+      }
+    },
+    {
+      $sort: {
+        likesCount: -1,
+        commentsCount: -1
+      }
+    }
+  ] as unknown as mongoose.PipelineStage[];
+
+  const options = getPaginateOptions(page, limit, {
+    populate: [
+      {
+        path: "user",
+        select: "username firstName lastName profilePicture"
+      }
+    ]
+  });
+
+  const posts = await Post.aggregate(aggregatePipeline)
+    .skip(options.page)
+    .limit(options.limit);
+
+  const totalDocs = await Post.countDocuments({
+    createdAt: { $gte: thirtyDaysAgo },
+    visibility: "public"
+  });
+
+  // Get user's bookmarks for these posts
+  const bookmarks = await Bookmark.find({
+    user: user._id,
+    post: { $in: posts.map(post => post._id) }
+  });
+
+  const bookmarkedPostIds = new Set(bookmarks.map(b => b.post.toString()));
+
+  // Transform the posts with consistent structure
+  const transformedPosts = posts.map(post => ({
+    _id: post._id,
+    user: {
+      _id: post.user._id,
+      username: post.user.username,
+      firstName: post.user.firstName,
+      lastName: post.user.lastName,
+      profilePicture: post.user.profilePicture
+    },
+    category: post.category,
+    thumbnail: post.thumbnail,
+    videoUrl: post.videoUrl,
+    description: post.description,
+    visibility: post.visibility,
+    tags: post.tags,
+    isCommentsAllowed: post.isCommentsAllowed,
+    reactions: post.reactions,
+    comments: post.comments,
+    createdAt: post.createdAt,
+    updatedAt: post.updatedAt,
+    isBookmarked: bookmarkedPostIds.has(post._id.toString()),
+    metrics: {
+      likesCount: post.likesCount,
+      commentsCount: post.commentsCount
+    }
+  }));
+
+  const paginatedResponse = {
+    docs: transformedPosts,
+    totalDocs,
+    limit: Number(options.limit),
+    page: Number(options.page),
+    totalPages: Math.ceil(totalDocs / Number(options.limit))
+  };
+
+  baseResponseHandler({
+    message: "Viral posts retrieved successfully",
+    res,
+    statusCode: 200,
+    success: true,
+    data: transformPaginateResponse(paginatedResponse)
   });
 });
