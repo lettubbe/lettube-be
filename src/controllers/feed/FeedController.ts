@@ -1170,7 +1170,7 @@ export const getViralPosts = asyncHandler(async (req, res, next) => {
   });
 
   const posts = await Post.aggregate(aggregatePipeline)
-    .skip(options.offset)
+    .skip(options.page)
     .limit(options.limit);
 
   const totalDocs = await Post.countDocuments({

@@ -22,7 +22,7 @@ router.get("/notifications", protect, getFeedNotifications); // Assuming you hav
 router.patch("/posts/:postId/like", protect, likePost);
 router.patch("/posts/:postId/dislike", protect, dislikePost);
 router.get("/posts/:postId/comments", protect, getPostComments);
-router.delete("/posts/:postId", protect, deletePost); 
+router.delete("/posts/:postId", protect, deletePost);
 router.get("/posts/search", protect, searchPosts); // Assuming you have a searchPosts function in your controller
 router.patch("/posts/:postId/bookmark", protect, bookmarkPost);
 router.patch("/posts/:postId/comments", [protect, validatePostComment(validatePostCommentSchema)], commentOnPost);
