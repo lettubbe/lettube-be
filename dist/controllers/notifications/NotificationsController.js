@@ -21,6 +21,7 @@ const BaseResponseHandler_1 = __importDefault(require("../../messages/BaseRespon
 // @route    GET /api/v1/notifications/device/pushToken
 // @access   Private
 exports.getUserPushToken = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    console.log("hitting push token", req.params);
     const user = yield (0, utils_1.getAuthUser)(req, next);
     const { deviceToken } = req.params;
     const deviceExists = yield Devices_1.default.findOne({ userId: user._id });
@@ -31,12 +32,12 @@ exports.getUserPushToken = (0, express_async_handler_1.default)((req, res, next)
         }
         return;
     }
-    yield Devices_1.default.create({ deviceToken, userId: user._id });
+    const _device = yield Devices_1.default.create({ deviceToken, userId: user._id });
     (0, BaseResponseHandler_1.default)({
         message: `Device Token Saved Successfully`,
         res,
         statusCode: 200,
         success: true,
-        data: `Device Token Saved Successfully`
+        data: _device,
     });
 }));
