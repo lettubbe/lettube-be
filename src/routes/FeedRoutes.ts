@@ -17,7 +17,7 @@ router.get("/uploads", protect, getUserUploadedFeeds);
 router.get("/uploads/public", protect, getUserPublicUploadedFeeds);
 router.post("/upload", [protect, upload.fields([{ name: "thumbnailImage" }, { name: "postVideo" }])], uploadFeedPost);
 router.get("/bookmarks", protect, getBookmarkedPosts);
-router.get("/notifications", protect, getFeedNotifications); // Assuming you have a getNotifications function in your controller
+router.get("/notifications", protect, getFeedNotifications); 
 
 router.patch("/posts/:postId/like", protect, likePost);
 router.patch("/posts/:postId/dislike", protect, dislikePost);
