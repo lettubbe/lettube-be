@@ -132,6 +132,7 @@ exports.resendOTP = (0, express_async_handler_1.default)((req, res, next) => __a
 // @desc    Send OTP to email/phone
 // @access  Public
 exports.sendVerificationEmail = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    console.log("verification email");
     const { email, phoneNumber, type } = req.body;
     // const query = buildUserAuthTypeQuery(email, phoneNumber);
     const verificationCode = (0, generate_1.generateVerificationCode)();
@@ -146,6 +147,12 @@ exports.sendVerificationEmail = (0, express_async_handler_1.default)((req, res, 
             authUser.verificationExpires = expiresAt;
             authUser.save();
         }
+        const emailVerficationTemplate = (0, Auth_template_1.welcomeEmailTemplate)(tokenOTP);
+        notificationService_1.default.sendEmail({
+            to: email,
+            subject: "Lettube Register Email Verification",
+            body: emailVerficationTemplate,
+        });
         (0, BaseResponseHandler_1.default)({
             res,
             statusCode: 200,
@@ -186,6 +193,7 @@ exports.sendVerificationEmail = (0, express_async_handler_1.default)((req, res, 
     try {
         const emailVerficationTemplate = (0, Auth_template_1.welcomeEmailTemplate)(tokenOTP);
         if (type === RegisterationEnums_1.registerEnumType.EMAIL) {
+            console.log("got to send email");
             notificationService_1.default.sendEmail({
                 to: email,
                 subject: "Lettube Register Email Verification",

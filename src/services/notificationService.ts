@@ -16,11 +16,15 @@ const KNOWN_ERRORS = [
 
 class NotificationService {
   public static async sendEmail(options: MailOptions) {
+
+    console.log("sendng email", options);
+
     const request = mailjet.post("send", { version: "v3.1" }).request({
       Messages: [
         {
           From: {
-            Email: "lwsrehearsal@gmail.com",
+            // Email: "lwsrehearsal@gmail.com",
+            Email: 'rosmonpro@gmail.com',
             Name: "lettube",
           },
           To: [

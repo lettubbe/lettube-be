@@ -284,7 +284,6 @@ exports.likePost = (0, express_async_handler_1.default)((req, res, next) => __aw
 // @route    GET /api/v1/feed/notifications
 // @access   Private
 exports.getFeedNotifications = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    console.log("hitting feed notifications");
     const user = yield (0, utils_1.getAuthUser)(req, next);
     const { page, limit, type } = req.query;
     const filter = {
@@ -670,6 +669,7 @@ exports.commentOnPost = (0, express_async_handler_1.default)((req, res, next) =>
         userId: post.user,
         actorIds: [user._id],
         type: "comment",
+        commentText: text,
         post: postId,
         createdAt: new Date(),
         read: false,
