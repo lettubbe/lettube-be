@@ -3,15 +3,15 @@ import mongoosePaginate from "mongoose-paginate-v2";
 
 const NotificationSchema: Schema = new Schema<INotification>({
   userId: { type: Schema.Types.ObjectId, ref: "user", required: true },
-  post: { type: Schema.Types.ObjectId, ref: "user", required: true },
-  actorIds: [{ type: Schema.Types.ObjectId, ref: "User" }],
+  post: { type: Schema.Types.ObjectId, ref: "post" },
+  actorIds: [{ type: Schema.Types.ObjectId, ref: "user" }],
   type: {
     type: String,
     enum: ["like", "comment", "reply", "subscription"],
     required: true,
   },
   videoId: { type: Schema.Types.ObjectId, ref: "Video", default: null },
-  commentId: { type: Schema.Types.ObjectId, ref: "Comment", default: null },
+  commentUser: { type: Schema.Types.ObjectId, ref: "user", default: null },
   text: { type: String },
   metadata: { type: Schema.Types.Mixed },
   read: { type: Boolean, default: false },
@@ -25,7 +25,7 @@ export interface INotification extends Document {
   actorIds: mongoose.Types.ObjectId[]; 
   type: "like" | "comment" | "reply" | "subscription"; 
   videoId?: mongoose.Types.ObjectId; 
-  commentId?: mongoose.Types.ObjectId;
+  commentUser?: mongoose.Types.ObjectId;
   text?: string; 
   createdAt: Date;
   read: boolean;

@@ -41,15 +41,15 @@ const mongoose_1 = __importStar(require("mongoose"));
 const mongoose_paginate_v2_1 = __importDefault(require("mongoose-paginate-v2"));
 const NotificationSchema = new mongoose_1.Schema({
     userId: { type: mongoose_1.Schema.Types.ObjectId, ref: "user", required: true },
-    post: { type: mongoose_1.Schema.Types.ObjectId, ref: "user", required: true },
-    actorIds: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "User" }],
+    post: { type: mongoose_1.Schema.Types.ObjectId, ref: "post" },
+    actorIds: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "user" }],
     type: {
         type: String,
         enum: ["like", "comment", "reply", "subscription"],
         required: true,
     },
     videoId: { type: mongoose_1.Schema.Types.ObjectId, ref: "Video", default: null },
-    commentId: { type: mongoose_1.Schema.Types.ObjectId, ref: "Comment", default: null },
+    commentUser: { type: mongoose_1.Schema.Types.ObjectId, ref: "user", default: null },
     text: { type: String },
     metadata: { type: mongoose_1.Schema.Types.Mixed },
     read: { type: Boolean, default: false },

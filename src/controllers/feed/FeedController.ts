@@ -373,7 +373,10 @@ export const getFeedNotifications = asyncHandler(async (req, res, next) => {
       },
       {
         path: "post",
-        select: "thumbnail",
+      },
+      {
+        path: "actorIds",
+        select: "username firstName lastName profilePicture",
       },
     ],
   });
@@ -529,6 +532,7 @@ export const likeComment = asyncHandler(async (req, res, next) => {
         await Notification.create({
           userId: reply.user,
           actorIds: [user._id],
+          post,
           type: "like",
           videoId: postId,
           commentId: replyId,
@@ -584,6 +588,7 @@ export const likeComment = asyncHandler(async (req, res, next) => {
           userId: comment.user,
           actorIds: [user._id],
           type: "like",
+          post,
           videoId: postId,
           commentId: commentId,
           createdAt: new Date(),
@@ -815,6 +820,7 @@ export const commentOnPost = asyncHandler(async (req, res, next) => {
     userId: post.user,
     actorIds: [user._id],
     type: "comment",
+    post,
     videoId: postId,
     createdAt: new Date(),
     read: false,

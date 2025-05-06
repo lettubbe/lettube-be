@@ -45,7 +45,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.searchPosts = exports.deletePost = exports.getUserFeeds = exports.getBookmarkedPosts = exports.bookmarkPost = exports.dislikePost = exports.commentOnPost = exports.getPostComments = exports.likeComment = exports.replyToComment = exports.getFeedNotifications = exports.likePost = exports.uploadFeedPost = exports.getContacts = exports.getUserPublicUploadedFeeds = exports.getUserUploadedFeeds = exports.createCategoryFeeds = void 0;
+exports.getViralPosts = exports.searchPosts = exports.deletePost = exports.getUserFeeds = exports.getBookmarkedPosts = exports.bookmarkPost = exports.dislikePost = exports.commentOnPost = exports.getPostComments = exports.likeComment = exports.replyToComment = exports.getFeedNotifications = exports.likePost = exports.uploadFeedPost = exports.getContacts = exports.getUserPublicUploadedFeeds = exports.getUserUploadedFeeds = exports.createCategoryFeeds = void 0;
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const Feed_1 = __importDefault(require("../../models/Feed"));
 const BaseResponseHandler_1 = __importDefault(require("../../messages/BaseResponseHandler"));
@@ -301,7 +301,10 @@ exports.getFeedNotifications = (0, express_async_handler_1.default)((req, res, n
             },
             {
                 path: "post",
-                select: "thumbnail",
+            },
+            {
+                path: "actorIds",
+                select: "username firstName lastName profilePicture",
             },
         ],
     });
@@ -392,9 +395,43 @@ exports.likeComment = (0, express_async_handler_1.default)((req, res, next) => _
                 { "reply._id": new mongoose_1.default.Types.ObjectId(replyId) },
             ],
         });
+        if (!alreadyLiked) {
+            const existing = yield Notifications_1.default.findOne({
+                userId: reply.user,
+                type: "like",
+                videoId: postId,
+                commentId: replyId,
+            });
+            if (existing) {
+                if (!existing.actorIds.includes(user._id)) {
+                    existing.actorIds.push(user._id);
+                    existing.createdAt = new Date();
+                    yield existing.save();
+                    yield notificationService_1.default.sendNotification(reply.user, {
+                        title: `${existing.actorIds.length} people liked your reply`,
+                        description: `${user.username} liked your reply`,
+                    });
+                }
+            }
+            else {
+                yield Notifications_1.default.create({
+                    userId: reply.user,
+                    actorIds: [user._id],
+                    post,
+                    type: "like",
+                    videoId: postId,
+                    commentId: replyId,
+                    createdAt: new Date(),
+                    read: false,
+                });
+                yield notificationService_1.default.sendNotification(reply.user, {
+                    title: `${user.username} liked your reply`,
+                    description: `${user.username} liked your reply to a comment`,
+                });
+            }
+        }
     }
     else {
-        // Like/Unlike a COMMENT
         const alreadyLiked = comment.likes.some((id) => id.toString() === userId.toString());
         const update = alreadyLiked
             ? { $pull: { "comments.$.likes": userObjectId } }
@@ -403,6 +440,41 @@ exports.likeComment = (0, express_async_handler_1.default)((req, res, next) => _
             _id: postId,
             "comments._id": commentId,
         }, update);
+        if (!alreadyLiked) {
+            const existing = yield Notifications_1.default.findOne({
+                userId: comment.user,
+                type: "like",
+                videoId: postId,
+                commentId: commentId,
+            });
+            if (existing) {
+                if (!existing.actorIds.includes(user._id)) {
+                    existing.actorIds.push(user._id);
+                    existing.createdAt = new Date();
+                    yield existing.save();
+                    yield notificationService_1.default.sendNotification(comment.user, {
+                        title: `${existing.actorIds.length} people liked your comment`,
+                        description: `${user.username} liked your comment`,
+                    });
+                }
+            }
+            else {
+                yield Notifications_1.default.create({
+                    userId: comment.user,
+                    actorIds: [user._id],
+                    type: "like",
+                    post,
+                    videoId: postId,
+                    commentId: commentId,
+                    createdAt: new Date(),
+                    read: false,
+                });
+                yield notificationService_1.default.sendNotification(comment.user, {
+                    title: `${user.username} liked your comment`,
+                    description: `${user.username} liked your comment on a post`,
+                });
+            }
+        }
     }
     const updatedPost = yield Post_1.default.findById(postId);
     return (0, BaseResponseHandler_1.default)({
@@ -592,8 +664,20 @@ exports.commentOnPost = (0, express_async_handler_1.default)((req, res, next) =>
     if (!post) {
         return next(new ErrorResponse_1.default(`Post Not Found`, 404));
     }
-    // NotificationService.se
-    // Notification.create({  });
+    yield Notifications_1.default.create({
+        userId: post.user,
+        actorIds: [user._id],
+        type: "comment",
+        post,
+        videoId: postId,
+        createdAt: new Date(),
+        read: false,
+    });
+    // Send push notification
+    yield notificationService_1.default.sendNotification(post.user, {
+        title: `${user.username} commented on your post`,
+        description: `${user.username} commented: ${text.substring(0, 50)}${text.length > 50 ? '...' : ''}`,
+    });
     (0, BaseResponseHandler_1.default)({
         message: `Comment Added Successfully`,
         res,
@@ -830,5 +914,96 @@ exports.searchPosts = (0, express_async_handler_1.default)((req, res, next) => _
         statusCode: 200,
         success: true,
         data: posts,
+    });
+}));
+// @desc      Get Viral Posts
+// @route     GET /api/v1/feed/viral
+// @access    Private
+exports.getViralPosts = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const { page, limit } = req.query;
+    const user = yield (0, utils_1.getAuthUser)(req, next);
+    // Calculate exactly 30 days ago
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const aggregatePipeline = [
+        {
+            $match: {
+                createdAt: { $gte: thirtyDaysAgo },
+                visibility: "public"
+            }
+        },
+        {
+            $addFields: {
+                likesCount: { $size: "$reactions.likes" },
+                commentsCount: { $size: "$comments" }
+            }
+        },
+        {
+            $sort: {
+                likesCount: -1,
+                commentsCount: -1
+            }
+        }
+    ];
+    const options = (0, paginate_1.getPaginateOptions)(page, limit, {
+        populate: [
+            {
+                path: "user",
+                select: "username firstName lastName profilePicture"
+            }
+        ]
+    });
+    const posts = yield Post_1.default.aggregate(aggregatePipeline)
+        .skip(options.page)
+        .limit(options.limit);
+    const totalDocs = yield Post_1.default.countDocuments({
+        createdAt: { $gte: thirtyDaysAgo },
+        visibility: "public"
+    });
+    // Get user's bookmarks for these posts
+    const bookmarks = yield Bookmark_1.default.find({
+        user: user._id,
+        post: { $in: posts.map(post => post._id) }
+    });
+    const bookmarkedPostIds = new Set(bookmarks.map(b => b.post.toString()));
+    // Transform the posts with consistent structure
+    const transformedPosts = posts.map(post => ({
+        _id: post._id,
+        user: {
+            _id: post.user._id,
+            username: post.user.username,
+            firstName: post.user.firstName,
+            lastName: post.user.lastName,
+            profilePicture: post.user.profilePicture
+        },
+        category: post.category,
+        thumbnail: post.thumbnail,
+        videoUrl: post.videoUrl,
+        description: post.description,
+        visibility: post.visibility,
+        tags: post.tags,
+        isCommentsAllowed: post.isCommentsAllowed,
+        reactions: post.reactions,
+        comments: post.comments,
+        createdAt: post.createdAt,
+        updatedAt: post.updatedAt,
+        isBookmarked: bookmarkedPostIds.has(post._id.toString()),
+        metrics: {
+            likesCount: post.likesCount,
+            commentsCount: post.commentsCount
+        }
+    }));
+    const paginatedResponse = {
+        docs: transformedPosts,
+        totalDocs,
+        limit: Number(options.limit),
+        page: Number(options.page),
+        totalPages: Math.ceil(totalDocs / Number(options.limit))
+    };
+    (0, BaseResponseHandler_1.default)({
+        message: "Viral posts retrieved successfully",
+        res,
+        statusCode: 200,
+        success: true,
+        data: (0, paginate_1.transformPaginateResponse)(paginatedResponse)
     });
 }));

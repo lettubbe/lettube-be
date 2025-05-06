@@ -63,4 +63,5 @@ router.patch("/posts/:postId/comments", [protect_1.protect, (0, commentOnPostVal
 router.patch("/posts/:postId/comments/:commentId/replies", protect_1.protect, FeedController_1.replyToComment);
 router.patch("/posts/:postId/comments/:commentId/like", protect_1.protect, FeedController_1.likeComment);
 router.patch("/posts/:postId/comments/:commentId/replies/:replyId/like", protect_1.protect, FeedController_1.likeComment);
+router.get("/viral", protect_1.protect, FeedController_1.getViralPosts);
 exports.default = router;
