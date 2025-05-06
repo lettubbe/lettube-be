@@ -18,6 +18,9 @@ const ErrorResponse_1 = __importDefault(require("../../messages/ErrorResponse"))
 const Subscription_1 = __importDefault(require("../../models/Subscription"));
 const utils_1 = require("../../lib/utils/utils");
 const BaseResponseHandler_1 = __importDefault(require("../../messages/BaseResponseHandler"));
+const notificationService_1 = __importDefault(require("../../services/notificationService"));
+const User_1 = __importDefault(require("../../models/User"));
+const Notifications_1 = __importDefault(require("../../models/Notifications"));
 // @desc    Subscribe to a channel
 // @route   /api/v1/subscription/subscribe
 // @access  Private
@@ -30,6 +33,19 @@ exports.subscribe = (0, express_async_handler_1.default)((req, res, next) => __a
     const subscription = yield Subscription_1.default.create({
         subscriber: user._id,
         subscribedTo: userId,
+    });
+    const subscribedUser = yield User_1.default.findById(userId).select("firstName lastName username profilePicture");
+    if (!subscribedUser) {
+        return next(new ErrorResponse_1.default("Subscribed user not found", 404));
+    }
+    yield notificationService_1.default.sendNotification(userId, {
+        title: `New Subscription`,
+        description: `${user.username} Just Subscribed Your Channel`,
+    });
+    Notifications_1.default.create({
+        userId,
+        type: "subscription",
+        read: false,
     });
     (0, BaseResponseHandler_1.default)({
         res,
@@ -57,7 +73,7 @@ exports.unsubscribe = (0, express_async_handler_1.default)((req, res, next) => _
         res,
         statusCode: 200,
         success: true,
-        data: subscription
+        data: subscription,
     });
 }));
 // @desc    Get User Subscribers
@@ -89,7 +105,6 @@ exports.getSubscribedTo = (0, express_async_handler_1.default)((req, res, next) 
 // @access  Private
 exports.bulkSubscribe = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { userIds } = req.body;
-    console.log("userIds", userIds);
     const subscriberId = yield (0, utils_1.getAuthUser)(req, next);
     if (!Array.isArray(userIds)) {
         return next(new ErrorResponse_1.default("Invalid user IDs provided", 400));
@@ -106,8 +121,11 @@ exports.bulkSubscribe = (0, express_async_handler_1.default)((req, res, next) =>
     }));
     // Bulk insert subscriptions, ignoring duplicates
     yield Subscription_1.default.insertMany(subscriptions, { ordered: false });
-    res.status(201).json({
+    (0, BaseResponseHandler_1.default)({
+        message: `Bulk subscription successful`,
+        res,
+        statusCode: 200,
         success: true,
-        message: "Bulk subscription successful",
+        data: `Bulk subscription successful`,
     });
 }));
