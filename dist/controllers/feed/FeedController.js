@@ -259,7 +259,8 @@ exports.likePost = (0, express_async_handler_1.default)((req, res, next) => __aw
             yield Notifications_1.default.create({
                 userId: post.user,
                 actorIds: [user._id],
-                post,
+                post: postId,
+                subType: "postLike",
                 type: "like",
                 videoId: postId,
                 createdAt: new Date(),
@@ -343,7 +344,7 @@ exports.replyToComment = (0, express_async_handler_1.default)((req, res, next) =
     };
     comment.replies.push(newReply);
     yield post.save();
-    yield Notifications_1.default.create({ userId: comment.user, actorIds: [user._id], post, type: "comment", videoId: postId, createdAt: new Date(), read: false });
+    yield Notifications_1.default.create({ userId: comment.user, actorIds: [user._id], post: postId, type: "comment", videoId: postId, createdAt: new Date(), read: false });
     // await NotificationService.sendNotification(comment.user as any, {});
     (0, BaseResponseHandler_1.default)({
         message: `Reply Done Successfully`,
@@ -417,7 +418,8 @@ exports.likeComment = (0, express_async_handler_1.default)((req, res, next) => _
                 yield Notifications_1.default.create({
                     userId: reply.user,
                     actorIds: [user._id],
-                    post,
+                    post: postId,
+                    subType: "commentLike",
                     type: "like",
                     videoId: postId,
                     commentId: replyId,
@@ -463,7 +465,7 @@ exports.likeComment = (0, express_async_handler_1.default)((req, res, next) => _
                     userId: comment.user,
                     actorIds: [user._id],
                     type: "like",
-                    post,
+                    post: postId,
                     videoId: postId,
                     commentId: commentId,
                     createdAt: new Date(),
@@ -668,8 +670,7 @@ exports.commentOnPost = (0, express_async_handler_1.default)((req, res, next) =>
         userId: post.user,
         actorIds: [user._id],
         type: "comment",
-        post,
-        videoId: postId,
+        post: postId,
         createdAt: new Date(),
         read: false,
     });

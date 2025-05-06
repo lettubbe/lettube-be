@@ -48,7 +48,10 @@ const NotificationSchema = new mongoose_1.Schema({
         enum: ["like", "comment", "reply", "subscription"],
         required: true,
     },
-    videoId: { type: mongoose_1.Schema.Types.ObjectId, ref: "Video", default: null },
+    subType: {
+        type: String,
+        enum: ["postLike", "commentLike", "replyLike", "commentReply", "comment"],
+    },
     commentUser: { type: mongoose_1.Schema.Types.ObjectId, ref: "user", default: null },
     text: { type: String },
     metadata: { type: mongoose_1.Schema.Types.Mixed },
