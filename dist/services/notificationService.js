@@ -24,11 +24,13 @@ const KNOWN_ERRORS = [
 class NotificationService {
     static sendEmail(options) {
         return __awaiter(this, void 0, void 0, function* () {
+            console.log("sendng email", options);
             const request = mailjetProvider_1.default.post("send", { version: "v3.1" }).request({
                 Messages: [
                     {
                         From: {
-                            Email: "lwsrehearsal@gmail.com",
+                            // Email: "lwsrehearsal@gmail.com",
+                            Email: 'rosmonpro@gmail.com',
                             Name: "lettube",
                         },
                         To: [

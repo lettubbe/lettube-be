@@ -52,6 +52,7 @@ const NotificationSchema = new mongoose_1.Schema({
         type: String,
         enum: ["postLike", "commentLike", "replyLike", "commentReply", "comment"],
     },
+    commentText: { type: String },
     commentUser: { type: mongoose_1.Schema.Types.ObjectId, ref: "user", default: null },
     text: { type: String },
     metadata: { type: mongoose_1.Schema.Types.Mixed },

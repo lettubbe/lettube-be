@@ -169,6 +169,9 @@ export const resendOTP = asyncHandler(async (req, res, next) => {
 // @access  Public
 
 export const sendVerificationEmail = asyncHandler(async (req, res, next) => {
+
+  console.log("verification email");
+
   const { email, phoneNumber, type } = req.body;
 
   // const query = buildUserAuthTypeQuery(email, phoneNumber);
@@ -190,6 +193,14 @@ export const sendVerificationEmail = asyncHandler(async (req, res, next) => {
       authUser.verificationExpires = expiresAt;
       authUser.save();
     }
+
+    const emailVerficationTemplate = welcomeEmailTemplate(tokenOTP);
+
+    NotificationService.sendEmail({
+      to: email,
+      subject: "Lettube Register Email Verification",
+      body: emailVerficationTemplate,
+    });
 
     baseResponseHandler({
       res,
@@ -247,6 +258,7 @@ export const sendVerificationEmail = asyncHandler(async (req, res, next) => {
     const emailVerficationTemplate = welcomeEmailTemplate(tokenOTP);
 
     if (type === registerEnumType.EMAIL) {
+      console.log("got to send email");
       NotificationService.sendEmail({
         to: email,
         subject: "Lettube Register Email Verification",
