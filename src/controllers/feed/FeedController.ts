@@ -352,8 +352,6 @@ export const likePost = asyncHandler(async (req, res, next) => {
 
 export const getFeedNotifications = asyncHandler(async (req, res, next) => {
 
-  console.log("hitting feed notifications");
-
   const user = await getAuthUser(req, next);
   const { page, limit, type } = req.query;
 
@@ -822,6 +820,7 @@ export const commentOnPost = asyncHandler(async (req, res, next) => {
     userId: post.user,
     actorIds: [user._id],
     type: "comment",
+    commentText: text,
     post: postId,
     createdAt: new Date(),
     read: false,

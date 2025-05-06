@@ -14,6 +14,7 @@ const NotificationSchema: Schema = new Schema<INotification>({
     type: String,
     enum: ["postLike", "commentLike", "replyLike", "commentReply", "comment"],
   },
+  commentText: { type: String },
   commentUser: { type: Schema.Types.ObjectId, ref: "user", default: null },
   text: { type: String },
   metadata: { type: Schema.Types.Mixed },
@@ -26,6 +27,7 @@ export interface INotification extends Document {
   userId: mongoose.Types.ObjectId; 
   post: mongoose.Types.ObjectId;
   subType: string;
+  commentText: string;
   actorIds: mongoose.Types.ObjectId[]; 
   type: "like" | "comment" | "reply" | "subscription"; 
   videoId?: mongoose.Types.ObjectId; 
