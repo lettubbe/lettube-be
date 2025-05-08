@@ -1163,9 +1163,26 @@ export const getViralPosts = asyncHandler(async (req, res, next) => {
       }
     },
     {
+      $lookup: {
+        from: "users",
+        localField: "user",
+        foreignField: "_id",
+        as: "user"
+      }
+    }, {
+      $unwind: "$user"
+    },
+
+    {
       $addFields: {
         likesCount: { $size: "$reactions.likes" },
-        commentsCount: { $size: "$comments" }
+        commentsCount: { $size: "$comments" },
+        user: {
+          username: "$user.username",
+          firstName: "$user.firstName",
+          lastName: "$user.lastName",
+          profilePicture: "$user.profilePicture"
+        }
       }
     },
     {
@@ -1187,7 +1204,7 @@ export const getViralPosts = asyncHandler(async (req, res, next) => {
 
   const posts = await Post.aggregate(aggregatePipeline)
     .skip(options.page)
-    .limit(options.limit);
+    .limit(options.limit)
 
   const totalDocs = await Post.countDocuments({
     createdAt: { $gte: thirtyDaysAgo },
