@@ -2,69 +2,71 @@ import { Model, model, Schema, Types } from "mongoose";
 import mongoosePaginate from "mongoose-paginate-v2";
 
 const postSchema = new Schema<IPost>({
-    user: {
-      type: Schema.Types.ObjectId,
-      ref: "user",
-      required: true,
-    },
-    category: String,
-    thumbnail: {
-      type: String,
-      required: [true, "Thumbnail is required"],
-    },
-    videoUrl: {
-      type: String,
-      required: [true, "Video URL is required"],
-    },
-    description: {
-      type: String,
-    },
-    visibility: {
-      type: String,
-      enum: ["public", "private", "subscribers"]
-    },
-    tags: {
-      type: [String]
-    },
-    isCommentsAllowed: {
-      type: Boolean,
-      default: true
-    },
-    duration: { type: Number, required: true, default: null },
-    // In the reactions object, remove the bookmarks array
-    reactions: {
-      likes: [{ type: Schema.Types.ObjectId, ref: "user" }], 
-      dislikes: [{ type: Schema.Types.ObjectId, ref: "user" }], 
-      shares: { type: Number, default: 0 }, 
-      views: { type: Number, default: 0 },
-    },
-    comments: [
-      {
-        user: { type: Schema.Types.ObjectId, ref: "user", required: true },
-        text: { type: String, required: true },
-        likes: [{ type: Schema.Types.ObjectId, ref: "user" }],
-        replies: [
-          {
-            user: { type: Schema.Types.ObjectId, ref: "user", required: true },
-            text: { type: String, required: true },
-            likes: [{ type: Schema.Types.ObjectId, ref: "user" }],
-            createdAt: { type: Date, default: Date.now },
-          },
-        ],
-        createdAt: { type: Date, default: Date.now },
-      },
-    ],
+  user: {
+    type: Schema.Types.ObjectId,
+    ref: "user",
+    required: true,
   },
+  category: String,
+  thumbnail: {
+    type: String,
+    required: [true, "Thumbnail is required"],
+  },
+  videoUrl: {
+    type: String,
+    required: [true, "Video URL is required"],
+  },
+  description: {
+    type: String,
+  },
+  visibility: {
+    type: String,
+    enum: ["public", "private", "subscribers"]
+  },
+  tags: {
+    type: [String]
+  },
+  isCommentsAllowed: {
+    type: Boolean,
+    default: true
+  },
+  duration: { type: Number, required: true, default: null },
+  // In the reactions object, remove the bookmarks array
+  reactions: {
+    likes: [{ type: Schema.Types.ObjectId, ref: "user" }],
+    dislikes: [{ type: Schema.Types.ObjectId, ref: "user" }],
+    shares: { type: Number, default: 0 },
+    views: { type: Number, default: 0 },
+  },
+  comments: [
+    {
+      user: { type: Schema.Types.ObjectId, ref: "user", required: true },
+      text: { type: String, required: true },
+      likes: [{ type: Schema.Types.ObjectId, ref: "user" }],
+      replies: [
+        {
+          user: { type: Schema.Types.ObjectId, ref: "user", required: true },
+          text: { type: String, required: true },
+          likes: [{ type: Schema.Types.ObjectId, ref: "user" }],
+          createdAt: { type: Date, default: Date.now },
+        },
+      ],
+      createdAt: { type: Date, default: Date.now },
+    },
+  ],
+},
   { timestamps: true }
 );
 
 export interface IPost extends Document {
+  _id: Types.ObjectId;
   user: Types.ObjectId;
   categories: string[];
   thumbnail: string;
-  duration: number | null; 
+  duration: number | null;
   videoUrl: string;
   reactions: {
+    _id: Types.ObjectId;
     likes: Types.ObjectId[];
     dislikes: Types.ObjectId[];
     shares: number;
@@ -77,10 +79,12 @@ export interface IPost extends Document {
   visibility: string;
   description: string;
   comments: {
+    _id: Types.ObjectId;
     user?: Types.ObjectId;
     text: string;
     likes: Types.ObjectId[];
     replies: {
+      _id: Types.ObjectId;
       user: Types.ObjectId;
       text: string;
       likes: Types.ObjectId[];

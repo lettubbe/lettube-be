@@ -19,6 +19,7 @@ import Playlist from "../../models/Playlist";
 import Bookmark from "../../models/Bookmark";
 import Notification from "../../models/Notifications";
 import NotificationService from "../../services/notificationService";
+import { getCommentsQuery } from '../../services/commentService';
 
 // @desc    Add Category to user Feed
 // @route   POST /api/v1/feed/category
@@ -427,6 +428,8 @@ export const replyToComment = asyncHandler(async (req, res, next) => {
     createdAt: new Date(),
   };
 
+
+  // @ts-ignore
   comment.replies.push(newReply);
   await post.save();
 
@@ -623,168 +626,51 @@ export const likeComment = asyncHandler(async (req, res, next) => {
 
 export const getPostComments = asyncHandler(async (req, res, next) => {
   const { postId } = req.params;
-  const { page = 1, limit = 10, search = "" } = req.query;
+  const { page = 1, limit = 10, search = "", mode = "newest" } = req.query as unknown as { page: number; limit: number; search: string; mode: 'top' | 'most-liked' | 'newest'; };
 
-  // First check if post exists
-  const postExists = await Post.findById(postId);
+  const query = getCommentsQuery(postId, { page, limit, search, mode });
+  const post = await query;
 
-  if (!postExists) {
+  if (!post) {
     return next(new ErrorResponse("Post Not Found", 404));
   }
 
-  // Build the aggregation pipeline
-  const pipeline: any[] = [
-    { $match: { _id: new Types.ObjectId(postId) } },
-    { $unwind: "$comments" },
+  const transformedComments = post.comments.map(comment => ({
+    _id: comment._id,
+    user: comment.user,
+    text: comment.text,
+    likes: comment.likes,
+    replies: comment.replies.map(reply => ({
+      _id: reply._id,
+      user: reply.user,
+      text: reply.text,
+      likes: reply.likes,
+      createdAt: reply.createdAt
+    })),
+    createdAt: comment.createdAt
+  }));
 
-    ...(search ? [{
-      $match: {
-        $or: [
-          { "comments.text": { $regex: search, $options: "i" } },
-          { "comments.replies.text": { $regex: search, $options: "i" } }
-        ]
-      }
-    }] : []),
-    // Add sorting and pagination
-    { $sort: { "comments.createdAt": -1 } },
-    { $skip: Math.max(0, (Number(page || 1) - 1) * Number(limit)) },
-    { $limit: Number(limit) },
-
-    {
-      $lookup: {
-        from: "users",
-        localField: "comments.user",
-        foreignField: "_id",
-        as: "comments.userDetails"
-      }
-    },
-    { $unwind: "$comments.userDetails" },
-    // Unwind replies to process each reply
-    {
-      $addFields: {
-        "comments.replies": {
-          $cond: {
-            if: { $isArray: "$comments.replies" },
-            then: "$comments.replies",
-            else: []
-          }
-        }
-      }
-    },
-    {
-      $unwind: {
-        path: "$comments.replies",
-        preserveNullAndEmptyArrays: true
-      }
-    },
-    // Lookup for reply users
-    {
-      $lookup: {
-        from: "users",
-        localField: "comments.replies.user",
-        foreignField: "_id",
-        as: "comments.replies.userDetails"
-      }
-    },
-    {
-      $unwind: {
-        path: "$comments.replies.userDetails",
-        preserveNullAndEmptyArrays: true
-      }
-    },
-    // Group replies back
-    {
-      $group: {
-        _id: {
-          postId: "$_id",
-          commentId: "$comments._id"
-        },
-        comment: { $first: "$comments" },
-        replies: {
-          $push: {
-            $cond: {
-              if: { $ifNull: ["$comments.replies", false] },
-              then: {
-                _id: "$comments.replies._id",
-                user: "$comments.replies.userDetails",
-                text: "$comments.replies.text",
-                likes: "$comments.replies.likes",
-                createdAt: "$comments.replies.createdAt"
-              },
-              else: "$$REMOVE"
-            }
-          }
-        }
-      }
-    },
-    // Final grouping
-    {
-      $group: {
-        _id: "$_id.postId",
-        comments: {
-          $push: {
-            _id: "$comment._id",
-            user: "$comment.userDetails",
-            text: "$comment.text",
-            likes: "$comment.likes",
-            replies: "$replies",
-            createdAt: "$comment.createdAt"
-          }
-        },
-        totalComments: { $sum: 1 }
-      }
-    }
-  ];
-
-  // Execute the aggregation
-  const result = await Post.aggregate(pipeline);
-
-  // Handle empty results
-  if (
-    result.length === 0 ||
-    !result[0].comments ||
-    result[0].comments.length === 0
-  ) {
-    return baseResponseHandler({
-      message: "No Comments Found",
-      res,
-      statusCode: 200,
-      success: true,
-      data: transformPaginateResponse({
-        docs: [],
-        totalDocs: 0,
-        limit: Number(limit),
-        totalPages: 0,
-        page: Number(page),
-        pagingCounter: 0,
-        hasPrevPage: false,
-        hasNextPage: false,
-        prevPage: null,
-        nextPage: null,
-      }),
-    });
-  }
+  const totalComments = await Post.findById(postId).select('comments').then(p => p?.comments?.length || 0);
 
   // Calculate pagination info
-  const totalComments = result[0].totalComments;
   const totalPages = Math.ceil(totalComments / Number(limit));
-  const hasNextPage = Number(page) < totalPages;
+  const hasNextPage = (Number(page) * Number(limit)) < totalComments;
   const hasPrevPage = Number(page) > 1;
 
   baseResponseHandler({
-    message: "Post Comments Retrieved Successfully",
+    message: transformedComments.length ? "Post Comments Retrieved Successfully" : "No Comments Found",
     res,
     statusCode: 200,
     success: true,
     data: transformPaginateResponse({
-      docs: result[0].comments,
+      docs: transformedComments,
       totalDocs: totalComments,
       limit: Number(limit),
-      totalPages: totalPages,
+      totalPages,
       page: Number(page),
-      pagingCounter: (Number(page) - 1) * Number(limit) + 1,
-      hasPrevPage: hasPrevPage,
-      hasNextPage: hasNextPage,
+      pagingCounter: ((Number(page) - 1) * Number(limit)) + 1,
+      hasPrevPage,
+      hasNextPage,
       prevPage: hasPrevPage ? Number(page) - 1 : null,
       nextPage: hasNextPage ? Number(page) + 1 : null,
     }),
@@ -1166,9 +1052,26 @@ export const getViralPosts = asyncHandler(async (req, res, next) => {
       }
     },
     {
+      $lookup: {
+        from: "users",
+        localField: "user",
+        foreignField: "_id",
+        as: "user"
+      }
+    }, {
+      $unwind: "$user"
+    },
+
+    {
       $addFields: {
         likesCount: { $size: "$reactions.likes" },
-        commentsCount: { $size: "$comments" }
+        commentsCount: { $size: "$comments" },
+        user: {
+          username: "$user.username",
+          firstName: "$user.firstName",
+          lastName: "$user.lastName",
+          profilePicture: "$user.profilePicture"
+        }
       }
     },
     {
@@ -1190,7 +1093,7 @@ export const getViralPosts = asyncHandler(async (req, res, next) => {
 
   const posts = await Post.aggregate(aggregatePipeline)
     .skip(options.page)
-    .limit(options.limit);
+    .limit(options.limit)
 
   const totalDocs = await Post.countDocuments({
     createdAt: { $gte: thirtyDaysAgo },
