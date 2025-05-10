@@ -383,7 +383,7 @@ export const getFeedNotifications = asyncHandler(async (req, res, next) => {
   const notificationsData = await Notification.paginate(filter, options);
   const notifications = transformPaginateResponse(notificationsData);
 
-  console.log("notifications", notifications);
+  // console.log("notifications", notifications);
 
   baseResponseHandler({
     message: `User Notifications Retrieved successfully`,
@@ -532,7 +532,8 @@ export const likeComment = asyncHandler(async (req, res, next) => {
           userId: reply.user,
           actorIds: [user._id],
           post: postId,
-          subType: "commentLike",
+          subType: "replyLike",
+          commentText: reply.text,
           type: "like",
           videoId: postId,
           commentId: replyId,
@@ -588,9 +589,11 @@ export const likeComment = asyncHandler(async (req, res, next) => {
           userId: comment.user,
           actorIds: [user._id],
           type: "like",
+          subType: "commentLike",
           post: postId,
           videoId: postId,
           commentId: commentId,
+          commentText: comment.text,
           createdAt: new Date(),
           read: false,
         });
