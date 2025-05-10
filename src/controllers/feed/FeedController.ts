@@ -775,11 +775,14 @@ export const dislikePost = asyncHandler(async (req, res, next) => {
 });
 
 // @desc      Bookmark Video
-// @route     /posts/:postId/bookmark
+// @route     POST /posts/:postId/bookmark
 // @access    Private
 
 export const bookmarkPost = asyncHandler(async (req, res, next) => {
   const { postId } = req.params;
+
+  console.log("hitting bookmark post");
+
   const user = await getAuthUser(req, next);
   const userId = user._id;
 

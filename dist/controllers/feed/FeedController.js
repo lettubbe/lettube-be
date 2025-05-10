@@ -1,37 +1,4 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -55,11 +22,12 @@ const User_1 = __importDefault(require("../../models/User"));
 const Post_1 = __importDefault(require("../../models/Post"));
 const paginate_1 = require("../../lib/utils/paginate");
 const fileUpload_1 = require("../../lib/utils/fileUpload");
-const mongoose_1 = __importStar(require("mongoose")); // make sure mongoose is imported
+const mongoose_1 = __importDefault(require("mongoose")); // make sure mongoose is imported
 const Playlist_1 = __importDefault(require("../../models/Playlist"));
 const Bookmark_1 = __importDefault(require("../../models/Bookmark"));
 const Notifications_1 = __importDefault(require("../../models/Notifications"));
 const notificationService_1 = __importDefault(require("../../services/notificationService"));
+const commentService_1 = require("../../services/commentService");
 // @desc    Add Category to user Feed
 // @route   POST /api/v1/feed/category
 // @access  Private
@@ -341,6 +309,7 @@ exports.replyToComment = (0, express_async_handler_1.default)((req, res, next) =
         likes: [],
         createdAt: new Date(),
     };
+    // @ts-ignore
     comment.replies.push(newReply);
     yield post.save();
     yield Notifications_1.default.create({ userId: comment.user, actorIds: [user._id], post: postId, type: "comment", videoId: postId, createdAt: new Date(), read: false });
@@ -494,157 +463,45 @@ exports.likeComment = (0, express_async_handler_1.default)((req, res, next) => _
 // @access    Private
 exports.getPostComments = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { postId } = req.params;
-    const { page = 1, limit = 10, search = "" } = req.query;
-    // First check if post exists
-    const postExists = yield Post_1.default.findById(postId);
-    if (!postExists) {
+    const { page = 1, limit = 10, search = "", mode = "newest" } = req.query;
+    const query = (0, commentService_1.getCommentsQuery)(postId, { page, limit, search, mode });
+    const post = yield query;
+    if (!post) {
         return next(new ErrorResponse_1.default("Post Not Found", 404));
     }
-    // Build the aggregation pipeline
-    const pipeline = [
-        { $match: { _id: new mongoose_1.Types.ObjectId(postId) } },
-        { $unwind: "$comments" },
-        ...(search ? [{
-                $match: {
-                    $or: [
-                        { "comments.text": { $regex: search, $options: "i" } },
-                        { "comments.replies.text": { $regex: search, $options: "i" } }
-                    ]
-                }
-            }] : []),
-        // Add sorting and pagination
-        { $sort: { "comments.createdAt": -1 } },
-        { $skip: Math.max(0, (Number(page || 1) - 1) * Number(limit)) },
-        { $limit: Number(limit) },
-        {
-            $lookup: {
-                from: "users",
-                localField: "comments.user",
-                foreignField: "_id",
-                as: "comments.userDetails"
-            }
-        },
-        { $unwind: "$comments.userDetails" },
-        // Unwind replies to process each reply
-        {
-            $addFields: {
-                "comments.replies": {
-                    $cond: {
-                        if: { $isArray: "$comments.replies" },
-                        then: "$comments.replies",
-                        else: []
-                    }
-                }
-            }
-        },
-        {
-            $unwind: {
-                path: "$comments.replies",
-                preserveNullAndEmptyArrays: true
-            }
-        },
-        // Lookup for reply users
-        {
-            $lookup: {
-                from: "users",
-                localField: "comments.replies.user",
-                foreignField: "_id",
-                as: "comments.replies.userDetails"
-            }
-        },
-        {
-            $unwind: {
-                path: "$comments.replies.userDetails",
-                preserveNullAndEmptyArrays: true
-            }
-        },
-        // Group replies back
-        {
-            $group: {
-                _id: {
-                    postId: "$_id",
-                    commentId: "$comments._id"
-                },
-                comment: { $first: "$comments" },
-                replies: {
-                    $push: {
-                        $cond: {
-                            if: { $ifNull: ["$comments.replies", false] },
-                            then: {
-                                _id: "$comments.replies._id",
-                                user: "$comments.replies.userDetails",
-                                text: "$comments.replies.text",
-                                likes: "$comments.replies.likes",
-                                createdAt: "$comments.replies.createdAt"
-                            },
-                            else: "$$REMOVE"
-                        }
-                    }
-                }
-            }
-        },
-        // Final grouping
-        {
-            $group: {
-                _id: "$_id.postId",
-                comments: {
-                    $push: {
-                        _id: "$comment._id",
-                        user: "$comment.userDetails",
-                        text: "$comment.text",
-                        likes: "$comment.likes",
-                        replies: "$replies",
-                        createdAt: "$comment.createdAt"
-                    }
-                },
-                totalComments: { $sum: 1 }
-            }
-        }
-    ];
-    // Execute the aggregation
-    const result = yield Post_1.default.aggregate(pipeline);
-    // Handle empty results
-    if (result.length === 0 ||
-        !result[0].comments ||
-        result[0].comments.length === 0) {
-        return (0, BaseResponseHandler_1.default)({
-            message: "No Comments Found",
-            res,
-            statusCode: 200,
-            success: true,
-            data: (0, paginate_1.transformPaginateResponse)({
-                docs: [],
-                totalDocs: 0,
-                limit: Number(limit),
-                totalPages: 0,
-                page: Number(page),
-                pagingCounter: 0,
-                hasPrevPage: false,
-                hasNextPage: false,
-                prevPage: null,
-                nextPage: null,
-            }),
-        });
-    }
+    const transformedComments = post.comments.map(comment => ({
+        _id: comment._id,
+        user: comment.user,
+        text: comment.text,
+        likes: comment.likes,
+        replies: comment.replies.map(reply => ({
+            _id: reply._id,
+            user: reply.user,
+            text: reply.text,
+            likes: reply.likes,
+            createdAt: reply.createdAt
+        })),
+        createdAt: comment.createdAt
+    }));
+    const totalComments = yield Post_1.default.findById(postId).select('comments').then(p => { var _a; return ((_a = p === null || p === void 0 ? void 0 : p.comments) === null || _a === void 0 ? void 0 : _a.length) || 0; });
     // Calculate pagination info
-    const totalComments = result[0].totalComments;
     const totalPages = Math.ceil(totalComments / Number(limit));
-    const hasNextPage = Number(page) < totalPages;
+    const hasNextPage = (Number(page) * Number(limit)) < totalComments;
     const hasPrevPage = Number(page) > 1;
     (0, BaseResponseHandler_1.default)({
-        message: "Post Comments Retrieved Successfully",
+        message: transformedComments.length ? "Post Comments Retrieved Successfully" : "No Comments Found",
         res,
         statusCode: 200,
         success: true,
         data: (0, paginate_1.transformPaginateResponse)({
-            docs: result[0].comments,
+            docs: transformedComments,
             totalDocs: totalComments,
             limit: Number(limit),
-            totalPages: totalPages,
+            totalPages,
             page: Number(page),
-            pagingCounter: (Number(page) - 1) * Number(limit) + 1,
-            hasPrevPage: hasPrevPage,
-            hasNextPage: hasNextPage,
+            pagingCounter: ((Number(page) - 1) * Number(limit)) + 1,
+            hasPrevPage,
+            hasNextPage,
             prevPage: hasPrevPage ? Number(page) - 1 : null,
             nextPage: hasNextPage ? Number(page) + 1 : null,
         }),
@@ -724,10 +581,11 @@ exports.dislikePost = (0, express_async_handler_1.default)((req, res, next) => _
     });
 }));
 // @desc      Bookmark Video
-// @route     /posts/:postId/bookmark
+// @route     POST /posts/:postId/bookmark
 // @access    Private
 exports.bookmarkPost = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { postId } = req.params;
+    console.log("hitting bookmark post");
     const user = yield (0, utils_1.getAuthUser)(req, next);
     const userId = user._id;
     // Check if post exists
@@ -936,9 +794,25 @@ exports.getViralPosts = (0, express_async_handler_1.default)((req, res, next) =>
             }
         },
         {
+            $lookup: {
+                from: "users",
+                localField: "user",
+                foreignField: "_id",
+                as: "user"
+            }
+        }, {
+            $unwind: "$user"
+        },
+        {
             $addFields: {
                 likesCount: { $size: "$reactions.likes" },
-                commentsCount: { $size: "$comments" }
+                commentsCount: { $size: "$comments" },
+                user: {
+                    username: "$user.username",
+                    firstName: "$user.firstName",
+                    lastName: "$user.lastName",
+                    profilePicture: "$user.profilePicture"
+                }
             }
         },
         {
