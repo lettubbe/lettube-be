@@ -922,6 +922,7 @@ export const getUserFeeds = asyncHandler(async (req, res, next) => {
         comments: postObj.comments,
         createdAt: postObj.createdAt,
         updatedAt: postObj.updatedAt,
+        duration: postObj.duration,
         isBookmarked: bookmarkedPostIds.has(postObj._id.toString()),
       };
     }),
@@ -1048,6 +1049,7 @@ export const searchPosts = asyncHandler(async (req, res, next) => {
 // @desc      Get Viral Posts
 // @route     GET /api/v1/feed/viral
 // @access    Private
+
 export const getViralPosts = asyncHandler(async (req, res, next) => {
   const { page, limit } = req.query;
   const user = await getAuthUser(req, next);
