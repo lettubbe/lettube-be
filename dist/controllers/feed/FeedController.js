@@ -700,6 +700,7 @@ exports.getUserFeeds = (0, express_async_handler_1.default)((req, res, next) => 
                 comments: postObj.comments,
                 createdAt: postObj.createdAt,
                 updatedAt: postObj.updatedAt,
+                duration: postObj.duration,
                 isBookmarked: bookmarkedPostIds.has(postObj._id.toString()),
             };
         }) });
