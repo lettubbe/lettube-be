@@ -356,14 +356,22 @@ export const getFeedNotifications = asyncHandler(async (req, res, next) => {
   const user = await getAuthUser(req, next);
   const { page, limit, type } = req.query;
 
+  console.log("type", type);
+
   const filter: any = {
     userId: user._id,
   };
 
   // If type is provided and valid, add it to the filter
-  if (type && ["like", "comment", "reply", "subscription"].includes(type as any)) {
+  if (type && ["like", "comment", "subscription"].includes(type as any)) {
     filter.type = type;
   }
+
+  if (type && ["reply"].includes(type as any)) {
+    filter.subType = "replyLike";
+  }
+
+  console.log("filter", filter);
 
   const options = getPaginateOptions(page, limit, {
     populate: [
