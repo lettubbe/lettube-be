@@ -283,7 +283,7 @@ exports.getFeedNotifications = (0, express_async_handler_1.default)((req, res, n
     });
     const notificationsData = yield Notifications_1.default.paginate(filter, options);
     const notifications = (0, paginate_1.transformPaginateResponse)(notificationsData);
-    console.log("notifications", notifications);
+    // console.log("notifications", notifications);
     (0, BaseResponseHandler_1.default)({
         message: `User Notifications Retrieved successfully`,
         res,
@@ -392,7 +392,8 @@ exports.likeComment = (0, express_async_handler_1.default)((req, res, next) => _
                     userId: reply.user,
                     actorIds: [user._id],
                     post: postId,
-                    subType: "commentLike",
+                    subType: "replyLike",
+                    commentText: reply.text,
                     type: "like",
                     videoId: postId,
                     commentId: replyId,
@@ -438,9 +439,11 @@ exports.likeComment = (0, express_async_handler_1.default)((req, res, next) => _
                     userId: comment.user,
                     actorIds: [user._id],
                     type: "like",
+                    subType: "commentLike",
                     post: postId,
                     videoId: postId,
                     commentId: commentId,
+                    commentText: comment.text,
                     createdAt: new Date(),
                     read: false,
                 });
@@ -583,10 +586,11 @@ exports.dislikePost = (0, express_async_handler_1.default)((req, res, next) => _
     });
 }));
 // @desc      Bookmark Video
-// @route     /posts/:postId/bookmark
+// @route     POST /posts/:postId/bookmark
 // @access    Private
 exports.bookmarkPost = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { postId } = req.params;
+    console.log("hitting bookmark post");
     const user = yield (0, utils_1.getAuthUser)(req, next);
     const userId = user._id;
     // Check if post exists
