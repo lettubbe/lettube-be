@@ -169,9 +169,7 @@ export const resendOTP = asyncHandler(async (req, res, next) => {
 // @access  Public
 
 export const sendVerificationEmail = asyncHandler(async (req, res, next) => {
-
-  console.log("verification email");
-
+  
   const { email, phoneNumber, type } = req.body;
 
   // const query = buildUserAuthTypeQuery(email, phoneNumber);
@@ -225,6 +223,11 @@ export const sendVerificationEmail = asyncHandler(async (req, res, next) => {
       authUser.verificationExpires = expiresAt;
       authUser.save();
     }
+
+    NotificationService.sendSms({
+      text: `Please Verify Phone Number, Please use the following code: ${mobileOTP}`,
+      to: phoneNumber,
+    });
 
     baseResponseHandler({
       res,
@@ -430,21 +433,22 @@ export const createUserDetails = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse(`user not found`, 404));
   }
 
-  const updatableFields: Partial<Pick<typeof user, "firstName" | "lastName" | "dob" | "age" | "username">> = {
+  const updatableFields: Partial<
+    Pick<typeof user, "firstName" | "lastName" | "dob" | "age" | "username">
+  > = {
     firstName,
     lastName,
     dob,
     age,
     username,
   };
-  
+
   for (const key in updatableFields) {
     if (updatableFields[key as keyof typeof updatableFields] !== undefined) {
       user[key as keyof typeof updatableFields] =
         updatableFields[key as keyof typeof updatableFields]!;
     }
   }
-  
 
   if (dob) {
     authUser.isDOBSet = true;
@@ -474,7 +478,6 @@ export const createUserDetails = asyncHandler(async (req, res, next) => {
     data: userData,
   });
 });
-
 
 // @route   /api/v1/auth/user/username/suggest
 // @desc    Suggest Unique Username
