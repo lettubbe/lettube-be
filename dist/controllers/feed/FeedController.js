@@ -254,13 +254,18 @@ exports.likePost = (0, express_async_handler_1.default)((req, res, next) => __aw
 exports.getFeedNotifications = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const user = yield (0, utils_1.getAuthUser)(req, next);
     const { page, limit, type } = req.query;
+    console.log("type", type);
     const filter = {
         userId: user._id,
     };
     // If type is provided and valid, add it to the filter
-    if (type && ["like", "comment", "reply", "subscription"].includes(type)) {
+    if (type && ["like", "comment", "subscription"].includes(type)) {
         filter.type = type;
     }
+    if (type && ["reply"].includes(type)) {
+        filter.subType = "replyLike";
+    }
+    console.log("filter", filter);
     const options = (0, paginate_1.getPaginateOptions)(page, limit, {
         populate: [
             {
