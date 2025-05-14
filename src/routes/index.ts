@@ -9,6 +9,7 @@ import SubscriptionRoute from "./SubscriptionRoute";
 import FeedRoute from "./FeedRoutes";
 import PlaylistRoute from "./Playlist";
 import NoticationsRoute from "./NotificationsRoute";
+import reportRoutes from './ReportRoutes';
 
 router.use("/auth", AuthRoute);
 router.use("/profile", ProfileRoute);
@@ -17,5 +18,6 @@ router.use("/subscription", SubscriptionRoute);
 router.use("/feeds", FeedRoute);
 router.use("/playlist", PlaylistRoute);
 router.use("/notifications", NoticationsRoute);
+router.use('/reports', reportRoutes);
 
 export default router;
