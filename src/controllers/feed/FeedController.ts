@@ -870,7 +870,7 @@ export const bookmarkPost = asyncHandler(async (req, res, next) => {
 
 export const getBookmarkedPosts = asyncHandler(async (req, res, next) => {
   const user = await getAuthUser(req, next);
-  const { page, limit } = req.query;
+  const { page, limit, searchTerm } = req.query;
 
   const options = getPaginateOptions(page, limit, {
     populate: {
@@ -879,8 +879,7 @@ export const getBookmarkedPosts = asyncHandler(async (req, res, next) => {
         path: "user",
         select: "username firstName lastName profilePicture",
       },
-    },
-    sort: { createdAt: -1 },
+    }
   });
 
   const bookmarks = await Bookmark.paginate({ user: user._id }, options);
