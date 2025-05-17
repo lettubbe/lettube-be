@@ -20,6 +20,9 @@ import Bookmark from "../../models/Bookmark";
 import Notification from "../../models/Notifications";
 import NotificationService from "../../services/notificationService";
 import { IPushNotificationBody } from "../../lib/interfaces/notification.interface";
+import { getCommentsQuery } from '../../services/commentService';
+import NotInterestedModel from "../../models/NotInterested";
+import BlockedChannel from "../../models/BlockedChannel";
 
 // @desc    Add Category to user Feed
 // @route   POST /api/v1/feed/category
@@ -289,12 +292,12 @@ export const likePost = asyncHandler(async (req, res, next) => {
 
   const update = hasLiked
     ? {
-        $pull: { "reactions.likes": userId },
-      }
+      $pull: { "reactions.likes": userId },
+    }
     : {
-        $addToSet: { "reactions.likes": userId },
-        $pull: { "reactions.dislikes": userId },
-      };
+      $addToSet: { "reactions.likes": userId },
+      $pull: { "reactions.dislikes": userId },
+    };
 
   const updatedPost = await Post.findByIdAndUpdate(postId, update, {
     new: true,
@@ -323,6 +326,8 @@ export const likePost = asyncHandler(async (req, res, next) => {
       await Notification.create({
         userId: post.user,
         actorIds: [user._id],
+        post: postId,
+        subType: "postLike",
         type: "like",
         videoId: postId,
         createdAt: new Date(),
@@ -350,22 +355,38 @@ export const likePost = asyncHandler(async (req, res, next) => {
 // @access   Private
 
 export const getFeedNotifications = asyncHandler(async (req, res, next) => {
+
   const user = await getAuthUser(req, next);
   const { page, limit, type } = req.query;
 
+  console.log("type", type);
+
   const filter: any = {
-    userId: user._id, 
+    userId: user._id,
   };
 
   // If type is provided and valid, add it to the filter
-  if (type && ["like", "comment", "reply", "subscription"].includes(type as any)) {
+  if (type && ["like", "comment", "subscription"].includes(type as any)) {
     filter.type = type;
   }
+
+  if (type && ["reply"].includes(type as any)) {
+    filter.subType = "replyLike";
+  }
+
+  console.log("filter", filter);
 
   const options = getPaginateOptions(page, limit, {
     populate: [
       {
-        path: "user",
+        path: "userId",
+        select: "username firstName lastName profilePicture",
+      },
+      {
+        path: "post",
+      },
+      {
+        path: "actorIds",
         select: "username firstName lastName profilePicture",
       },
     ],
@@ -373,6 +394,8 @@ export const getFeedNotifications = asyncHandler(async (req, res, next) => {
 
   const notificationsData = await Notification.paginate(filter, options);
   const notifications = transformPaginateResponse(notificationsData);
+
+  // console.log("notifications", notifications);
 
   baseResponseHandler({
     message: `User Notifications Retrieved successfully`,
@@ -416,8 +439,11 @@ export const replyToComment = asyncHandler(async (req, res, next) => {
     createdAt: new Date(),
   };
 
+
+  // @ts-ignore
   comment.replies.push(newReply);
   await post.save();
+
 
   const commentNotificationPayload: IPushNotificationBody  = {
     title: `Reply to your comment`,
@@ -458,6 +484,10 @@ export const replyToComment = asyncHandler(async (req, res, next) => {
     await NotificationService.sendNotification(comment.user as any, commentNotificationPayload);
 
   }
+
+  await Notification.create({ userId: comment.user, actorIds: [user._id], post: postId, type: "comment", videoId: postId, createdAt: new Date(), read: false });
+  // await NotificationService.sendNotification(comment.user as any, {});
+
 
   baseResponseHandler({
     message: `Reply Done Successfully`,
@@ -510,13 +540,13 @@ export const likeComment = asyncHandler(async (req, res, next) => {
 
     const update = alreadyLiked
       ? {
-          $pull: { "comments.$[comment].replies.$[reply].likes": userObjectId },
-        }
+        $pull: { "comments.$[comment].replies.$[reply].likes": userObjectId },
+      }
       : {
-          $addToSet: {
-            "comments.$[comment].replies.$[reply].likes": userObjectId,
-          },
-        };
+        $addToSet: {
+          "comments.$[comment].replies.$[reply].likes": userObjectId,
+        },
+      };
 
     await Post.updateOne(
       {
@@ -532,8 +562,48 @@ export const likeComment = asyncHandler(async (req, res, next) => {
         ],
       }
     );
+
+
+    if (!alreadyLiked) {
+      const existing = await Notification.findOne({
+        userId: reply.user,
+        type: "like",
+        videoId: postId,
+        commentId: replyId,
+      });
+
+      if (existing) {
+        if (!existing.actorIds.includes(user._id)) {
+          existing.actorIds.push(user._id);
+          existing.createdAt = new Date();
+          await existing.save();
+
+          await NotificationService.sendNotification(reply.user as any, {
+            title: `${existing.actorIds.length} people liked your reply`,
+            description: `${user.username} liked your reply`,
+          });
+        }
+      } else {
+        await Notification.create({
+          userId: reply.user,
+          actorIds: [user._id],
+          post: postId,
+          subType: "replyLike",
+          commentText: reply.text,
+          type: "like",
+          videoId: postId,
+          commentId: replyId,
+          createdAt: new Date(),
+          read: false,
+        });
+
+        await NotificationService.sendNotification(reply.user as any, {
+          title: `${user.username} liked your reply`,
+          description: `${user.username} liked your reply to a comment`,
+        });
+      }
+    }
   } else {
-    // Like/Unlike a COMMENT
     const alreadyLiked = comment.likes.some(
       (id) => id.toString() === userId.toString()
     );
@@ -549,6 +619,47 @@ export const likeComment = asyncHandler(async (req, res, next) => {
       },
       update
     );
+
+
+    if (!alreadyLiked) {
+      const existing = await Notification.findOne({
+        userId: comment.user,
+        type: "like",
+        videoId: postId,
+        commentId: commentId,
+      });
+
+      if (existing) {
+        if (!existing.actorIds.includes(user._id)) {
+          existing.actorIds.push(user._id);
+          existing.createdAt = new Date();
+          await existing.save();
+
+          await NotificationService.sendNotification(comment.user as any, {
+            title: `${existing.actorIds.length} people liked your comment`,
+            description: `${user.username} liked your comment`,
+          });
+        }
+      } else {
+        await Notification.create({
+          userId: comment.user,
+          actorIds: [user._id],
+          type: "like",
+          subType: "commentLike",
+          post: postId,
+          videoId: postId,
+          commentId: commentId,
+          commentText: comment.text,
+          createdAt: new Date(),
+          read: false,
+        });
+
+        await NotificationService.sendNotification(comment.user as any, {
+          title: `${user.username} liked your comment`,
+          description: `${user.username} liked your comment on a post`,
+        });
+      }
+    }
   }
 
   const updatedPost = await Post.findById(postId);
@@ -568,168 +679,51 @@ export const likeComment = asyncHandler(async (req, res, next) => {
 
 export const getPostComments = asyncHandler(async (req, res, next) => {
   const { postId } = req.params;
-  const { page = 1, limit = 10, search = "" } = req.query;
+  const { page = 1, limit = 10, search = "", mode = "newest" } = req.query as unknown as { page: number; limit: number; search: string; mode: 'top' | 'most-liked' | 'newest'; };
 
-  // First check if post exists
-  const postExists = await Post.findById(postId);
+  const query = getCommentsQuery(postId, { page, limit, search, mode });
+  const post = await query;
 
-  if (!postExists) {
+  if (!post) {
     return next(new ErrorResponse("Post Not Found", 404));
   }
 
-  // Build the aggregation pipeline
-  const pipeline: any[] = [
-    { $match: { _id: new Types.ObjectId(postId) } },
-    { $unwind: "$comments" },
+  const transformedComments = post.comments.map(comment => ({
+    _id: comment._id,
+    user: comment.user,
+    text: comment.text,
+    likes: comment.likes,
+    replies: comment.replies.map(reply => ({
+      _id: reply._id,
+      user: reply.user,
+      text: reply.text,
+      likes: reply.likes,
+      createdAt: reply.createdAt
+    })),
+    createdAt: comment.createdAt
+  }));
 
-    ...(search ? [{
-      $match: {
-        $or: [
-          { "comments.text": { $regex: search, $options: "i" } },
-          { "comments.replies.text": { $regex: search, $options: "i" } }
-        ]
-      }
-    }] : []),
-    // Add sorting and pagination
-    { $sort: { "comments.createdAt": -1 } },
-    { $skip: Math.max(0, (Number(page || 1) - 1) * Number(limit)) },
-    { $limit: Number(limit) },
-
-    {
-      $lookup: {
-        from: "users",
-        localField: "comments.user",
-        foreignField: "_id",
-        as: "comments.userDetails"
-      }
-    },
-    { $unwind: "$comments.userDetails" },
-    // Unwind replies to process each reply
-    {
-      $addFields: {
-        "comments.replies": {
-          $cond: {
-            if: { $isArray: "$comments.replies" },
-            then: "$comments.replies",
-            else: []
-          }
-        }
-      }
-    },
-    {
-      $unwind: {
-        path: "$comments.replies",
-        preserveNullAndEmptyArrays: true
-      }
-    },
-    // Lookup for reply users
-    {
-      $lookup: {
-        from: "users",
-        localField: "comments.replies.user",
-        foreignField: "_id",
-        as: "comments.replies.userDetails"
-      }
-    },
-    {
-      $unwind: {
-        path: "$comments.replies.userDetails",
-        preserveNullAndEmptyArrays: true
-      }
-    },
-    // Group replies back
-    {
-      $group: {
-        _id: {
-          postId: "$_id",
-          commentId: "$comments._id"
-        },
-        comment: { $first: "$comments" },
-        replies: {
-          $push: {
-            $cond: {
-              if: { $ifNull: ["$comments.replies", false] },
-              then: {
-                _id: "$comments.replies._id",
-                user: "$comments.replies.userDetails",
-                text: "$comments.replies.text",
-                likes: "$comments.replies.likes",
-                createdAt: "$comments.replies.createdAt"
-              },
-              else: "$$REMOVE"
-            }
-          }
-        }
-      }
-    },
-    // Final grouping
-    {
-      $group: {
-        _id: "$_id.postId",
-        comments: {
-          $push: {
-            _id: "$comment._id",
-            user: "$comment.userDetails",
-            text: "$comment.text",
-            likes: "$comment.likes",
-            replies: "$replies",
-            createdAt: "$comment.createdAt"
-          }
-        },
-        totalComments: { $sum: 1 }
-      }
-    }
-  ];
-
-  // Execute the aggregation
-  const result = await Post.aggregate(pipeline);
-
-  // Handle empty results
-  if (
-    result.length === 0 ||
-    !result[0].comments ||
-    result[0].comments.length === 0
-  ) {
-    return baseResponseHandler({
-      message: "No Comments Found",
-      res,
-      statusCode: 200,
-      success: true,
-      data: transformPaginateResponse({
-        docs: [],
-        totalDocs: 0,
-        limit: Number(limit),
-        totalPages: 0,
-        page: Number(page),
-        pagingCounter: 0,
-        hasPrevPage: false,
-        hasNextPage: false,
-        prevPage: null,
-        nextPage: null,
-      }),
-    });
-  }
+  const totalComments = await Post.findById(postId).select('comments').then(p => p?.comments?.length || 0);
 
   // Calculate pagination info
-  const totalComments = result[0].totalComments;
   const totalPages = Math.ceil(totalComments / Number(limit));
-  const hasNextPage = Number(page) < totalPages;
+  const hasNextPage = (Number(page) * Number(limit)) < totalComments;
   const hasPrevPage = Number(page) > 1;
 
   baseResponseHandler({
-    message: "Post Comments Retrieved Successfully",
+    message: transformedComments.length ? "Post Comments Retrieved Successfully" : "No Comments Found",
     res,
     statusCode: 200,
     success: true,
     data: transformPaginateResponse({
-      docs: result[0].comments,
+      docs: transformedComments,
       totalDocs: totalComments,
       limit: Number(limit),
-      totalPages: totalPages,
+      totalPages,
       page: Number(page),
-      pagingCounter: (Number(page) - 1) * Number(limit) + 1,
-      hasPrevPage: hasPrevPage,
-      hasNextPage: hasNextPage,
+      pagingCounter: ((Number(page) - 1) * Number(limit)) + 1,
+      hasPrevPage,
+      hasNextPage,
       prevPage: hasPrevPage ? Number(page) - 1 : null,
       nextPage: hasNextPage ? Number(page) + 1 : null,
     }),
@@ -764,8 +758,23 @@ export const commentOnPost = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse(`Post Not Found`, 404));
   }
 
-  // NotificationService.se
-  // Notification.create({  });
+  await Notification.create({
+    userId: post.user,
+    actorIds: [user._id],
+    type: "comment",
+    commentText: text,
+    post: postId,
+    createdAt: new Date(),
+    read: false,
+  });
+
+
+  // Send push notification
+  await NotificationService.sendNotification(post.user as any, {
+    title: `${user.username} commented on your post`,
+    description: `${user.username} commented: ${text.substring(0, 50)}${text.length > 50 ? '...' : ''}`,
+  });
+
 
   baseResponseHandler({
     message: `Comment Added Successfully`,
@@ -795,14 +804,14 @@ export const dislikePost = asyncHandler(async (req, res, next) => {
 
   const update = hasDisliked
     ? {
-        // User already disliked → remove from dislikes
-        $pull: { "reactions.dislikes": userId },
-      }
+      // User already disliked → remove from dislikes
+      $pull: { "reactions.dislikes": userId },
+    }
     : {
-        // User not disliked yet → add to dislikes
-        $addToSet: { "reactions.dislikes": userId },
-        $pull: { "reactions.likes": userId }, // Remove from likes if any
-      };
+      // User not disliked yet → add to dislikes
+      $addToSet: { "reactions.dislikes": userId },
+      $pull: { "reactions.likes": userId }, // Remove from likes if any
+    };
 
   const updatedPost = await Post.findByIdAndUpdate(postId, update, {
     new: true,
@@ -819,11 +828,14 @@ export const dislikePost = asyncHandler(async (req, res, next) => {
 });
 
 // @desc      Bookmark Video
-// @route     /posts/:postId/bookmark
+// @route     POST /posts/:postId/bookmark
 // @access    Private
 
 export const bookmarkPost = asyncHandler(async (req, res, next) => {
   const { postId } = req.params;
+
+  console.log("hitting bookmark post");
+
   const user = await getAuthUser(req, next);
   const userId = user._id;
 
@@ -910,6 +922,12 @@ export const getUserFeeds = asyncHandler(async (req, res, next) => {
   const user = await getAuthUser(req, next);
   const { page, limit } = req.query;
 
+  // Get posts IDs that user is not interested in
+  const notInterestedPosts = await NotInterestedModel.find({ user: user._id })
+    .select('post')
+    .lean();
+  const notInterestedPostIds = notInterestedPosts.map(item => item.post);
+
   const options = getPaginateOptions(page, limit, {
     populate: [
       {
@@ -919,7 +937,12 @@ export const getUserFeeds = asyncHandler(async (req, res, next) => {
     ],
   });
 
-  const posts = await Post.paginate({}, options);
+  // Add not interested filter to query
+  const query = {
+    _id: { $nin: notInterestedPostIds }
+  };
+
+  const posts = await Post.paginate(query, options);
 
   // Get user's bookmarks for these posts
   const bookmarks = await Bookmark.find({
@@ -954,6 +977,7 @@ export const getUserFeeds = asyncHandler(async (req, res, next) => {
         comments: postObj.comments,
         createdAt: postObj.createdAt,
         updatedAt: postObj.updatedAt,
+        duration: postObj.duration,
         isBookmarked: bookmarkedPostIds.has(postObj._id.toString()),
       };
     }),
@@ -998,6 +1022,39 @@ export const deletePost = asyncHandler(async (req, res, next) => {
     statusCode: 200,
     success: true,
     data: post,
+  });
+});
+
+// @desc    Add post to playlist
+// @route   PATCH /api/v1/feed/posts/:postId/playlist/:playlistId
+// @access  Private
+export const addPostToPlaylist = asyncHandler(async (req, res, next) => {
+  const { postId, playlistId } = req.params;
+  const user = await getAuthUser(req, next);
+
+  const playlist = await Playlist.findOne({ _id: playlistId, user: user._id });
+  if (!playlist) {
+    return next(new ErrorResponse('Playlist not found or unauthorized', 404));
+  }
+
+  const post = await Post.findById(postId);
+  if (!post) {
+    return next(new ErrorResponse('Post not found', 404));
+  }
+
+  if (playlist.videos.includes(new Types.ObjectId(postId))) {
+    return next(new ErrorResponse('Post already in playlist', 400));
+  }
+
+  playlist.videos.push(new Types.ObjectId(postId));
+  await playlist.save();
+
+  baseResponseHandler({
+    message: 'Post added to playlist successfully',
+    res,
+    statusCode: 200,
+    success: true,
+    data: playlist
   });
 });
 
@@ -1074,5 +1131,247 @@ export const searchPosts = asyncHandler(async (req, res, next) => {
     statusCode: 200,
     success: true,
     data: posts,
+  });
+});
+
+// @desc      Get Viral Posts
+// @route     GET /api/v1/feed/viral
+// @access    Private
+
+export const getViralPosts = asyncHandler(async (req, res, next) => {
+  const { page, limit } = req.query;
+  const user = await getAuthUser(req, next);
+
+  // Calculate exactly 30 days ago
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+  const aggregatePipeline = [
+    {
+      $match: {
+        createdAt: { $gte: thirtyDaysAgo },
+        visibility: "public"
+      }
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "user",
+        foreignField: "_id",
+        as: "user"
+      }
+    }, {
+      $unwind: "$user"
+    },
+
+    {
+      $addFields: {
+        likesCount: { $size: "$reactions.likes" },
+        commentsCount: { $size: "$comments" },
+        user: {
+          username: "$user.username",
+          firstName: "$user.firstName",
+          lastName: "$user.lastName",
+          profilePicture: "$user.profilePicture"
+        }
+      }
+    },
+    {
+      $sort: {
+        likesCount: -1,
+        commentsCount: -1
+      }
+    }
+  ] as unknown as mongoose.PipelineStage[];
+
+  const options = getPaginateOptions(page, limit, {
+    populate: [
+      {
+        path: "user",
+        select: "username firstName lastName profilePicture"
+      }
+    ]
+  });
+
+  const posts = await Post.aggregate(aggregatePipeline)
+    .skip(options.page)
+    .limit(options.limit)
+
+  const totalDocs = await Post.countDocuments({
+    createdAt: { $gte: thirtyDaysAgo },
+    visibility: "public"
+  });
+
+  // Get user's bookmarks for these posts
+  const bookmarks = await Bookmark.find({
+    user: user._id,
+    post: { $in: posts.map(post => post._id) }
+  });
+
+  const bookmarkedPostIds = new Set(bookmarks.map(b => b.post.toString()));
+
+  // Transform the posts with consistent structure
+  const transformedPosts = posts.map(post => ({
+    _id: post._id,
+    user: {
+      _id: post.user._id,
+      username: post.user.username,
+      firstName: post.user.firstName,
+      lastName: post.user.lastName,
+      profilePicture: post.user.profilePicture
+    },
+    category: post.category,
+    thumbnail: post.thumbnail,
+    videoUrl: post.videoUrl,
+    description: post.description,
+    visibility: post.visibility,
+    tags: post.tags,
+    isCommentsAllowed: post.isCommentsAllowed,
+    reactions: post.reactions,
+    comments: post.comments,
+    createdAt: post.createdAt,
+    updatedAt: post.updatedAt,
+    isBookmarked: bookmarkedPostIds.has(post._id.toString()),
+    metrics: {
+      likesCount: post.likesCount,
+      commentsCount: post.commentsCount
+    }
+  }));
+
+  const paginatedResponse = {
+    docs: transformedPosts,
+    totalDocs,
+    limit: Number(options.limit),
+    page: Number(options.page),
+    totalPages: Math.ceil(totalDocs / Number(options.limit))
+  };
+
+  baseResponseHandler({
+    message: "Viral posts retrieved successfully",
+    res,
+    statusCode: 200,
+    success: true,
+    data: transformPaginateResponse(paginatedResponse)
+  });
+});
+
+// @desc    Mark post as not interested
+// @route   POST /api/v1/feed/posts/:postId/not-interested
+// @access  Private
+export const toggleNotInterested = asyncHandler(async (req, res, next) => {
+  const { postId } = req.params;
+  const user = await getAuthUser(req, next);
+
+  const post = await Post.findById(postId);
+  if (!post) {
+    return next(new ErrorResponse('Post not found', 404));
+  }
+
+  const existingNotInterested = await NotInterestedModel.findOne({
+    user: user._id,
+    post: postId
+  });
+
+  if (existingNotInterested) {
+    await NotInterestedModel.deleteOne({ _id: existingNotInterested._id });
+    baseResponseHandler({
+      message: 'Post removed from not interested',
+      res,
+      statusCode: 200,
+      success: true,
+      data: { status: 'removed' }
+    });
+  } else {
+    const notInterested = await NotInterestedModel.create({
+      user: user._id,
+      post: postId
+    });
+    baseResponseHandler({
+      message: 'Post marked as not interested',
+      res,
+      statusCode: 200,
+      success: true,
+      data: { status: 'added', notInterested }
+    });
+  }
+});
+
+// @desc    Block channel from recommendations
+// @route   POST /api/v1/feed/channels/:channelId/block
+// @access  Private
+export const blockChannel = asyncHandler(async (req, res, next) => {
+  const { channelId } = req.params;
+  const user = await getAuthUser(req, next);
+
+  const channelUser = await User.findById(channelId);
+  if (!channelUser) {
+    return next(new ErrorResponse('Channel not found', 404));
+  }
+
+  const blockedChannel = await BlockedChannel.create({
+    user: user._id,
+    blockedUser: channelId
+  });
+
+  baseResponseHandler({
+    message: 'Channel blocked from recommendations',
+    res,
+    statusCode: 200,
+    success: true,
+    data: blockedChannel
+  });
+});
+
+// @desc    Remove post from playlist
+// @route   DELETE /api/v1/feed/posts/:postId/playlist/:playlistId
+// @access  Private
+export const removePostFromPlaylist = asyncHandler(async (req, res, next) => {
+  const { postId, playlistId } = req.params;
+  const user = await getAuthUser(req, next);
+
+  const playlist = await Playlist.findOne({ _id: playlistId, user: user._id });
+  if (!playlist) {
+    return next(new ErrorResponse('Playlist not found or unauthorized', 404));
+  }
+
+  if (!playlist.videos.includes(new Types.ObjectId(postId))) {
+    return next(new ErrorResponse('Post not in playlist', 404));
+  }
+
+  playlist.videos = playlist.videos.filter(videoId => videoId.toString() !== postId);
+  await playlist.save();
+
+  baseResponseHandler({
+    message: 'Post removed from playlist successfully',
+    res,
+    statusCode: 200,
+    success: true,
+    data: playlist
+  });
+});
+
+// @desc    Unblock channel from recommendations
+// @route   DELETE /api/v1/feed/channels/:channelId/block
+// @access  Private
+export const unblockChannel = asyncHandler(async (req, res, next) => {
+  const { channelId } = req.params;
+  const user = await getAuthUser(req, next);
+
+  const blockedChannel = await BlockedChannel.findOne({
+    user: user._id,
+    blockedUser: channelId
+  });
+
+  if (!blockedChannel) {
+    return next(new ErrorResponse('Channel not blocked', 404));
+  }
+
+  await BlockedChannel.deleteOne({ _id: blockedChannel._id });
+
+  baseResponseHandler({
+    message: 'Channel unblocked successfully',
+    res,
+    statusCode: 200,
+    success: true,
+    data: { status: 'unblocked' }
   });
 });
