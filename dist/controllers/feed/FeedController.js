@@ -45,7 +45,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.unblockChannel = exports.removePostFromPlaylist = exports.blockChannel = exports.toggleNotInterested = exports.getViralPosts = exports.searchPosts = exports.addPostToPlaylist = exports.deletePost = exports.getUserFeeds = exports.getBookmarkedPosts = exports.bookmarkPost = exports.dislikePost = exports.commentOnPost = exports.getPostComments = exports.likeComment = exports.replyToComment = exports.getFeedNotificationsCount = exports.getFeedNotifications = exports.likePost = exports.editFeedPost = exports.uploadFeedPost = exports.getContacts = exports.getUserPublicUploadedFeeds = exports.getUserUploadedFeeds = exports.createCategoryFeeds = void 0;
+exports.unblockChannel = exports.removePostFromPlaylist = exports.blockChannel = exports.toggleNotInterested = exports.getViralPosts = exports.searchPosts = exports.addPostToPlaylist = exports.deletePost = exports.getUserFeeds = exports.getBookmarkedPosts = exports.bookmarkPost = exports.dislikePost = exports.commentOnPost = exports.getPostComments = exports.likeComment = exports.replyToComment = exports.getFeedNotificationsCount = exports.getFeedNotifications = exports.likePost = exports.getPostFeed = exports.editFeedPost = exports.uploadFeedPost = exports.getContacts = exports.getUserPublicUploadedFeeds = exports.getUserUploadedFeeds = exports.createCategoryFeeds = void 0;
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const Feed_1 = __importDefault(require("../../models/Feed"));
 const BaseResponseHandler_1 = __importDefault(require("../../messages/BaseResponseHandler"));
@@ -64,6 +64,9 @@ const commentService_1 = require("../../services/commentService");
 const NotInterested_1 = __importDefault(require("../../models/NotInterested"));
 const BlockedChannel_1 = __importDefault(require("../../models/BlockedChannel"));
 const NotificationEnums_1 = require("../../constants/enums/NotificationEnums");
+// @desc    Add Category to user Feed
+// @route   POST /api/v1/feed/category
+// @access  Private
 exports.createCategoryFeeds = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { categories = [], excludedCategories = [] } = req.body;
     const user = yield (0, utils_1.getAuthUser)(req, next);
@@ -276,6 +279,23 @@ exports.editFeedPost = (0, express_async_handler_1.default)((req, res, next) => 
         statusCode: 200,
         success: true,
         data: post,
+    });
+}));
+// @desc     Edit User Feed Post
+// @route    GET /api/v1/feed/upload/:postId
+// @access   Private
+exports.getPostFeed = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const { postId } = req.params;
+    const post = yield Post_1.default.findById(postId).select("-comments");
+    if (!postId) {
+        return next(new ErrorResponse_1.default(`Post Not Found`, 404));
+    }
+    (0, BaseResponseHandler_1.default)({
+        message: `Post Retrieved Successsfully`,
+        res,
+        statusCode: 200,
+        success: true,
+        data: post
     });
 }));
 // @desc     Get User Feed
@@ -786,9 +806,9 @@ exports.getUserFeeds = (0, express_async_handler_1.default)((req, res, next) => 
     const { page, limit } = req.query;
     // Get posts IDs that user is not interested in
     const notInterestedPosts = yield NotInterested_1.default.find({ user: user._id })
-        .select("post")
+        .select('post')
         .lean();
-    const notInterestedPostIds = notInterestedPosts.map((item) => item.post);
+    const notInterestedPostIds = notInterestedPosts.map(item => item.post);
     const options = (0, paginate_1.getPaginateOptions)(page, limit, {
         populate: [
             {
@@ -799,7 +819,7 @@ exports.getUserFeeds = (0, express_async_handler_1.default)((req, res, next) => 
     });
     // Add not interested filter to query
     const query = {
-        _id: { $nin: notInterestedPostIds },
+        _id: { $nin: notInterestedPostIds }
     };
     const posts = yield Post_1.default.paginate(query, options);
     // Get user's bookmarks for these posts
@@ -874,23 +894,23 @@ exports.addPostToPlaylist = (0, express_async_handler_1.default)((req, res, next
     const user = yield (0, utils_1.getAuthUser)(req, next);
     const playlist = yield Playlist_1.default.findOne({ _id: playlistId, user: user._id });
     if (!playlist) {
-        return next(new ErrorResponse_1.default("Playlist not found or unauthorized", 404));
+        return next(new ErrorResponse_1.default('Playlist not found or unauthorized', 404));
     }
     const post = yield Post_1.default.findById(postId);
     if (!post) {
-        return next(new ErrorResponse_1.default("Post not found", 404));
+        return next(new ErrorResponse_1.default('Post not found', 404));
     }
     if (playlist.videos.includes(new mongoose_1.Types.ObjectId(postId))) {
-        return next(new ErrorResponse_1.default("Post already in playlist", 400));
+        return next(new ErrorResponse_1.default('Post already in playlist', 400));
     }
     playlist.videos.push(new mongoose_1.Types.ObjectId(postId));
     yield playlist.save();
     (0, BaseResponseHandler_1.default)({
-        message: "Post added to playlist successfully",
+        message: 'Post added to playlist successfully',
         res,
         statusCode: 200,
         success: true,
-        data: playlist,
+        data: playlist
     });
 }));
 // @desc      Get User's Feed Posts
@@ -1058,33 +1078,33 @@ exports.toggleNotInterested = (0, express_async_handler_1.default)((req, res, ne
     const user = yield (0, utils_1.getAuthUser)(req, next);
     const post = yield Post_1.default.findById(postId);
     if (!post) {
-        return next(new ErrorResponse_1.default("Post not found", 404));
+        return next(new ErrorResponse_1.default('Post not found', 404));
     }
     const existingNotInterested = yield NotInterested_1.default.findOne({
         user: user._id,
-        post: postId,
+        post: postId
     });
     if (existingNotInterested) {
         yield NotInterested_1.default.deleteOne({ _id: existingNotInterested._id });
         (0, BaseResponseHandler_1.default)({
-            message: "Post removed from not interested",
+            message: 'Post removed from not interested',
             res,
             statusCode: 200,
             success: true,
-            data: { status: "removed" },
+            data: { status: 'removed' }
         });
     }
     else {
         const notInterested = yield NotInterested_1.default.create({
             user: user._id,
-            post: postId,
+            post: postId
         });
         (0, BaseResponseHandler_1.default)({
-            message: "Post marked as not interested",
+            message: 'Post marked as not interested',
             res,
             statusCode: 200,
             success: true,
-            data: { status: "added", notInterested },
+            data: { status: 'added', notInterested }
         });
     }
 }));
@@ -1096,18 +1116,18 @@ exports.blockChannel = (0, express_async_handler_1.default)((req, res, next) => 
     const user = yield (0, utils_1.getAuthUser)(req, next);
     const channelUser = yield User_1.default.findById(channelId);
     if (!channelUser) {
-        return next(new ErrorResponse_1.default("Channel not found", 404));
+        return next(new ErrorResponse_1.default('Channel not found', 404));
     }
     const blockedChannel = yield BlockedChannel_1.default.create({
         user: user._id,
-        blockedUser: channelId,
+        blockedUser: channelId
     });
     (0, BaseResponseHandler_1.default)({
-        message: "Channel blocked from recommendations",
+        message: 'Channel blocked from recommendations',
         res,
         statusCode: 200,
         success: true,
-        data: blockedChannel,
+        data: blockedChannel
     });
 }));
 // @desc    Remove post from playlist
@@ -1118,19 +1138,19 @@ exports.removePostFromPlaylist = (0, express_async_handler_1.default)((req, res,
     const user = yield (0, utils_1.getAuthUser)(req, next);
     const playlist = yield Playlist_1.default.findOne({ _id: playlistId, user: user._id });
     if (!playlist) {
-        return next(new ErrorResponse_1.default("Playlist not found or unauthorized", 404));
+        return next(new ErrorResponse_1.default('Playlist not found or unauthorized', 404));
     }
     if (!playlist.videos.includes(new mongoose_1.Types.ObjectId(postId))) {
-        return next(new ErrorResponse_1.default("Post not in playlist", 404));
+        return next(new ErrorResponse_1.default('Post not in playlist', 404));
     }
-    playlist.videos = playlist.videos.filter((videoId) => videoId.toString() !== postId);
+    playlist.videos = playlist.videos.filter(videoId => videoId.toString() !== postId);
     yield playlist.save();
     (0, BaseResponseHandler_1.default)({
-        message: "Post removed from playlist successfully",
+        message: 'Post removed from playlist successfully',
         res,
         statusCode: 200,
         success: true,
-        data: playlist,
+        data: playlist
     });
 }));
 // @desc    Unblock channel from recommendations
@@ -1141,17 +1161,17 @@ exports.unblockChannel = (0, express_async_handler_1.default)((req, res, next) =
     const user = yield (0, utils_1.getAuthUser)(req, next);
     const blockedChannel = yield BlockedChannel_1.default.findOne({
         user: user._id,
-        blockedUser: channelId,
+        blockedUser: channelId
     });
     if (!blockedChannel) {
-        return next(new ErrorResponse_1.default("Channel not blocked", 404));
+        return next(new ErrorResponse_1.default('Channel not blocked', 404));
     }
     yield BlockedChannel_1.default.deleteOne({ _id: blockedChannel._id });
     (0, BaseResponseHandler_1.default)({
-        message: "Channel unblocked successfully",
+        message: 'Channel unblocked successfully',
         res,
         statusCode: 200,
         success: true,
-        data: { status: "unblocked" },
+        data: { status: 'unblocked' }
     });
 }));

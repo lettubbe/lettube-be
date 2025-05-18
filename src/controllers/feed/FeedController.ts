@@ -358,6 +358,30 @@ export const editFeedPost = asyncHandler(async (req, res, next) => {
   });
 });
 
+// @desc     Edit User Feed Post
+// @route    GET /api/v1/feed/upload/:postId
+// @access   Private
+
+export const getPostFeed = asyncHandler(async (req, res, next) => {
+
+  const { postId } = req.params;
+
+  const post = await Post.findById(postId).select("-comments");
+
+  if(!postId){
+    return next(new ErrorResponse(`Post Not Found`, 404));
+  }
+
+  baseResponseHandler({
+    message: `Post Retrieved Successsfully`,
+    res,
+    statusCode: 200,
+    success: true,
+    data: post
+  });
+
+});
+
 // @desc     Get User Feed
 // @route    GET /api/v1/feed/:postId/like
 // @access   Private
@@ -1116,6 +1140,7 @@ export const deletePost = asyncHandler(async (req, res, next) => {
 // @desc    Add post to playlist
 // @route   PATCH /api/v1/feed/posts/:postId/playlist/:playlistId
 // @access  Private
+
 export const addPostToPlaylist = asyncHandler(async (req, res, next) => {
   const { postId, playlistId } = req.params;
   const user = await getAuthUser(req, next);
@@ -1346,6 +1371,7 @@ export const getViralPosts = asyncHandler(async (req, res, next) => {
 // @desc    Mark post as not interested
 // @route   POST /api/v1/feed/posts/:postId/not-interested
 // @access  Private
+
 export const toggleNotInterested = asyncHandler(async (req, res, next) => {
   const { postId } = req.params;
   const user = await getAuthUser(req, next);
@@ -1387,6 +1413,7 @@ export const toggleNotInterested = asyncHandler(async (req, res, next) => {
 // @desc    Block channel from recommendations
 // @route   POST /api/v1/feed/channels/:channelId/block
 // @access  Private
+
 export const blockChannel = asyncHandler(async (req, res, next) => {
   const { channelId } = req.params;
   const user = await getAuthUser(req, next);
@@ -1413,6 +1440,7 @@ export const blockChannel = asyncHandler(async (req, res, next) => {
 // @desc    Remove post from playlist
 // @route   DELETE /api/v1/feed/posts/:postId/playlist/:playlistId
 // @access  Private
+
 export const removePostFromPlaylist = asyncHandler(async (req, res, next) => {
   const { postId, playlistId } = req.params;
   const user = await getAuthUser(req, next);
@@ -1441,6 +1469,7 @@ export const removePostFromPlaylist = asyncHandler(async (req, res, next) => {
 // @desc    Unblock channel from recommendations
 // @route   DELETE /api/v1/feed/channels/:channelId/block
 // @access  Private
+
 export const unblockChannel = asyncHandler(async (req, res, next) => {
   const { channelId } = req.params;
   const user = await getAuthUser(req, next);
