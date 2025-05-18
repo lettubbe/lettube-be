@@ -2,7 +2,7 @@ import express from "express";
 import { protect } from "../middleware/protect";
 import validateGetPhoneContacts, { validatePhoneContactsSchema } from "../middleware/validation/feeds/phoneContactsValidationSchema";
 import validateAddCategoryFeedRequest, { validateAddCategoryFeedSchema } from "../middleware/validation/feeds/categoryValidationSchema";
-import { addPostToPlaylist, blockChannel, bookmarkPost, commentOnPost, createCategoryFeeds, deletePost, dislikePost, getBookmarkedPosts, getContacts, getFeedNotifications, getPostComments, getUserFeeds, getUserPublicUploadedFeeds, getUserUploadedFeeds, getViralPosts, likeComment, likePost, removePostFromPlaylist, replyToComment, searchPosts, toggleNotInterested, unblockChannel, uploadFeedPost } from "../controllers/feed/FeedController";
+import { addPostToPlaylist, blockChannel, bookmarkPost, commentOnPost, createCategoryFeeds, deletePost, dislikePost, getBookmarkedPosts, getContacts, getFeedNotifications, getFeedNotificationsCount, getPostComments, getUserFeeds, getUserPublicUploadedFeeds, getUserUploadedFeeds, getViralPosts, likeComment, likePost, removePostFromPlaylist, replyToComment, searchPosts, toggleNotInterested, unblockChannel, uploadFeedPost } from "../controllers/feed/FeedController";
 import upload from "../middleware/multer";
 import validatePostComment, { validatePostCommentSchema } from "../middleware/validation/feeds/commentOnPostValidationSchema";
 
@@ -18,6 +18,7 @@ router.get("/uploads/public", protect, getUserPublicUploadedFeeds);
 router.post("/upload", [protect, upload.fields([{ name: "thumbnailImage" }, { name: "postVideo" }])], uploadFeedPost);
 router.get("/bookmarks", protect, getBookmarkedPosts);
 router.get("/notifications", protect, getFeedNotifications);
+router.get("/notifications/count", protect, getFeedNotificationsCount);
 
 router.patch("/posts/:postId/like", protect, likePost);
 router.patch("/posts/:postId/dislike", protect, dislikePost);
