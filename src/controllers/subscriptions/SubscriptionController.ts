@@ -94,7 +94,10 @@ export const getSubscribers = asyncHandler(async (req, res, next) => {
   });
 });
 
-// Get who a user is subscribed to
+// @desc    Get User Subscribers
+// @route   /api/v1/subscription/subscribedTo 
+// @access  Private
+
 export const getSubscribedTo = asyncHandler(async (req, res, next) => {
   const subscriberId = req.user.id;
 

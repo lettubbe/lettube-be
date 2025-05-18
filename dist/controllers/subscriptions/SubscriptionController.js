@@ -89,7 +89,9 @@ exports.getSubscribers = (0, express_async_handler_1.default)((req, res, next) =
         data: subscribers,
     });
 }));
-// Get who a user is subscribed to
+// @desc    Get User Subscribers
+// @route   /api/v1/subscription/subscribedTo 
+// @access  Private
 exports.getSubscribedTo = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const subscriberId = req.user.id;
     const subscriptions = yield Subscription_1.default.find({

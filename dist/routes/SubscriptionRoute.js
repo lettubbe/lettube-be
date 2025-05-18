@@ -10,4 +10,6 @@ const router = (0, express_1.default)();
 router.post("/bulk", protect_1.protect, SubscriptionController_1.bulkSubscribe);
 router.post("/subscribe/:userId", protect_1.protect, SubscriptionController_1.subscribe);
 router.post("/unsubscribe/:userId", protect_1.protect, SubscriptionController_1.unsubscribe);
+router.get("/subscribers", protect_1.protect, SubscriptionController_1.getSubscribers);
+router.get("/subscribedTo", protect_1.protect, SubscriptionController_1.getSubscribedTo);
 exports.default = router;
