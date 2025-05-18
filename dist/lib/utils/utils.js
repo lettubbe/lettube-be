@@ -13,7 +13,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getRemoteVideoDuration = exports.normalizePhoneNumber = exports.buildUserAuthTypeQuery = exports.removeSensitiveFields = exports.formatCurrency = exports.getAuthUser = void 0;
-const User_1 = __importDefault(require("../../models/User"));
+const User_1 = __importDefault(require("../../models/Auth/User"));
 const axios_1 = __importDefault(require("axios"));
 const fs_1 = __importDefault(require("fs"));
 const tmp_1 = __importDefault(require("tmp"));

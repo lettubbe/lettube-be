@@ -14,7 +14,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteChatMessage = void 0;
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
-const Conversations_1 = require("../../models/Conversations");
+const Conversations_1 = require("../../models/chats/Conversations");
 const ErrorResponse_1 = __importDefault(require("../../messages/ErrorResponse"));
 exports.deleteChatMessage = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { messageId } = req.params;

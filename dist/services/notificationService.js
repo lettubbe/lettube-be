@@ -13,10 +13,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const axios_1 = __importDefault(require("axios"));
-const mailjetProvider_1 = __importDefault(require("../providers/mailjetProvider"));
 const config_1 = __importDefault(require("../config"));
+const Devices_1 = __importDefault(require("../models/Auth/Devices"));
 const expoProvider_1 = __importDefault(require("../providers/expoProvider"));
-const Devices_1 = __importDefault(require("../models/Devices"));
+const mailjetProvider_1 = __importDefault(require("../providers/mailjetProvider"));
 const KNOWN_ERRORS = [
     "messaging/invalid-argument",
     "messaging/registration-token-not-registered",
@@ -24,7 +24,6 @@ const KNOWN_ERRORS = [
 class NotificationService {
     static sendEmail(options) {
         return __awaiter(this, void 0, void 0, function* () {
-            console.log("sendng email", options);
             const request = mailjetProvider_1.default.post("send", { version: "v3.1" }).request({
                 Messages: [
                     {
@@ -89,8 +88,6 @@ class NotificationService {
                 try {
                     const response = yield expoProvider_1.default.sendPushNotificationsAsync([notificationPayload]);
                     console.log("response expo", response);
-                    // const receipts = await expo.getPushNotificationReceiptsAsync(['019478ca-c108-7fa5-873b-c40aa61d8f45']);
-                    // console.log("receipts", receipts);
                 }
                 catch (error) {
                     console.error("Failed to send notification:", error);

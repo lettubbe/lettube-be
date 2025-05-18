@@ -47,22 +47,22 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.unblockChannel = exports.removePostFromPlaylist = exports.blockChannel = exports.toggleNotInterested = exports.getViralPosts = exports.searchPosts = exports.addPostToPlaylist = exports.deletePost = exports.getUserFeeds = exports.getBookmarkedPosts = exports.bookmarkPost = exports.dislikePost = exports.deletePostComment = exports.commentOnPost = exports.getPostComments = exports.likeComment = exports.replyToComment = exports.getFeedNotificationsCount = exports.getFeedNotifications = exports.likePost = exports.getPostFeed = exports.editFeedPost = exports.uploadFeedPost = exports.getContacts = exports.getUserPublicUploadedFeeds = exports.getUserUploadedFeeds = exports.createCategoryFeeds = void 0;
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
-const Feed_1 = __importDefault(require("../../models/Feed"));
+const Feed_1 = __importDefault(require("../../models/Feed/Feed"));
 const BaseResponseHandler_1 = __importDefault(require("../../messages/BaseResponseHandler"));
 const utils_1 = require("../../lib/utils/utils");
 const ErrorResponse_1 = __importDefault(require("../../messages/ErrorResponse"));
-const User_1 = __importDefault(require("../../models/User"));
-const Post_1 = __importDefault(require("../../models/Post"));
+const User_1 = __importDefault(require("../../models/Auth/User"));
+const Post_1 = __importDefault(require("../../models/Feed/Post"));
 const paginate_1 = require("../../lib/utils/paginate");
 const fileUpload_1 = require("../../lib/utils/fileUpload");
-const mongoose_1 = __importStar(require("mongoose")); // make sure mongoose is imported
-const Playlist_1 = __importDefault(require("../../models/Playlist"));
-const Bookmark_1 = __importDefault(require("../../models/Bookmark"));
+const mongoose_1 = __importStar(require("mongoose"));
+const Playlist_1 = __importDefault(require("../../models/Feed/Playlist"));
+const Bookmark_1 = __importDefault(require("../../models/Feed/Bookmark"));
 const Notifications_1 = __importDefault(require("../../models/Notifications"));
 const notificationService_1 = __importDefault(require("../../services/notificationService"));
 const commentService_1 = require("../../services/commentService");
-const NotInterested_1 = __importDefault(require("../../models/NotInterested"));
-const BlockedChannel_1 = __importDefault(require("../../models/BlockedChannel"));
+const NotInterested_1 = __importDefault(require("../../models/Feed/NotInterested"));
+const BlockedChannel_1 = __importDefault(require("../../models/Feed/BlockedChannel"));
 const NotificationEnums_1 = require("../../constants/enums/NotificationEnums");
 // @desc    Add Category to user Feed
 // @route   POST /api/v1/feed/category

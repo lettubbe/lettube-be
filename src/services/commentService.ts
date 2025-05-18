@@ -1,5 +1,5 @@
 import { Types } from 'mongoose';
-import Post from '../models/Post';
+import Post from '../models/Feed/Post';
 
 type SortMode = 'top' | 'most-liked' | 'newest';
 

@@ -1,5 +1,5 @@
 import asyncHandler from "express-async-handler";
-import Feed from "../../models/Feed";
+import Feed from "../../models/Feed/Feed";
 import baseResponseHandler from "../../messages/BaseResponseHandler";
 import {
   getAuthUser,
@@ -7,21 +7,21 @@ import {
   normalizePhoneNumber,
 } from "../../lib/utils/utils";
 import ErrorResponse from "../../messages/ErrorResponse";
-import User from "../../models/User";
-import Post from "../../models/Post";
+import User from "../../models/Auth/User";
+import Post from "../../models/Feed/Post";
 import {
   getPaginateOptions,
   transformPaginateResponse,
 } from "../../lib/utils/paginate";
 import { uploadFileFromFields } from "../../lib/utils/fileUpload";
-import mongoose, { Types } from "mongoose"; // make sure mongoose is imported
-import Playlist from "../../models/Playlist";
-import Bookmark from "../../models/Bookmark";
+import mongoose, { Types } from "mongoose";
+import Playlist from "../../models/Feed/Playlist";
+import Bookmark from "../../models/Feed/Bookmark";
 import Notification from "../../models/Notifications";
 import NotificationService from "../../services/notificationService";
 import { getCommentsQuery } from "../../services/commentService";
-import NotInterestedModel from "../../models/NotInterested";
-import BlockedChannel from "../../models/BlockedChannel";
+import NotInterestedModel from "../../models/Feed/NotInterested";
+import BlockedChannel from "../../models/Feed/BlockedChannel";
 import { NotificationStatusEnum } from "../../constants/enums/NotificationEnums";
 import { IPushNotificationBody } from "../../lib/interfaces/notification.interface";
 

@@ -1,4 +1,4 @@
-import User from "../../models/User";
+import User from "../../models/Auth/User";
 import { NextFunction } from "express";
 import axios from "axios";
 import fs from "fs";

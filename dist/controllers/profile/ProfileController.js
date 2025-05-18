@@ -13,12 +13,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getUserPublicProfile = exports.getUserProfile = exports.updateProfileDetails = exports.uploadCoverPhoto = exports.updateProfilePhoto = void 0;
-const User_1 = __importDefault(require("../../models/User"));
+const User_1 = __importDefault(require("../../models/Auth/User"));
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const fileUpload_1 = require("../../lib/utils/fileUpload");
 const ErrorResponse_1 = __importDefault(require("../../messages/ErrorResponse"));
 const utils_1 = require("../../lib/utils/utils");
-const Subscription_1 = __importDefault(require("../../models/Subscription"));
+const Subscription_1 = __importDefault(require("../../models/Feed/Subscription"));
 const BaseResponseHandler_1 = __importDefault(require("../../messages/BaseResponseHandler"));
 // @route   /api/v1/profile/upload/profilePhoto
 // @desc    Upload Profile Picture
