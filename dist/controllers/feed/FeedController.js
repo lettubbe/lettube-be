@@ -64,9 +64,6 @@ const commentService_1 = require("../../services/commentService");
 const NotInterested_1 = __importDefault(require("../../models/NotInterested"));
 const BlockedChannel_1 = __importDefault(require("../../models/BlockedChannel"));
 const NotificationEnums_1 = require("../../constants/enums/NotificationEnums");
-// @desc    Add Category to user Feed
-// @route   POST /api/v1/feed/category
-// @access  Private
 exports.createCategoryFeeds = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { categories = [], excludedCategories = [] } = req.body;
     const user = yield (0, utils_1.getAuthUser)(req, next);

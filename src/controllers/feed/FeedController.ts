@@ -1012,9 +1012,9 @@ export const getUserFeeds = asyncHandler(async (req, res, next) => {
 
   // Get posts IDs that user is not interested in
   const notInterestedPosts = await NotInterestedModel.find({ user: user._id })
-    .select("post")
+    .select('post')
     .lean();
-  const notInterestedPostIds = notInterestedPosts.map((item) => item.post);
+  const notInterestedPostIds = notInterestedPosts.map(item => item.post);
 
   const options = getPaginateOptions(page, limit, {
     populate: [
@@ -1027,7 +1027,7 @@ export const getUserFeeds = asyncHandler(async (req, res, next) => {
 
   // Add not interested filter to query
   const query = {
-    _id: { $nin: notInterestedPostIds },
+    _id: { $nin: notInterestedPostIds }
   };
 
   const posts = await Post.paginate(query, options);
@@ -1116,34 +1116,33 @@ export const deletePost = asyncHandler(async (req, res, next) => {
 // @desc    Add post to playlist
 // @route   PATCH /api/v1/feed/posts/:postId/playlist/:playlistId
 // @access  Private
-
 export const addPostToPlaylist = asyncHandler(async (req, res, next) => {
   const { postId, playlistId } = req.params;
   const user = await getAuthUser(req, next);
 
   const playlist = await Playlist.findOne({ _id: playlistId, user: user._id });
   if (!playlist) {
-    return next(new ErrorResponse("Playlist not found or unauthorized", 404));
+    return next(new ErrorResponse('Playlist not found or unauthorized', 404));
   }
 
   const post = await Post.findById(postId);
   if (!post) {
-    return next(new ErrorResponse("Post not found", 404));
+    return next(new ErrorResponse('Post not found', 404));
   }
 
   if (playlist.videos.includes(new Types.ObjectId(postId))) {
-    return next(new ErrorResponse("Post already in playlist", 400));
+    return next(new ErrorResponse('Post already in playlist', 400));
   }
 
   playlist.videos.push(new Types.ObjectId(postId));
   await playlist.save();
 
   baseResponseHandler({
-    message: "Post added to playlist successfully",
+    message: 'Post added to playlist successfully',
     res,
     statusCode: 200,
     success: true,
-    data: playlist,
+    data: playlist
   });
 });
 
@@ -1347,41 +1346,40 @@ export const getViralPosts = asyncHandler(async (req, res, next) => {
 // @desc    Mark post as not interested
 // @route   POST /api/v1/feed/posts/:postId/not-interested
 // @access  Private
-
 export const toggleNotInterested = asyncHandler(async (req, res, next) => {
   const { postId } = req.params;
   const user = await getAuthUser(req, next);
 
   const post = await Post.findById(postId);
   if (!post) {
-    return next(new ErrorResponse("Post not found", 404));
+    return next(new ErrorResponse('Post not found', 404));
   }
 
   const existingNotInterested = await NotInterestedModel.findOne({
     user: user._id,
-    post: postId,
+    post: postId
   });
 
   if (existingNotInterested) {
     await NotInterestedModel.deleteOne({ _id: existingNotInterested._id });
     baseResponseHandler({
-      message: "Post removed from not interested",
+      message: 'Post removed from not interested',
       res,
       statusCode: 200,
       success: true,
-      data: { status: "removed" },
+      data: { status: 'removed' }
     });
   } else {
     const notInterested = await NotInterestedModel.create({
       user: user._id,
-      post: postId,
+      post: postId
     });
     baseResponseHandler({
-      message: "Post marked as not interested",
+      message: 'Post marked as not interested',
       res,
       statusCode: 200,
       success: true,
-      data: { status: "added", notInterested },
+      data: { status: 'added', notInterested }
     });
   }
 });
@@ -1389,85 +1387,80 @@ export const toggleNotInterested = asyncHandler(async (req, res, next) => {
 // @desc    Block channel from recommendations
 // @route   POST /api/v1/feed/channels/:channelId/block
 // @access  Private
-
 export const blockChannel = asyncHandler(async (req, res, next) => {
   const { channelId } = req.params;
   const user = await getAuthUser(req, next);
 
   const channelUser = await User.findById(channelId);
   if (!channelUser) {
-    return next(new ErrorResponse("Channel not found", 404));
+    return next(new ErrorResponse('Channel not found', 404));
   }
 
   const blockedChannel = await BlockedChannel.create({
     user: user._id,
-    blockedUser: channelId,
+    blockedUser: channelId
   });
 
   baseResponseHandler({
-    message: "Channel blocked from recommendations",
+    message: 'Channel blocked from recommendations',
     res,
     statusCode: 200,
     success: true,
-    data: blockedChannel,
+    data: blockedChannel
   });
 });
 
 // @desc    Remove post from playlist
 // @route   DELETE /api/v1/feed/posts/:postId/playlist/:playlistId
 // @access  Private
-
 export const removePostFromPlaylist = asyncHandler(async (req, res, next) => {
   const { postId, playlistId } = req.params;
   const user = await getAuthUser(req, next);
 
   const playlist = await Playlist.findOne({ _id: playlistId, user: user._id });
   if (!playlist) {
-    return next(new ErrorResponse("Playlist not found or unauthorized", 404));
+    return next(new ErrorResponse('Playlist not found or unauthorized', 404));
   }
 
   if (!playlist.videos.includes(new Types.ObjectId(postId))) {
-    return next(new ErrorResponse("Post not in playlist", 404));
+    return next(new ErrorResponse('Post not in playlist', 404));
   }
 
-  playlist.videos = playlist.videos.filter(
-    (videoId) => videoId.toString() !== postId
-  );
+  playlist.videos = playlist.videos.filter(videoId => videoId.toString() !== postId);
   await playlist.save();
 
   baseResponseHandler({
-    message: "Post removed from playlist successfully",
+    message: 'Post removed from playlist successfully',
     res,
     statusCode: 200,
     success: true,
-    data: playlist,
+    data: playlist
   });
 });
 
 // @desc    Unblock channel from recommendations
 // @route   DELETE /api/v1/feed/channels/:channelId/block
 // @access  Private
-
 export const unblockChannel = asyncHandler(async (req, res, next) => {
   const { channelId } = req.params;
   const user = await getAuthUser(req, next);
 
   const blockedChannel = await BlockedChannel.findOne({
     user: user._id,
-    blockedUser: channelId,
+    blockedUser: channelId
   });
 
   if (!blockedChannel) {
-    return next(new ErrorResponse("Channel not blocked", 404));
+    return next(new ErrorResponse('Channel not blocked', 404));
   }
 
   await BlockedChannel.deleteOne({ _id: blockedChannel._id });
 
   baseResponseHandler({
-    message: "Channel unblocked successfully",
+    message: 'Channel unblocked successfully',
     res,
     statusCode: 200,
     success: true,
-    data: { status: "unblocked" },
+    data: { status: 'unblocked' }
   });
 });
