@@ -53,6 +53,7 @@ router.get("/uploads/public", protect_1.protect, FeedController_1.getUserPublicU
 router.post("/upload", [protect_1.protect, multer_1.default.fields([{ name: "thumbnailImage" }, { name: "postVideo" }])], FeedController_1.uploadFeedPost);
 router.get("/bookmarks", protect_1.protect, FeedController_1.getBookmarkedPosts);
 router.get("/notifications", protect_1.protect, FeedController_1.getFeedNotifications);
+router.get("/upload/:postId", protect_1.protect, FeedController_1.getPostFeed);
 router.patch("/posts/:postId/like", protect_1.protect, FeedController_1.likePost);
 router.patch("/posts/:postId/dislike", protect_1.protect, FeedController_1.dislikePost);
 router.get("/posts/:postId/comments", protect_1.protect, FeedController_1.getPostComments);
@@ -64,4 +65,11 @@ router.patch("/posts/:postId/comments/:commentId/replies", protect_1.protect, Fe
 router.patch("/posts/:postId/comments/:commentId/like", protect_1.protect, FeedController_1.likeComment);
 router.patch("/posts/:postId/comments/:commentId/replies/:replyId/like", protect_1.protect, FeedController_1.likeComment);
 router.get("/viral", protect_1.protect, FeedController_1.getViralPosts);
+router.patch('/posts/:postId/playlist/:playlistId', protect_1.protect, FeedController_1.addPostToPlaylist);
+router.post('/channels/:channelId/block', protect_1.protect, FeedController_1.blockChannel);
+router.delete('/posts/:postId/playlist/:playlistId', protect_1.protect, FeedController_1.removePostFromPlaylist);
+// Not interested management
+router.patch('/posts/:postId/not-interested', protect_1.protect, FeedController_1.toggleNotInterested);
+// Channel blocking management
+router.delete('/channels/:channelId/block', protect_1.protect, FeedController_1.unblockChannel);
 exports.default = router;

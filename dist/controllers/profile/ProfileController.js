@@ -26,6 +26,7 @@ const BaseResponseHandler_1 = __importDefault(require("../../messages/BaseRespon
 exports.updateProfilePhoto = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { email, phoneNumber } = req.body;
     const authUser = yield (0, utils_1.getAuthUser)(req, next);
+    console.log("authUser", authUser);
     const query = (0, utils_1.buildUserAuthTypeQuery)(email, phoneNumber, authUser._id);
     const user = yield User_1.default.findOne(query);
     if (!user) {
