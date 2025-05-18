@@ -12,8 +12,7 @@ import {
   forgotPasswordEmailTemplate,
   welcomeEmailTemplate,
 } from "../../lib/templates/Auth/Auth.template";
-import User from "../../models/User";
-import Auth from "../../models/Auth";
+import User from "../../models/Auth/User";
 import baseResponseHandler from "../../messages/BaseResponseHandler";
 import {
   buildUserAuthTypeQuery,
@@ -21,6 +20,7 @@ import {
 } from "../../lib/utils/utils";
 import config from "../../config";
 import { registerEnumType } from "../../constants/enums/RegisterationEnums";
+import Auth from "../../models/Auth/Auth";
 
 // @route   /api/v1/auth/register
 // @desc    Login A User

@@ -1,5 +1,5 @@
 import asyncHandler from "express-async-handler";
-import Category from "../../models/Category";
+import Category from "../../models/Feed/Category";
 import { getPaginateOptions, transformPaginateResponse } from "../../lib/utils/paginate";
 import baseResponseHandler from "../../messages/BaseResponseHandler";
 import { CATEGORIES } from "../../_data/categories";

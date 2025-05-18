@@ -17,7 +17,7 @@ const express_async_handler_1 = __importDefault(require("express-async-handler")
 const fileUpload_1 = require("../../lib/utils/fileUpload");
 const ErrorResponse_1 = __importDefault(require("../../messages/ErrorResponse"));
 const utils_1 = require("../../lib/utils/utils");
-const Playlist_1 = __importDefault(require("../../models/Playlist"));
+const Playlist_1 = __importDefault(require("../../models/Feed/Playlist"));
 const BaseResponseHandler_1 = __importDefault(require("../../messages/BaseResponseHandler"));
 const paginate_1 = require("../../lib/utils/paginate");
 // @route   POST /api/v1/playlist

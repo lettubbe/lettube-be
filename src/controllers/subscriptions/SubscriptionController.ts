@@ -1,10 +1,10 @@
 import asyncHandler from "express-async-handler";
 import ErrorResponse from "../../messages/ErrorResponse";
-import Subscription from "../../models/Subscription";
+import Subscription from "../../models/Feed/Subscription";
 import { getAuthUser } from "../../lib/utils/utils";
 import baseResponseHandler from "../../messages/BaseResponseHandler";
 import NotificationService from "../../services/notificationService";
-import User from "../../models/User";
+import User from "../../models/Auth/User";
 import Notification from "../../models/Notifications";
 
 // @desc    Subscribe to a channel

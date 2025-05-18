@@ -1,5 +1,5 @@
 import asyncHandler from "express-async-handler";
-import Device from "../../models/Devices";
+import Device from "../../models/Auth/Devices";
 import { getAuthUser } from "../../lib/utils/utils";
 import baseResponseHandler from "../../messages/BaseResponseHandler";
 

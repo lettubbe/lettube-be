@@ -45,24 +45,24 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.unblockChannel = exports.removePostFromPlaylist = exports.blockChannel = exports.toggleNotInterested = exports.getViralPosts = exports.searchPosts = exports.addPostToPlaylist = exports.deletePost = exports.getUserFeeds = exports.getBookmarkedPosts = exports.bookmarkPost = exports.dislikePost = exports.commentOnPost = exports.getPostComments = exports.likeComment = exports.replyToComment = exports.getFeedNotificationsCount = exports.getFeedNotifications = exports.likePost = exports.getPostFeed = exports.editFeedPost = exports.uploadFeedPost = exports.getContacts = exports.getUserPublicUploadedFeeds = exports.getUserUploadedFeeds = exports.createCategoryFeeds = void 0;
+exports.unblockChannel = exports.removePostFromPlaylist = exports.blockChannel = exports.toggleNotInterested = exports.getViralPosts = exports.searchPosts = exports.addPostToPlaylist = exports.deletePost = exports.getUserFeeds = exports.getBookmarkedPosts = exports.bookmarkPost = exports.dislikePost = exports.deletePostComment = exports.commentOnPost = exports.getPostComments = exports.likeComment = exports.replyToComment = exports.getFeedNotificationsCount = exports.getFeedNotifications = exports.likePost = exports.getPostFeed = exports.editFeedPost = exports.uploadFeedPost = exports.getContacts = exports.getUserPublicUploadedFeeds = exports.getUserUploadedFeeds = exports.createCategoryFeeds = void 0;
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
-const Feed_1 = __importDefault(require("../../models/Feed"));
+const Feed_1 = __importDefault(require("../../models/Feed/Feed"));
 const BaseResponseHandler_1 = __importDefault(require("../../messages/BaseResponseHandler"));
 const utils_1 = require("../../lib/utils/utils");
 const ErrorResponse_1 = __importDefault(require("../../messages/ErrorResponse"));
-const User_1 = __importDefault(require("../../models/User"));
-const Post_1 = __importDefault(require("../../models/Post"));
+const User_1 = __importDefault(require("../../models/Auth/User"));
+const Post_1 = __importDefault(require("../../models/Feed/Post"));
 const paginate_1 = require("../../lib/utils/paginate");
 const fileUpload_1 = require("../../lib/utils/fileUpload");
-const mongoose_1 = __importStar(require("mongoose")); // make sure mongoose is imported
-const Playlist_1 = __importDefault(require("../../models/Playlist"));
-const Bookmark_1 = __importDefault(require("../../models/Bookmark"));
+const mongoose_1 = __importStar(require("mongoose"));
+const Playlist_1 = __importDefault(require("../../models/Feed/Playlist"));
+const Bookmark_1 = __importDefault(require("../../models/Feed/Bookmark"));
 const Notifications_1 = __importDefault(require("../../models/Notifications"));
 const notificationService_1 = __importDefault(require("../../services/notificationService"));
 const commentService_1 = require("../../services/commentService");
-const NotInterested_1 = __importDefault(require("../../models/NotInterested"));
-const BlockedChannel_1 = __importDefault(require("../../models/BlockedChannel"));
+const NotInterested_1 = __importDefault(require("../../models/Feed/NotInterested"));
+const BlockedChannel_1 = __importDefault(require("../../models/Feed/BlockedChannel"));
 const NotificationEnums_1 = require("../../constants/enums/NotificationEnums");
 // @desc    Add Category to user Feed
 // @route   POST /api/v1/feed/category
@@ -291,7 +291,7 @@ exports.getPostFeed = (0, express_async_handler_1.default)((req, res, next) => _
         return next(new ErrorResponse_1.default(`Post Not Found`, 404));
     }
     (0, BaseResponseHandler_1.default)({
-        message: `Post Retrieved Successsfully`,
+        message: `Post Retrieved Successfully`,
         res,
         statusCode: 200,
         success: true,
@@ -447,6 +447,40 @@ exports.replyToComment = (0, express_async_handler_1.default)((req, res, next) =
     // @ts-ignore
     comment.replies.push(newReply);
     yield post.save();
+    const commentNotificationPayload = {
+        title: `Reply to your comment`,
+        description: `${user.username} replied to your comment`,
+    };
+    const now = new Date();
+    const existingNotification = yield Notifications_1.default.findOne({
+        userId: comment.user,
+        type: 'comment',
+        commentId: commentId
+    });
+    if (existingNotification) {
+        if (!existingNotification.actorIds.includes(user._id)) {
+            existingNotification.actorIds.push(user._id);
+            existingNotification.createdAt = now;
+            yield existingNotification.save();
+            const existingCommentNotificationPayload = {
+                title: `Reply to your comment`,
+                description: `${existingNotification.actorIds.length} replied to your comment`,
+            };
+            yield notificationService_1.default.sendNotification(comment.user, existingCommentNotificationPayload);
+        }
+    }
+    else {
+        yield Notifications_1.default.create({
+            userId: comment.user,
+            actorIds: [user._id],
+            type: 'comment',
+            videoId: postId,
+            commentId: commentId,
+            read: false,
+        });
+        yield notificationService_1.default.sendNotification(comment.user, commentNotificationPayload);
+    }
+    yield Notifications_1.default.create({ userId: comment.user, actorIds: [user._id], post: postId, type: "comment", videoId: postId, createdAt: new Date(), read: false });
     yield Notifications_1.default.create({
         userId: comment.user,
         actorIds: [user._id],
@@ -694,6 +728,32 @@ exports.commentOnPost = (0, express_async_handler_1.default)((req, res, next) =>
         data: post.comments,
     });
 }));
+// @desc      Delete Comment On A Post
+// @route     /posts/:postId/comments/:commentId/:postId
+// @access    Private
+exports.deletePostComment = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const { commentId, postId } = req.params;
+    if (!mongoose_1.default.Types.ObjectId.isValid(commentId) || !mongoose_1.default.Types.ObjectId.isValid(postId)) {
+        return next(new ErrorResponse_1.default("Invalid comment or post ID", 400));
+    }
+    const post = yield Post_1.default.findById(postId);
+    if (!post) {
+        return next(new ErrorResponse_1.default("Post not found", 404));
+    }
+    const commentIndex = post.comments.findIndex((comment) => comment._id.toString() === commentId);
+    if (commentIndex === -1) {
+        return next(new ErrorResponse_1.default("Comment not found", 404));
+    }
+    post.comments.splice(commentIndex, 1);
+    yield post.save();
+    (0, BaseResponseHandler_1.default)({
+        res,
+        message: "Comment deleted successfully",
+        success: true,
+        data: post.comments,
+        statusCode: 200
+    });
+}));
 // @desc      Dislike A Post
 // @route     /posts/:postId/dislike
 // @access    Private
@@ -732,7 +792,6 @@ exports.dislikePost = (0, express_async_handler_1.default)((req, res, next) => _
 // @access    Private
 exports.bookmarkPost = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { postId } = req.params;
-    console.log("hitting bookmark post");
     const user = yield (0, utils_1.getAuthUser)(req, next);
     const userId = user._id;
     // Check if post exists
@@ -773,7 +832,7 @@ exports.bookmarkPost = (0, express_async_handler_1.default)((req, res, next) => 
 // @access    Private
 exports.getBookmarkedPosts = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const user = yield (0, utils_1.getAuthUser)(req, next);
-    const { page, limit } = req.query;
+    const { page, limit, searchTerm } = req.query;
     const options = (0, paginate_1.getPaginateOptions)(page, limit, {
         populate: {
             path: "post",
@@ -781,8 +840,7 @@ exports.getBookmarkedPosts = (0, express_async_handler_1.default)((req, res, nex
                 path: "user",
                 select: "username firstName lastName profilePicture",
             },
-        },
-        sort: { createdAt: -1 },
+        }
     });
     const bookmarks = yield Bookmark_1.default.paginate({ user: user._id }, options);
     // Transform the response to return posts with isBookmarked flag

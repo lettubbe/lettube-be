@@ -1,5 +1,5 @@
 import asyncHandler from "express-async-handler";
-import { Message } from "../../models/Conversations";
+import { Message } from "../../models/chats/Conversations";
 import ErrorResponse from "../../messages/ErrorResponse";
 
 export const deleteChatMessage = asyncHandler(async (req, res, next) => {

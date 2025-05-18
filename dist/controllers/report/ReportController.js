@@ -14,11 +14,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getUserReports = exports.createReport = void 0;
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
-const Report_1 = __importDefault(require("../../models/Report"));
+const Report_1 = __importDefault(require("../../models/Feed/Report"));
 const BaseResponseHandler_1 = __importDefault(require("../../messages/BaseResponseHandler"));
 const ErrorResponse_1 = __importDefault(require("../../messages/ErrorResponse"));
 const utils_1 = require("../../lib/utils/utils");
-const Post_1 = __importDefault(require("../../models/Post"));
+const Post_1 = __importDefault(require("../../models/Feed/Post"));
 // @desc    Create a report
 // @route   POST /api/v1/reports
 // @access  Private

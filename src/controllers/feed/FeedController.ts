@@ -1,5 +1,5 @@
 import asyncHandler from "express-async-handler";
-import Feed from "../../models/Feed";
+import Feed from "../../models/Feed/Feed";
 import baseResponseHandler from "../../messages/BaseResponseHandler";
 import {
   getAuthUser,
@@ -7,22 +7,23 @@ import {
   normalizePhoneNumber,
 } from "../../lib/utils/utils";
 import ErrorResponse from "../../messages/ErrorResponse";
-import User from "../../models/User";
-import Post from "../../models/Post";
+import User from "../../models/Auth/User";
+import Post from "../../models/Feed/Post";
 import {
   getPaginateOptions,
   transformPaginateResponse,
 } from "../../lib/utils/paginate";
 import { uploadFileFromFields } from "../../lib/utils/fileUpload";
-import mongoose, { Types } from "mongoose"; // make sure mongoose is imported
-import Playlist from "../../models/Playlist";
-import Bookmark from "../../models/Bookmark";
+import mongoose, { Types } from "mongoose";
+import Playlist from "../../models/Feed/Playlist";
+import Bookmark from "../../models/Feed/Bookmark";
 import Notification from "../../models/Notifications";
 import NotificationService from "../../services/notificationService";
 import { getCommentsQuery } from "../../services/commentService";
-import NotInterestedModel from "../../models/NotInterested";
-import BlockedChannel from "../../models/BlockedChannel";
+import NotInterestedModel from "../../models/Feed/NotInterested";
+import BlockedChannel from "../../models/Feed/BlockedChannel";
 import { NotificationStatusEnum } from "../../constants/enums/NotificationEnums";
+import { IPushNotificationBody } from "../../lib/interfaces/notification.interface";
 
 // @desc    Add Category to user Feed
 // @route   POST /api/v1/feed/category
@@ -373,7 +374,7 @@ export const getPostFeed = asyncHandler(async (req, res, next) => {
   }
 
   baseResponseHandler({
-    message: `Post Retrieved Successsfully`,
+    message: `Post Retrieved Successfully`,
     res,
     statusCode: 200,
     success: true,
@@ -577,6 +578,48 @@ export const replyToComment = asyncHandler(async (req, res, next) => {
   comment.replies.push(newReply);
   await post.save();
 
+
+  const commentNotificationPayload: IPushNotificationBody  = {
+    title: `Reply to your comment`,
+    description: `${user.username} replied to your comment`,
+  }
+
+  const now = new Date();
+
+  const existingNotification = await Notification.findOne({
+    userId: comment.user,
+    type: 'comment',
+    commentId: commentId
+  });
+  
+  if (existingNotification) {
+    if (!existingNotification.actorIds.includes(user._id)) {
+      existingNotification.actorIds.push(user._id);
+      existingNotification.createdAt = now;
+      await existingNotification.save();
+
+      const existingCommentNotificationPayload: IPushNotificationBody  = {
+        title: `Reply to your comment`,
+        description: `${existingNotification.actorIds.length} replied to your comment`,
+      }
+
+      await NotificationService.sendNotification(comment.user as any, existingCommentNotificationPayload);
+    }
+  } else {
+    await Notification.create({
+      userId: comment.user,
+      actorIds: [user._id],
+      type: 'comment',
+      videoId: postId,
+      commentId: commentId,
+      read: false,
+    });
+
+    await NotificationService.sendNotification(comment.user as any, commentNotificationPayload);
+
+  }
+
+  await Notification.create({ userId: comment.user, actorIds: [user._id], post: postId, type: "comment", videoId: postId, createdAt: new Date(), read: false });
   await Notification.create({
     userId: comment.user,
     actorIds: [user._id],
@@ -587,6 +630,7 @@ export const replyToComment = asyncHandler(async (req, res, next) => {
     read: false,
   });
   // await NotificationService.sendNotification(comment.user as any, {});
+
 
   baseResponseHandler({
     message: `Reply Done Successfully`,
@@ -896,6 +940,46 @@ export const commentOnPost = asyncHandler(async (req, res, next) => {
   });
 });
 
+// @desc      Delete Comment On A Post
+// @route     /posts/:postId/comments/:commentId/:postId
+// @access    Private
+
+export const deletePostComment = asyncHandler(async (req, res, next) => {
+  const { commentId, postId } = req.params;
+
+  if (!mongoose.Types.ObjectId.isValid(commentId) || !mongoose.Types.ObjectId.isValid(postId)) {
+    return next(new ErrorResponse("Invalid comment or post ID", 400));
+  }
+
+  const post = await Post.findById(postId);
+
+  if (!post) {
+    return next(new ErrorResponse("Post not found", 404));
+  }
+
+  const commentIndex = post.comments.findIndex(
+    (comment) => comment._id.toString() === commentId
+  );
+
+  if (commentIndex === -1) {
+    return next(new ErrorResponse("Comment not found", 404));
+  }
+
+  post.comments.splice(commentIndex, 1); 
+
+  await post.save();
+
+  baseResponseHandler({
+    res,
+    message: "Comment deleted successfully",
+    success: true,
+    data: post.comments,
+    statusCode: 200
+  })
+
+});
+
+
 // @desc      Dislike A Post
 // @route     /posts/:postId/dislike
 // @access    Private
@@ -945,8 +1029,6 @@ export const dislikePost = asyncHandler(async (req, res, next) => {
 export const bookmarkPost = asyncHandler(async (req, res, next) => {
   const { postId } = req.params;
 
-  console.log("hitting bookmark post");
-
   const user = await getAuthUser(req, next);
   const userId = user._id;
 
@@ -993,7 +1075,7 @@ export const bookmarkPost = asyncHandler(async (req, res, next) => {
 
 export const getBookmarkedPosts = asyncHandler(async (req, res, next) => {
   const user = await getAuthUser(req, next);
-  const { page, limit } = req.query;
+  const { page, limit, searchTerm } = req.query;
 
   const options = getPaginateOptions(page, limit, {
     populate: {
@@ -1002,8 +1084,7 @@ export const getBookmarkedPosts = asyncHandler(async (req, res, next) => {
         path: "user",
         select: "username firstName lastName profilePicture",
       },
-    },
-    sort: { createdAt: -1 },
+    }
   });
 
   const bookmarks = await Bookmark.paginate({ user: user._id }, options);

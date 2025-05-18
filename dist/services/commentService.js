@@ -4,7 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getCommentsQuery = void 0;
-const Post_1 = __importDefault(require("../models/Post"));
+const Post_1 = __importDefault(require("../models/Feed/Post"));
 const getCommentsQuery = (postId, { page = 1, limit = 10, search = "", mode = "newest" }) => {
     const query = Post_1.default.findById(postId);
     if (search) {
