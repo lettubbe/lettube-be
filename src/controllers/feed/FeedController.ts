@@ -785,6 +785,46 @@ export const commentOnPost = asyncHandler(async (req, res, next) => {
   });
 });
 
+// @desc      Delete Comment On A Post
+// @route     /posts/:postId/comments/:commentId/:postId
+// @access    Private
+
+export const deletePostComment = asyncHandler(async (req, res, next) => {
+  const { commentId, postId } = req.params;
+
+  if (!mongoose.Types.ObjectId.isValid(commentId) || !mongoose.Types.ObjectId.isValid(postId)) {
+    return next(new ErrorResponse("Invalid comment or post ID", 400));
+  }
+
+  const post = await Post.findById(postId);
+
+  if (!post) {
+    return next(new ErrorResponse("Post not found", 404));
+  }
+
+  const commentIndex = post.comments.findIndex(
+    (comment) => comment._id.toString() === commentId
+  );
+
+  if (commentIndex === -1) {
+    return next(new ErrorResponse("Comment not found", 404));
+  }
+
+  post.comments.splice(commentIndex, 1); 
+
+  await post.save();
+
+  baseResponseHandler({
+    res,
+    message: "Comment deleted successfully",
+    success: true,
+    data: post.comments,
+    statusCode: 200
+  })
+
+});
+
+
 // @desc      Dislike A Post
 // @route     /posts/:postId/dislike
 // @access    Private
@@ -833,8 +873,6 @@ export const dislikePost = asyncHandler(async (req, res, next) => {
 
 export const bookmarkPost = asyncHandler(async (req, res, next) => {
   const { postId } = req.params;
-
-  console.log("hitting bookmark post");
 
   const user = await getAuthUser(req, next);
   const userId = user._id;
@@ -1028,6 +1066,7 @@ export const deletePost = asyncHandler(async (req, res, next) => {
 // @desc    Add post to playlist
 // @route   PATCH /api/v1/feed/posts/:postId/playlist/:playlistId
 // @access  Private
+
 export const addPostToPlaylist = asyncHandler(async (req, res, next) => {
   const { postId, playlistId } = req.params;
   const user = await getAuthUser(req, next);
@@ -1298,6 +1337,7 @@ export const toggleNotInterested = asyncHandler(async (req, res, next) => {
 // @desc    Block channel from recommendations
 // @route   POST /api/v1/feed/channels/:channelId/block
 // @access  Private
+
 export const blockChannel = asyncHandler(async (req, res, next) => {
   const { channelId } = req.params;
   const user = await getAuthUser(req, next);
@@ -1324,6 +1364,7 @@ export const blockChannel = asyncHandler(async (req, res, next) => {
 // @desc    Remove post from playlist
 // @route   DELETE /api/v1/feed/posts/:postId/playlist/:playlistId
 // @access  Private
+
 export const removePostFromPlaylist = asyncHandler(async (req, res, next) => {
   const { postId, playlistId } = req.params;
   const user = await getAuthUser(req, next);
@@ -1352,6 +1393,7 @@ export const removePostFromPlaylist = asyncHandler(async (req, res, next) => {
 // @desc    Unblock channel from recommendations
 // @route   DELETE /api/v1/feed/channels/:channelId/block
 // @access  Private
+
 export const unblockChannel = asyncHandler(async (req, res, next) => {
   const { channelId } = req.params;
   const user = await getAuthUser(req, next);
