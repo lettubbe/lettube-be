@@ -20,7 +20,7 @@ router.get("/notifications", protect, getFeedNotifications);
 router.get("/upload/posts/:postId", protect, getPostFeed);
 
 router.delete("/posts/:postId", protect, deletePost);
-router.get("/posts/search", protect, searchPosts); 
+router.get("/posts/search", protect, searchPosts);
 router.patch("/posts/:postId/like", protect, likePost);
 router.patch("/posts/:postId/dislike", protect, dislikePost);
 router.get("/posts/:postId/comments", protect, getPostComments);
@@ -34,9 +34,13 @@ router.patch('/posts/:postId/playlist/:playlistId', protect, addPostToPlaylist);
 router.patch('/posts/:postId/not-interested', protect, toggleNotInterested);
 router.delete('/posts/:postId/playlist/:playlistId', protect, removePostFromPlaylist);
 
+// Not interested management
+router.patch('/posts/:postId/not-interested', protect, toggleNotInterested);
+
+// Channel blocking management
+router.delete('/channels/:channelId/unblock', protect, unblockChannel);
 router.get("/viral", protect, getViralPosts);
 router.post('/channels/:channelId/block', protect, blockChannel);
-router.delete('/channels/:channelId/block', protect, unblockChannel);
 
 
 export default router;

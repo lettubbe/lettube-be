@@ -24,6 +24,8 @@ import NotInterestedModel from "../../models/Feed/NotInterested";
 import BlockedChannel from "../../models/Feed/BlockedChannel";
 import { NotificationStatusEnum } from "../../constants/enums/NotificationEnums";
 import { IPushNotificationBody } from "../../lib/interfaces/notification.interface";
+import { sortModeType } from "../../lib/interfaces/filter.interface";
+import { getPostsQuery } from "../../services/feedService";
 
 // @desc    Add Category to user Feed
 // @route   POST /api/v1/feed/category
@@ -89,10 +91,19 @@ export const createCategoryFeeds = asyncHandler(async (req, res, next) => {
 export const getUserUploadedFeeds = asyncHandler(async (req, res, next) => {
   const user = await getAuthUser(req, next);
 
-  const { page, limit } = req.params;
+  const {
+    page = 1,
+    limit = 10,
+    search = "",
+    mode = "latest",
+  } = req.query as unknown as {
+    page: number;
+    limit: number;
+    search: string;
+    mode: sortModeType;
+  };
 
-  const options = getPaginateOptions(page, limit);
-
+  const options = await getPostsQuery({ page, search, mode, limit })
   const posts = await Post.paginate({ user: user._id }, options);
 
   const postsTransformedData = transformPaginateResponse(posts);
@@ -113,10 +124,19 @@ export const getUserUploadedFeeds = asyncHandler(async (req, res, next) => {
 export const getUserPublicUploadedFeeds = asyncHandler(
   async (req, res, next) => {
     const { userId } = req.query;
+    const {
+      page = 1,
+      limit = 10,
+      search = "",
+      mode = "latest",
+    } = req.query as unknown as {
+      page: number;
+      limit: number;
+      search: string;
+      mode: sortModeType;
+    };
 
-    const { page, limit } = req.params;
-
-    const options = getPaginateOptions(page, limit);
+    const options = await getPostsQuery({ page, search, mode, limit })
 
     const posts = await Post.paginate({ user: userId }, options);
 
@@ -372,7 +392,7 @@ export const getPostFeed = asyncHandler(async (req, res, next) => {
 
   const post = await Post.findById(postId).select("-comments");
 
-  if(!postId){
+  if (!postId) {
     return next(new ErrorResponse(`Post Not Found`, 404));
   }
 
@@ -407,12 +427,12 @@ export const likePost = asyncHandler(async (req, res, next) => {
 
   const update = hasLiked
     ? {
-        $pull: { "reactions.likes": userId },
-      }
+      $pull: { "reactions.likes": userId },
+    }
     : {
-        $addToSet: { "reactions.likes": userId },
-        $pull: { "reactions.dislikes": userId },
-      };
+      $addToSet: { "reactions.likes": userId },
+      $pull: { "reactions.dislikes": userId },
+    };
 
   const updatedPost = await Post.findByIdAndUpdate(postId, update, {
     new: true,
@@ -582,7 +602,7 @@ export const replyToComment = asyncHandler(async (req, res, next) => {
   await post.save();
 
 
-  const commentNotificationPayload: IPushNotificationBody  = {
+  const commentNotificationPayload: IPushNotificationBody = {
     title: `Reply to your comment`,
     description: `${user.username} replied to your comment`,
   }
@@ -594,14 +614,14 @@ export const replyToComment = asyncHandler(async (req, res, next) => {
     type: 'comment',
     commentId: commentId
   });
-  
+
   if (existingNotification) {
     if (!existingNotification.actorIds.includes(user._id)) {
       existingNotification.actorIds.push(user._id);
       existingNotification.createdAt = now;
       await existingNotification.save();
 
-      const existingCommentNotificationPayload: IPushNotificationBody  = {
+      const existingCommentNotificationPayload: IPushNotificationBody = {
         title: `Reply to your comment`,
         description: `${existingNotification.actorIds.length} replied to your comment`,
       }
@@ -686,13 +706,13 @@ export const likeComment = asyncHandler(async (req, res, next) => {
 
     const update = alreadyLiked
       ? {
-          $pull: { "comments.$[comment].replies.$[reply].likes": userObjectId },
-        }
+        $pull: { "comments.$[comment].replies.$[reply].likes": userObjectId },
+      }
       : {
-          $addToSet: {
-            "comments.$[comment].replies.$[reply].likes": userObjectId,
-          },
-        };
+        $addToSet: {
+          "comments.$[comment].replies.$[reply].likes": userObjectId,
+        },
+      };
 
     await Post.updateOne(
       {
@@ -832,7 +852,7 @@ export const getPostComments = asyncHandler(async (req, res, next) => {
     page: number;
     limit: number;
     search: string;
-    mode: "top" | "most-liked" | "newest";
+    mode: sortModeType;
   };
 
   const query = getCommentsQuery(postId, { page, limit, search, mode });
@@ -929,9 +949,8 @@ export const commentOnPost = asyncHandler(async (req, res, next) => {
   // Send push notification
   await NotificationService.sendNotification(post.user as any, {
     title: `${user.username} commented on your post`,
-    description: `${user.username} commented: ${text.substring(0, 50)}${
-      text.length > 50 ? "..." : ""
-    }`,
+    description: `${user.username} commented: ${text.substring(0, 50)}${text.length > 50 ? "..." : ""
+      }`,
   });
 
   baseResponseHandler({
@@ -968,7 +987,7 @@ export const deletePostComment = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("Comment not found", 404));
   }
 
-  post.comments.splice(commentIndex, 1); 
+  post.comments.splice(commentIndex, 1);
 
   await post.save();
 
@@ -1002,14 +1021,14 @@ export const dislikePost = asyncHandler(async (req, res, next) => {
 
   const update = hasDisliked
     ? {
-        // User already disliked → remove from dislikes
-        $pull: { "reactions.dislikes": userId },
-      }
+      // User already disliked → remove from dislikes
+      $pull: { "reactions.dislikes": userId },
+    }
     : {
-        // User not disliked yet → add to dislikes
-        $addToSet: { "reactions.dislikes": userId },
-        $pull: { "reactions.likes": userId }, // Remove from likes if any
-      };
+      // User not disliked yet → add to dislikes
+      $addToSet: { "reactions.dislikes": userId },
+      $pull: { "reactions.likes": userId }, // Remove from likes if any
+    };
 
   const updatedPost = await Post.findByIdAndUpdate(postId, update, {
     new: true,
