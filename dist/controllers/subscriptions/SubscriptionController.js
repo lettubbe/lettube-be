@@ -15,11 +15,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.bulkSubscribe = exports.getSubscribedTo = exports.getSubscribers = exports.unsubscribe = exports.subscribe = void 0;
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const ErrorResponse_1 = __importDefault(require("../../messages/ErrorResponse"));
-const Subscription_1 = __importDefault(require("../../models/Subscription"));
+const Subscription_1 = __importDefault(require("../../models/Feed/Subscription"));
 const utils_1 = require("../../lib/utils/utils");
 const BaseResponseHandler_1 = __importDefault(require("../../messages/BaseResponseHandler"));
 const notificationService_1 = __importDefault(require("../../services/notificationService"));
-const User_1 = __importDefault(require("../../models/User"));
+const User_1 = __importDefault(require("../../models/Auth/User"));
 const Notifications_1 = __importDefault(require("../../models/Notifications"));
 // @desc    Subscribe to a channel
 // @route   /api/v1/subscription/subscribe
@@ -89,7 +89,9 @@ exports.getSubscribers = (0, express_async_handler_1.default)((req, res, next) =
         data: subscribers,
     });
 }));
-// Get who a user is subscribed to
+// @desc    Get User Subscribers
+// @route   /api/v1/subscription/subscribedTo 
+// @access  Private
 exports.getSubscribedTo = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const subscriberId = req.user.id;
     const subscriptions = yield Subscription_1.default.find({

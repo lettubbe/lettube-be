@@ -44,7 +44,6 @@ const FeedController_1 = require("../controllers/feed/FeedController");
 const multer_1 = __importDefault(require("../middleware/multer"));
 const commentOnPostValidationSchema_1 = __importStar(require("../middleware/validation/feeds/commentOnPostValidationSchema"));
 const router = express_1.default.Router();
-// validatePostFeed(validatePostFeedSchema),
 router.post("/category", [(0, categoryValidationSchema_1.default)(categoryValidationSchema_1.validateAddCategoryFeedSchema), protect_1.protect], FeedController_1.createCategoryFeeds);
 router.post("/contacts", [(0, phoneContactsValidationSchema_1.default)(phoneContactsValidationSchema_1.validatePhoneContactsSchema), protect_1.protect], FeedController_1.getContacts);
 router.get("/", protect_1.protect, FeedController_1.getUserFeeds);
@@ -53,15 +52,22 @@ router.get("/uploads/public", protect_1.protect, FeedController_1.getUserPublicU
 router.post("/upload", [protect_1.protect, multer_1.default.fields([{ name: "thumbnailImage" }, { name: "postVideo" }])], FeedController_1.uploadFeedPost);
 router.get("/bookmarks", protect_1.protect, FeedController_1.getBookmarkedPosts);
 router.get("/notifications", protect_1.protect, FeedController_1.getFeedNotifications);
+router.get("/upload/:postId", protect_1.protect, FeedController_1.getPostFeed);
+router.delete("/posts/:postId", protect_1.protect, FeedController_1.deletePost);
+router.get("/posts/search", protect_1.protect, FeedController_1.searchPosts);
 router.patch("/posts/:postId/like", protect_1.protect, FeedController_1.likePost);
 router.patch("/posts/:postId/dislike", protect_1.protect, FeedController_1.dislikePost);
 router.get("/posts/:postId/comments", protect_1.protect, FeedController_1.getPostComments);
-router.delete("/posts/:postId", protect_1.protect, FeedController_1.deletePost);
-router.get("/posts/search", protect_1.protect, FeedController_1.searchPosts); // Assuming you have a searchPosts function in your controller
 router.patch("/posts/:postId/bookmark", protect_1.protect, FeedController_1.bookmarkPost);
 router.patch("/posts/:postId/comments", [protect_1.protect, (0, commentOnPostValidationSchema_1.default)(commentOnPostValidationSchema_1.validatePostCommentSchema)], FeedController_1.commentOnPost);
 router.patch("/posts/:postId/comments/:commentId/replies", protect_1.protect, FeedController_1.replyToComment);
 router.patch("/posts/:postId/comments/:commentId/like", protect_1.protect, FeedController_1.likeComment);
+router.patch("/posts/:postId/comments/:commentId/:postId", protect_1.protect, FeedController_1.deletePostComment);
 router.patch("/posts/:postId/comments/:commentId/replies/:replyId/like", protect_1.protect, FeedController_1.likeComment);
+router.patch('/posts/:postId/playlist/:playlistId', protect_1.protect, FeedController_1.addPostToPlaylist);
+router.patch('/posts/:postId/not-interested', protect_1.protect, FeedController_1.toggleNotInterested);
+router.delete('/posts/:postId/playlist/:playlistId', protect_1.protect, FeedController_1.removePostFromPlaylist);
 router.get("/viral", protect_1.protect, FeedController_1.getViralPosts);
+router.post('/channels/:channelId/block', protect_1.protect, FeedController_1.blockChannel);
+router.delete('/channels/:channelId/block', protect_1.protect, FeedController_1.unblockChannel);
 exports.default = router;

@@ -1,6 +1,5 @@
 import { model, Schema } from "mongoose";
-import { registerEnumType } from "../constants/enums/RegisterationEnums";
-import { bool } from "aws-sdk/clients/signer";
+import { registerEnumType } from "../../constants/enums/RegisterationEnums";
 
 const authSchema = new Schema(
   {

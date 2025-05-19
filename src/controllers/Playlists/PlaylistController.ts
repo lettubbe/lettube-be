@@ -2,7 +2,7 @@ import asyncHandler from "express-async-handler";
 import { uploadFile } from "../../lib/utils/fileUpload";
 import ErrorResponse from "../../messages/ErrorResponse";
 import { getAuthUser } from "../../lib/utils/utils";
-import Playlist from "../../models/Playlist";
+import Playlist from "../../models/Feed/Playlist";
 import baseResponseHandler from "../../messages/BaseResponseHandler";
 import {
   getPaginateOptions,

@@ -13,7 +13,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getRemoteVideoDuration = exports.normalizePhoneNumber = exports.buildUserAuthTypeQuery = exports.removeSensitiveFields = exports.formatCurrency = exports.getAuthUser = void 0;
-const User_1 = __importDefault(require("../../models/User"));
+const User_1 = __importDefault(require("../../models/Auth/User"));
 const axios_1 = __importDefault(require("axios"));
 const fs_1 = __importDefault(require("fs"));
 const tmp_1 = __importDefault(require("tmp"));
@@ -23,12 +23,12 @@ const ErrorResponse_1 = __importDefault(require("../../messages/ErrorResponse"))
 fluent_ffmpeg_1.default.setFfprobePath(ffprobe_static_1.default.path);
 const getAuthUser = (req, next) => __awaiter(void 0, void 0, void 0, function* () {
     const userId = req.user.id;
-    //  console.log("user", req.user);
+    // console.log("user 123", req.user);
     if (!userId) {
         return next(new ErrorResponse_1.default(`User Id is required`, 400));
     }
     const user = yield User_1.default.findOne({ _id: userId });
-    // console.log("logged in user", user);
+    // console.log("logged in user 456", user);
     if (!user) {
         return next(new ErrorResponse_1.default(`User Id is required`, 400));
     }

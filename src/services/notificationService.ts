@@ -1,13 +1,13 @@
 import axios from "axios";
-import mailjet from "../providers/mailjetProvider";
 import {
   IPushNotificationBody,
   MailOptions,
   SmsOptions,
 } from "../lib/interfaces/notification.interface";
 import config from "../config";
+import Device from "../models/Auth/Devices";
 import expo from "../providers/expoProvider";
-import Device from "../models/Devices";
+import mailjet from "../providers/mailjetProvider";
 
 const KNOWN_ERRORS = [
   "messaging/invalid-argument",
@@ -16,8 +16,6 @@ const KNOWN_ERRORS = [
 
 class NotificationService {
   public static async sendEmail(options: MailOptions) {
-
-    console.log("sendng email", options);
 
     const request = mailjet.post("send", { version: "v3.1" }).request({
       Messages: [
@@ -93,13 +91,9 @@ class NotificationService {
 
       try {
       
-        
         const response = await expo.sendPushNotificationsAsync([notificationPayload]);
+
         console.log("response expo", response);
-
-        // const receipts = await expo.getPushNotificationReceiptsAsync(['019478ca-c108-7fa5-873b-c40aa61d8f45']);
-
-        // console.log("receipts", receipts);
 
       } catch (error) {
         console.error("Failed to send notification:", error);
