@@ -10,11 +10,6 @@ export enum ReportCategory {
   OTHER = 'other'
 }
 
-export enum ReportType {
-  POST = 'post',
-  CHANNEL = 'channel'
-}
-
 const ReportSchema = new Schema({
   user: {
     type: Schema.Types.ObjectId,
@@ -24,20 +19,6 @@ const ReportSchema = new Schema({
   post: {
     type: Schema.Types.ObjectId,
     ref: "post",
-    required: function(this: any) {
-      return this.type === ReportType.POST;
-    }
-  },
-  channel: {
-    type: Schema.Types.ObjectId,
-    ref: "user",
-    required: function(this: any) {
-      return this.type === ReportType.CHANNEL;
-    }
-  },
-  type: {
-    type: String,
-    enum: Object.values(ReportType),
     required: true
   },
   category: {
@@ -58,9 +39,7 @@ const ReportSchema = new Schema({
 
 export interface IReport extends Document {
   user: string;
-  post?: string;
-  channel?: string;
-  type: ReportType;
+  post: string;
   category: ReportCategory;
   reason: string;
   status: string;

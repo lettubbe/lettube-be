@@ -251,27 +251,3 @@ export const getPlaylistVideos = asyncHandler(async (req, res, next) => {
     data: playlist.videos,
   });
 });
-
-// @route   DELETE /api/v1/playlist/:playlistId
-// @desc    Delete a playlist
-// @access  Private
-export const deletePlaylist = asyncHandler(async (req, res, next) => {
-  const { playlistId } = req.params;
-  const user = await getAuthUser(req, next);
-
-  const playlist = await Playlist.findOne({ _id: playlistId, user: user._id });
-
-  if (!playlist) {
-    return next(new ErrorResponse('Playlist not found or unauthorized', 404));
-  }
-
-  await Playlist.deleteOne({ _id: playlistId });
-
-  baseResponseHandler({
-    message: 'Playlist deleted successfully',
-    res,
-    statusCode: 200,
-    success: true,
-    data: null
-  });
-});

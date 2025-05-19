@@ -1,7 +1,7 @@
 import { Types } from 'mongoose';
 import Post from '../models/Feed/Post';
-import { sortModeType } from '../lib/interfaces/filter.interface';
 
+type SortMode = 'top' | 'most-liked' | 'newest';
 
 export const getCommentsQuery = (
     postId: string,
@@ -14,7 +14,7 @@ export const getCommentsQuery = (
         page: number;
         limit: number;
         search: string;
-        mode: sortModeType;
+        mode: SortMode;
     }
 ) => {
     const query = Post.findById(postId);

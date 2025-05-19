@@ -1,14 +1,13 @@
 import express from "express";
 import { protect } from "../../middleware/protect";
 import validateAddPlaylistRequest, { validateAddPlaylistSchema } from "../../middleware/validation/playlist/playlistValidationSchema";
-import { createPlaylist, deletePlaylist, getPlaylist, getPlaylists, getPlaylistVideos, updatePlaylist, updatePlaylistCoverPhoto, uploadVideoToPlaylist } from "../../controllers/Playlists/PlaylistController";
+import { createPlaylist, getPlaylist, getPlaylists, getPlaylistVideos, updatePlaylist, updatePlaylistCoverPhoto, uploadVideoToPlaylist } from "../../controllers/Playlists/PlaylistController";
 import upload from "../../middleware/multer";
 
 const router = express.Router();
 
 router.get("/", protect, getPlaylists);
 router.get("/:playlistId", getPlaylist);
-router.delete("/:playlistId", deletePlaylist);
 router.patch("/:playlistId/video", [protect, upload.single("playlistVideo")], uploadVideoToPlaylist);
 router.get("/:playlistId/video", protect, getPlaylistVideos);
 router.patch("/:playlistId", [protect, upload.single("playlistCoverPhoto")], updatePlaylist);
