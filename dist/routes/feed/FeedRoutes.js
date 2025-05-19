@@ -63,7 +63,7 @@ router.patch("/posts/:postId/bookmark", protect_1.protect, FeedController_1.book
 router.patch("/posts/:postId/comments", [protect_1.protect, (0, commentOnPostValidationSchema_1.default)(commentOnPostValidationSchema_1.validatePostCommentSchema)], FeedController_1.commentOnPost);
 router.patch("/posts/:postId/comments/:commentId/replies", protect_1.protect, FeedController_1.replyToComment);
 router.patch("/posts/:postId/comments/:commentId/like", protect_1.protect, FeedController_1.likeComment);
-router.patch("/posts/:postId/comments/:commentId/:postId", protect_1.protect, FeedController_1.deletePostComment);
+router.delete("/posts/:postId/comments/:commentId/", protect_1.protect, FeedController_1.deletePostComment);
 router.patch("/posts/:postId/comments/:commentId/replies/:replyId/like", protect_1.protect, FeedController_1.likeComment);
 router.patch('/posts/:postId/playlist/:playlistId', protect_1.protect, FeedController_1.addPostToPlaylist);
 router.patch('/posts/:postId/not-interested', protect_1.protect, FeedController_1.toggleNotInterested);
