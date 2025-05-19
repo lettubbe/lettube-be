@@ -39,5 +39,5 @@ router.delete('/posts/:postId/playlist/:playlistId', protect, removePostFromPlay
 router.patch('/posts/:postId/not-interested', protect, toggleNotInterested);
 
 // Channel blocking management
-router.delete('/channels/:channelId/block', protect, unblockChannel);
+router.delete('/channels/:channelId/unblock', protect, unblockChannel);
 export default router;
