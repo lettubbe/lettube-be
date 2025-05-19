@@ -277,10 +277,13 @@ export const uploadFeedPost = asyncHandler(async (req, res, next) => {
 // @access   Private
 
 export const editFeedPost = asyncHandler(async (req, res, next) => {
+
   const user = await getAuthUser(req, next);
   const { postId } = req.params;
 
   const post = await Post.findById(postId);
+
+  console.log({ postId });
 
   if (!post) {
     return next(new ErrorResponse("Post not found", 404));

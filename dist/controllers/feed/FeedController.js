@@ -225,6 +225,7 @@ exports.editFeedPost = (0, express_async_handler_1.default)((req, res, next) => 
     const user = yield (0, utils_1.getAuthUser)(req, next);
     const { postId } = req.params;
     const post = yield Post_1.default.findById(postId);
+    console.log({ postId });
     if (!post) {
         return next(new ErrorResponse_1.default("Post not found", 404));
     }

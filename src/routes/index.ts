@@ -2,14 +2,14 @@ import express from "express";
 
 const router = express.Router();
 
-import AuthRoute from "./AuthRoute";
-import ProfileRoute from "./ProfileRoute";
-import CategoryRoute from "./CategoryRoute";
-import SubscriptionRoute from "./SubscriptionRoute";
-import FeedRoute from "./FeedRoutes";
-import PlaylistRoute from "./Playlist";
+import AuthRoute from "././Auth/AuthRoute";
+import ProfileRoute from "././Auth/ProfileRoute";
+import CategoryRoute from "././feed/CategoryRoute";
+import SubscriptionRoute from "././feed/SubscriptionRoute";
+import FeedRoute from "././feed/FeedRoutes";
+import PlaylistRoute from "././feed/Playlist";
 import NoticationsRoute from "./NotificationsRoute";
-import reportRoutes from './ReportRoutes';
+import reportRoutes from '././feed/ReportRoutes';
 
 router.use("/auth", AuthRoute);
 router.use("/profile", ProfileRoute);
