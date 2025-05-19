@@ -1,9 +1,9 @@
 import asyncHandler from "express-async-handler";
-import Report, { ReportCategory } from "../../models/Report";
+import Report, { ReportCategory } from "../../models/Feed/Report";
 import baseResponseHandler from "../../messages/BaseResponseHandler";
 import ErrorResponse from "../../messages/ErrorResponse";
 import { getAuthUser } from "../../lib/utils/utils";
-import Post from "../../models/Post";
+import Post from "../../models/Feed/Post";
 
 // @desc    Create a report
 // @route   POST /api/v1/reports

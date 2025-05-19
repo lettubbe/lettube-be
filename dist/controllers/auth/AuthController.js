@@ -18,12 +18,12 @@ const ErrorResponse_1 = __importDefault(require("../../messages/ErrorResponse"))
 const notificationService_1 = __importDefault(require("../../services/notificationService"));
 const generate_1 = require("../../lib/utils/generate");
 const Auth_template_1 = require("../../lib/templates/Auth/Auth.template");
-const User_1 = __importDefault(require("../../models/User"));
-const Auth_1 = __importDefault(require("../../models/Auth"));
+const User_1 = __importDefault(require("../../models/Auth/User"));
 const BaseResponseHandler_1 = __importDefault(require("../../messages/BaseResponseHandler"));
 const utils_1 = require("../../lib/utils/utils");
 const config_1 = __importDefault(require("../../config"));
 const RegisterationEnums_1 = require("../../constants/enums/RegisterationEnums");
+const Auth_1 = __importDefault(require("../../models/Auth/Auth"));
 // @route   /api/v1/auth/register
 // @desc    Login A User
 // @access  Public

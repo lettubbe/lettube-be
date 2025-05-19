@@ -13,12 +13,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getUserPublicProfile = exports.getUserProfile = exports.updateProfileDetails = exports.uploadCoverPhoto = exports.updateProfilePhoto = void 0;
-const User_1 = __importDefault(require("../../models/User"));
+const User_1 = __importDefault(require("../../models/Auth/User"));
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const fileUpload_1 = require("../../lib/utils/fileUpload");
 const ErrorResponse_1 = __importDefault(require("../../messages/ErrorResponse"));
 const utils_1 = require("../../lib/utils/utils");
-const Subscription_1 = __importDefault(require("../../models/Subscription"));
+const Subscription_1 = __importDefault(require("../../models/Feed/Subscription"));
 const BaseResponseHandler_1 = __importDefault(require("../../messages/BaseResponseHandler"));
 // @route   /api/v1/profile/upload/profilePhoto
 // @desc    Upload Profile Picture
@@ -26,6 +26,7 @@ const BaseResponseHandler_1 = __importDefault(require("../../messages/BaseRespon
 exports.updateProfilePhoto = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { email, phoneNumber } = req.body;
     const authUser = yield (0, utils_1.getAuthUser)(req, next);
+    console.log("authUser", authUser);
     const query = (0, utils_1.buildUserAuthTypeQuery)(email, phoneNumber, authUser._id);
     const user = yield User_1.default.findOne(query);
     if (!user) {

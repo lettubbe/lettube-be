@@ -9,6 +9,7 @@ const FeedSchema = new Schema({
   },
   categories: [String],
   excludedCategories: [String],
+  notInstrested: [String],
 }, { timestamps: true });
 
 export interface IFeed extends Document {

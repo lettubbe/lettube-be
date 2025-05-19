@@ -5,9 +5,9 @@ import {
   updateProfileDetails,
   updateProfilePhoto,
   uploadCoverPhoto,
-} from "../controllers/profile/ProfileController";
-import upload from "../middleware/multer";
-import { protect } from "../middleware/protect";
+} from "../../controllers/profile/ProfileController";
+import upload from "../../middleware/multer";
+import { protect } from "../../middleware/protect";
 
 const router = express.Router();
 

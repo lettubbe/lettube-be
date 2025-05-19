@@ -1,6 +1,6 @@
 import express from "express";
-import { protect } from "../middleware/protect";
-import { createReport, getUserReports } from "../controllers/report/ReportController";
+import { protect } from "../../middleware/protect";
+import { createReport, getUserReports } from "../../controllers/report/ReportController";
 
 const router = express.Router();
 

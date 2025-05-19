@@ -14,7 +14,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getUserPushToken = void 0;
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
-const Devices_1 = __importDefault(require("../../models/Devices"));
+const Devices_1 = __importDefault(require("../../models/Auth/Devices"));
 const utils_1 = require("../../lib/utils/utils");
 const BaseResponseHandler_1 = __importDefault(require("../../messages/BaseResponseHandler"));
 // @desc     Add User Push Token

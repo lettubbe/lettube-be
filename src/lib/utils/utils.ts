@@ -1,4 +1,4 @@
-import User from "../../models/User";
+import User from "../../models/Auth/User";
 import { NextFunction } from "express";
 import axios from "axios";
 import fs from "fs";
@@ -13,7 +13,7 @@ export const getAuthUser = async (req: any, next: NextFunction): Promise<any> =>
 
  const userId = req.user.id;
 
-//  console.log("user", req.user);
+  // console.log("user 123", req.user);
 
   if (!userId) {
     return next(new ErrorResponse(`User Id is required`, 400));
@@ -21,7 +21,7 @@ export const getAuthUser = async (req: any, next: NextFunction): Promise<any> =>
 
   const user = await User.findOne({ _id: userId });
 
-  // console.log("logged in user", user);
+  // console.log("logged in user 456", user);
 
   if (!user) {
     return next(new ErrorResponse(`User Id is required`, 400));

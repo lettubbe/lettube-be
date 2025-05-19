@@ -1,10 +1,10 @@
 import asyncHandler from "express-async-handler";
 import ErrorResponse from "../../messages/ErrorResponse";
-import Subscription from "../../models/Subscription";
+import Subscription from "../../models/Feed/Subscription";
 import { getAuthUser } from "../../lib/utils/utils";
 import baseResponseHandler from "../../messages/BaseResponseHandler";
 import NotificationService from "../../services/notificationService";
-import User from "../../models/User";
+import User from "../../models/Auth/User";
 import Notification from "../../models/Notifications";
 
 // @desc    Subscribe to a channel
@@ -94,7 +94,10 @@ export const getSubscribers = asyncHandler(async (req, res, next) => {
   });
 });
 
-// Get who a user is subscribed to
+// @desc    Get User Subscribers
+// @route   /api/v1/subscription/subscribedTo 
+// @access  Private
+
 export const getSubscribedTo = asyncHandler(async (req, res, next) => {
   const subscriberId = req.user.id;
 

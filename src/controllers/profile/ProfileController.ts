@@ -1,4 +1,4 @@
-import User from "../../models/User";
+import User from "../../models/Auth/User";
 import asyncHandler from "express-async-handler";
 import { uploadFile } from "../../lib/utils/fileUpload";
 import ErrorResponse from "../../messages/ErrorResponse";
@@ -8,7 +8,7 @@ import {
   getAuthUser,
   removeSensitiveFields,
 } from "../../lib/utils/utils";
-import Subscription from "../../models/Subscription";
+import Subscription from "../../models/Feed/Subscription";
 import baseResponseHandler from "../../messages/BaseResponseHandler";
 
 // @route   /api/v1/profile/upload/profilePhoto
@@ -20,6 +20,8 @@ export const updateProfilePhoto = asyncHandler(async (req: Request, res: Respons
   const { email, phoneNumber } = req.body;
 
   const authUser = await getAuthUser(req, next);
+
+  console.log("authUser", authUser);
 
   const query = buildUserAuthTypeQuery(email, phoneNumber, authUser._id);
 

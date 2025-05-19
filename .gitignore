@@ -1,8 +1,10 @@
 node_modules
 
+.vscode
+
 .env
 
 .env.example
 
 .trae
-.trae/
+.trae/.env
