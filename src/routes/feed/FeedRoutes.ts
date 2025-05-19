@@ -28,7 +28,7 @@ router.patch("/posts/:postId/bookmark", protect, bookmarkPost);
 router.patch("/posts/:postId/comments", [protect, validatePostComment(validatePostCommentSchema)], commentOnPost);
 router.patch("/posts/:postId/comments/:commentId/replies", protect, replyToComment);
 router.patch("/posts/:postId/comments/:commentId/like", protect, likeComment);
-router.patch("/posts/:postId/comments/:commentId/:postId", protect, deletePostComment);
+router.delete("/posts/:postId/comments/:commentId/", protect, deletePostComment);
 router.patch("/posts/:postId/comments/:commentId/replies/:replyId/like", protect, likeComment);
 router.patch('/posts/:postId/playlist/:playlistId', protect, addPostToPlaylist);
 router.patch('/posts/:postId/not-interested', protect, toggleNotInterested);
