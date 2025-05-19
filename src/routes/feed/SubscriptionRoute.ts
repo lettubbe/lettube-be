@@ -1,6 +1,6 @@
 import express from "express";
-import { bulkSubscribe, getSubscribedTo, getSubscribers, subscribe, unsubscribe } from "../controllers/subscriptions/SubscriptionController";
-import { protect } from "../middleware/protect";
+import { bulkSubscribe, getSubscribedTo, getSubscribers, subscribe, unsubscribe } from "../../controllers/subscriptions/SubscriptionController";
+import { protect } from "../../middleware/protect";
 
 const router = express();
 

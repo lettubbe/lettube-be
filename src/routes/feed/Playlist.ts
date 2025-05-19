@@ -1,8 +1,8 @@
 import express from "express";
-import { protect } from "../middleware/protect";
-import validateAddPlaylistRequest, { validateAddPlaylistSchema } from "../middleware/validation/playlist/playlistValidationSchema";
-import { createPlaylist, getPlaylist, getPlaylists, getPlaylistVideos, updatePlaylist, updatePlaylistCoverPhoto, uploadVideoToPlaylist } from "../controllers/Playlists/PlaylistController";
-import upload from "../middleware/multer";
+import { protect } from "../../middleware/protect";
+import validateAddPlaylistRequest, { validateAddPlaylistSchema } from "../../middleware/validation/playlist/playlistValidationSchema";
+import { createPlaylist, getPlaylist, getPlaylists, getPlaylistVideos, updatePlaylist, updatePlaylistCoverPhoto, uploadVideoToPlaylist } from "../../controllers/Playlists/PlaylistController";
+import upload from "../../middleware/multer";
 
 const router = express.Router();
 

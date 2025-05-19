@@ -1,10 +1,10 @@
 import express from "express";
-import { protect } from "../middleware/protect";
-import validateGetPhoneContacts, { validatePhoneContactsSchema } from "../middleware/validation/feeds/phoneContactsValidationSchema";
-import validateAddCategoryFeedRequest, { validateAddCategoryFeedSchema } from "../middleware/validation/feeds/categoryValidationSchema";
-import { addPostToPlaylist, blockChannel, getPostFeed, bookmarkPost, commentOnPost, createCategoryFeeds, deletePost, deletePostComment, dislikePost, getBookmarkedPosts, getContacts, getFeedNotifications, getPostComments, getUserFeeds, getUserPublicUploadedFeeds, getUserUploadedFeeds, getViralPosts, likeComment, likePost, removePostFromPlaylist, replyToComment, searchPosts, toggleNotInterested, unblockChannel, uploadFeedPost } from "../controllers/feed/FeedController";
-import upload from "../middleware/multer";
-import validatePostComment, { validatePostCommentSchema } from "../middleware/validation/feeds/commentOnPostValidationSchema";
+import { protect } from "../../middleware/protect";
+import validateGetPhoneContacts, { validatePhoneContactsSchema } from "../../middleware/validation/feeds/phoneContactsValidationSchema";
+import validateAddCategoryFeedRequest, { validateAddCategoryFeedSchema } from "../../middleware/validation/feeds/categoryValidationSchema";
+import { addPostToPlaylist, blockChannel, getPostFeed, bookmarkPost, commentOnPost, createCategoryFeeds, deletePost, deletePostComment, dislikePost, getBookmarkedPosts, getContacts, getFeedNotifications, getPostComments, getUserFeeds, getUserPublicUploadedFeeds, getUserUploadedFeeds, getViralPosts, likeComment, likePost, removePostFromPlaylist, replyToComment, searchPosts, toggleNotInterested, unblockChannel, uploadFeedPost, editFeedPost } from "../../controllers/feed/FeedController";
+import upload from "../../middleware/multer";
+import validatePostComment, { validatePostCommentSchema } from "../../middleware/validation/feeds/commentOnPostValidationSchema";
 
 const router = express.Router();
 
@@ -14,9 +14,10 @@ router.get("/", protect, getUserFeeds);
 router.get("/uploads", protect, getUserUploadedFeeds);
 router.get("/uploads/public", protect, getUserPublicUploadedFeeds);
 router.post("/upload", [protect, upload.fields([{ name: "thumbnailImage" }, { name: "postVideo" }])], uploadFeedPost);
+router.patch("/upload", [protect, upload.fields([{ name: "thumbnailImage" }, { name: "postVideo" }])], editFeedPost);
 router.get("/bookmarks", protect, getBookmarkedPosts);
 router.get("/notifications", protect, getFeedNotifications);
-router.get("/upload/:postId", protect, getPostFeed);
+router.get("/upload/posts/:postId", protect, getPostFeed);
 
 router.delete("/posts/:postId", protect, deletePost);
 router.get("/posts/search", protect, searchPosts); 
