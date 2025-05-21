@@ -222,6 +222,7 @@ exports.uploadFeedPost = (0, express_async_handler_1.default)((req, res, next) =
 // @route    PATCH /api/v1/feed/upload/:postId
 // @access   Private
 exports.editFeedPost = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    console.log("editing post");
     const user = yield (0, utils_1.getAuthUser)(req, next);
     const { postId } = req.params;
     const post = yield Post_1.default.findById(postId);
@@ -252,12 +253,12 @@ exports.editFeedPost = (0, express_async_handler_1.default)((req, res, next) => 
         post.isCommentsAllowed = String(isCommentsAllowed).toLowerCase() === "true";
     }
     // Replace thumbnail if provided
-    const newThumbnail = yield (0, fileUpload_1.uploadFileFromFields)(req, next, `feedThumbnail/${user._id}/thumbnails`, "thumbnailImage");
+    const newThumbnail = yield (0, fileUpload_1.uploadFileFromFields)(req, next, `feedThumbnail/${user._id}/thumbnails`, "thumbnailImage", true);
     if (newThumbnail) {
         post.thumbnail = newThumbnail;
     }
     // Replace video if provided
-    const newVideo = yield (0, fileUpload_1.uploadFileFromFields)(req, next, `feedVideos/${user._id}/videos`, "postVideo");
+    const newVideo = yield (0, fileUpload_1.uploadFileFromFields)(req, next, `feedVideos/${user._id}/videos`, "postVideo", true);
     if (newVideo) {
         post.videoUrl = newVideo;
         post.duration = yield (0, utils_1.getRemoteVideoDuration)(newVideo);

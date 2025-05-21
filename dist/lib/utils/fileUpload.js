@@ -46,16 +46,54 @@ const uploadFile = (req_1, next_1, folder_1, ...args_1) => __awaiter(void 0, [re
     }
 });
 exports.uploadFile = uploadFile;
-const uploadFileFromFields = (req, next, folder, fieldName) => __awaiter(void 0, void 0, void 0, function* () {
+// export const uploadFileFromFields = async (
+//     req: Request,
+//     next: NextFunction,
+//     folder: string,
+//     fieldName: string,
+//     optional: boolean = false
+//   ) => {
+//     const files = req.files;
+//     console.log("files", files);
+//     // Ensure files is the expected shape
+//     if (!files || typeof files !== "object" || Array.isArray(files)) {
+//       return next(new ErrorResponse(`Invalid file format for field "${fieldName}"`, 400));
+//     }
+//     const file = files[fieldName]?.[0];
+//     if (!file) {
+//       return next(new ErrorResponse(`No file uploaded for field "${fieldName}"`, 400));
+//     }
+//     const fileExtension = file.originalname.split(".").pop();
+//     const s3Params: any = {
+//       Bucket: process.env.S3_BUCKET_NAME,
+//       Key: `${folder}/${uuidv4()}.${fileExtension}`,
+//       Body: file.buffer,
+//       ContentType: file.mimetype,
+//     };
+//     try {
+//       const uploadResult = await s3.upload(s3Params).promise();
+//       return uploadResult.Location;
+//     } catch (error) {
+//       console.error("Error uploading file to S3:", error);
+//       return next(new ErrorResponse("Error uploading file", 500));
+//     }
+// };
+const uploadFileFromFields = (req_1, next_1, folder_1, fieldName_1, ...args_1) => __awaiter(void 0, [req_1, next_1, folder_1, fieldName_1, ...args_1], void 0, function* (req, next, folder, fieldName, optional = false) {
     var _a;
     const files = req.files;
     console.log("files", files);
-    // Ensure files is the expected shape
+    // Validate the files object
     if (!files || typeof files !== "object" || Array.isArray(files)) {
-        return next(new ErrorResponse_1.default(`Invalid file format for field "${fieldName}"`, 400));
+        return optional
+            ? undefined
+            : next(new ErrorResponse_1.default(`Invalid file format for field "${fieldName}"`, 400));
     }
     const file = (_a = files[fieldName]) === null || _a === void 0 ? void 0 : _a[0];
+    // If file is not present and optional, skip upload
     if (!file) {
+        if (optional) {
+            return undefined;
+        }
         return next(new ErrorResponse_1.default(`No file uploaded for field "${fieldName}"`, 400));
     }
     const fileExtension = file.originalname.split(".").pop();
