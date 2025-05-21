@@ -278,6 +278,8 @@ export const uploadFeedPost = asyncHandler(async (req, res, next) => {
 
 export const editFeedPost = asyncHandler(async (req, res, next) => {
 
+  console.log("editing post");
+
   const user = await getAuthUser(req, next);
   const { postId } = req.params;
 
@@ -318,7 +320,8 @@ export const editFeedPost = asyncHandler(async (req, res, next) => {
     req,
     next,
     `feedThumbnail/${user._id}/thumbnails`,
-    "thumbnailImage"
+    "thumbnailImage",
+    true
   );
   if (newThumbnail) {
     post.thumbnail = newThumbnail;
@@ -329,7 +332,8 @@ export const editFeedPost = asyncHandler(async (req, res, next) => {
     req,
     next,
     `feedVideos/${user._id}/videos`,
-    "postVideo"
+    "postVideo",
+    true
   );
 
   if (newVideo) {

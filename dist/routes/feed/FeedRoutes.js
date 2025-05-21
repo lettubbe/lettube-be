@@ -50,7 +50,7 @@ router.get("/", protect_1.protect, FeedController_1.getUserFeeds);
 router.get("/uploads", protect_1.protect, FeedController_1.getUserUploadedFeeds);
 router.get("/uploads/public", protect_1.protect, FeedController_1.getUserPublicUploadedFeeds);
 router.post("/upload", [protect_1.protect, multer_1.default.fields([{ name: "thumbnailImage" }, { name: "postVideo" }])], FeedController_1.uploadFeedPost);
-router.patch("/upload", [protect_1.protect, multer_1.default.fields([{ name: "thumbnailImage" }, { name: "postVideo" }])], FeedController_1.editFeedPost);
+router.patch("/upload/:postId", [protect_1.protect, multer_1.default.fields([{ name: "thumbnailImage" }, { name: "postVideo" }])], FeedController_1.editFeedPost);
 router.get("/bookmarks", protect_1.protect, FeedController_1.getBookmarkedPosts);
 router.get("/notifications", protect_1.protect, FeedController_1.getFeedNotifications);
 router.get("/upload/posts/:postId", protect_1.protect, FeedController_1.getPostFeed);
