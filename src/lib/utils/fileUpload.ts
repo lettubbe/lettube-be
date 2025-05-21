@@ -54,42 +54,91 @@ export const uploadFile = async (
   }
 };
 
+// export const uploadFileFromFields = async (
+//     req: Request,
+//     next: NextFunction,
+//     folder: string,
+//     fieldName: string,
+//     optional: boolean = false
+//   ) => {
+
+//     const files = req.files;
+
+//     console.log("files", files);
+  
+//     // Ensure files is the expected shape
+//     if (!files || typeof files !== "object" || Array.isArray(files)) {
+//       return next(new ErrorResponse(`Invalid file format for field "${fieldName}"`, 400));
+//     }
+  
+//     const file = files[fieldName]?.[0];
+  
+//     if (!file) {
+//       return next(new ErrorResponse(`No file uploaded for field "${fieldName}"`, 400));
+//     }
+  
+//     const fileExtension = file.originalname.split(".").pop();
+  
+//     const s3Params: any = {
+//       Bucket: process.env.S3_BUCKET_NAME,
+//       Key: `${folder}/${uuidv4()}.${fileExtension}`,
+//       Body: file.buffer,
+//       ContentType: file.mimetype,
+//     };
+  
+//     try {
+//       const uploadResult = await s3.upload(s3Params).promise();
+//       return uploadResult.Location;
+//     } catch (error) {
+//       console.error("Error uploading file to S3:", error);
+//       return next(new ErrorResponse("Error uploading file", 500));
+//     }
+
+// };
+
+
 export const uploadFileFromFields = async (
-    req: Request,
-    next: NextFunction,
-    folder: string,
-    fieldName: string
-  ) => {
-    const files = req.files;
+  req: Request,
+  next: NextFunction,
+  folder: string,
+  fieldName: string,
+  optional: boolean = false
+) => {
+  const files = req.files;
 
-    console.log("files", files);
-  
-    // Ensure files is the expected shape
-    if (!files || typeof files !== "object" || Array.isArray(files)) {
-      return next(new ErrorResponse(`Invalid file format for field "${fieldName}"`, 400));
-    }
-  
-    const file = files[fieldName]?.[0];
-  
-    if (!file) {
-      return next(new ErrorResponse(`No file uploaded for field "${fieldName}"`, 400));
-    }
-  
-    const fileExtension = file.originalname.split(".").pop();
-  
-    const s3Params: any = {
-      Bucket: process.env.S3_BUCKET_NAME,
-      Key: `${folder}/${uuidv4()}.${fileExtension}`,
-      Body: file.buffer,
-      ContentType: file.mimetype,
-    };
-  
-    try {
-      const uploadResult = await s3.upload(s3Params).promise();
-      return uploadResult.Location;
-    } catch (error) {
-      console.error("Error uploading file to S3:", error);
-      return next(new ErrorResponse("Error uploading file", 500));
-    }
+  console.log("files", files);
 
+  // Validate the files object
+  if (!files || typeof files !== "object" || Array.isArray(files)) {
+    return optional
+      ? undefined
+      : next(new ErrorResponse(`Invalid file format for field "${fieldName}"`, 400));
+  }
+
+  const file = files[fieldName]?.[0];
+
+  // If file is not present and optional, skip upload
+  if (!file) {
+    if (optional) {
+      return undefined;
+    }
+    return next(new ErrorResponse(`No file uploaded for field "${fieldName}"`, 400));
+  }
+
+  const fileExtension = file.originalname.split(".").pop();
+
+  const s3Params: any = {
+    Bucket: process.env.S3_BUCKET_NAME,
+    Key: `${folder}/${uuidv4()}.${fileExtension}`,
+    Body: file.buffer,
+    ContentType: file.mimetype,
+  };
+
+  try {
+    const uploadResult = await s3.upload(s3Params).promise();
+    return uploadResult.Location;
+  } catch (error) {
+    console.error("Error uploading file to S3:", error);
+    return next(new ErrorResponse("Error uploading file", 500));
+  }
 };

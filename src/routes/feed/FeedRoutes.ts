@@ -14,7 +14,7 @@ router.get("/", protect, getUserFeeds);
 router.get("/uploads", protect, getUserUploadedFeeds);
 router.get("/uploads/public", protect, getUserPublicUploadedFeeds);
 router.post("/upload", [protect, upload.fields([{ name: "thumbnailImage" }, { name: "postVideo" }])], uploadFeedPost);
-router.patch("/upload", [protect, upload.fields([{ name: "thumbnailImage" }, { name: "postVideo" }])], editFeedPost);
+router.patch("/upload/:postId", [protect, upload.fields([{ name: "thumbnailImage" }, { name: "postVideo" }])], editFeedPost);
 router.get("/bookmarks", protect, getBookmarkedPosts);
 router.get("/notifications", protect, getFeedNotifications);
 router.get("/upload/posts/:postId", protect, getPostFeed);
