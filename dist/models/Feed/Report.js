@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ReportCategory = void 0;
+exports.ReportType = exports.ReportCategory = void 0;
 const mongoose_1 = require("mongoose");
 var ReportCategory;
 (function (ReportCategory) {
@@ -12,6 +12,11 @@ var ReportCategory;
     ReportCategory["COPYRIGHT"] = "copyright";
     ReportCategory["OTHER"] = "other";
 })(ReportCategory || (exports.ReportCategory = ReportCategory = {}));
+var ReportType;
+(function (ReportType) {
+    ReportType["POST"] = "post";
+    ReportType["CHANNEL"] = "channel";
+})(ReportType || (exports.ReportType = ReportType = {}));
 const ReportSchema = new mongoose_1.Schema({
     user: {
         type: mongoose_1.Schema.Types.ObjectId,
@@ -21,6 +26,20 @@ const ReportSchema = new mongoose_1.Schema({
     post: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: "post",
+        required: function () {
+            return this.type === ReportType.POST;
+        }
+    },
+    channel: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: "user",
+        required: function () {
+            return this.type === ReportType.CHANNEL;
+        }
+    },
+    type: {
+        type: String,
+        enum: Object.values(ReportType),
         required: true
     },
     category: {
