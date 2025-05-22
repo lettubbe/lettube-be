@@ -13,9 +13,6 @@ exports.getPostsQuery = void 0;
 const paginate_1 = require("../lib/utils/paginate");
 const getPostsQuery = (_a) => __awaiter(void 0, [_a], void 0, function* ({ page = 1, limit = 10, search = "", mode = "latest" }) {
     const options = (0, paginate_1.getPaginateOptions)(page, limit);
-    // Add 
-    // 
-    // sorting based on mode
     switch (mode) {
         case 'most-popular':
             options.sort = {

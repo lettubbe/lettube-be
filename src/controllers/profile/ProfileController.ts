@@ -159,9 +159,11 @@ export const getUserProfile = asyncHandler(async (req, res, next) => {
 // @access  Private
 
 export const getUserPublicProfile = asyncHandler(async (req, res, next) => {
+  console.log("hitting public profile");
+
   const { userId } = req.params;
 
-  const [authUser] = await getAuthUser(req, next);
+  const authUser = await getAuthUser(req, next);
 
   const user = await User.findById(userId).select("-password");
 
@@ -173,10 +175,18 @@ export const getUserPublicProfile = asyncHandler(async (req, res, next) => {
   const subscriberCount = await Subscription.countDocuments({
     subscribedTo: userId,
   });
-  const isSubscribed = await Subscription.exists({
+
+  // const isSubscribed = await Subscription.exists({
+  //   subscriber: authUser._id,
+  //   subscribedTo: userId,
+  // });
+
+  const isSubscribed = !!(await Subscription.exists({
     subscriber: authUser._id,
     subscribedTo: userId,
-  });
+  }));
+
+  console.log("isSubscribed", isSubscribed);
 
   const userData = removeSensitiveFields(user, ["password"]);
 
