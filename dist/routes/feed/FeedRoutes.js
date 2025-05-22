@@ -68,7 +68,10 @@ router.patch("/posts/:postId/comments/:commentId/replies/:replyId/like", protect
 router.patch('/posts/:postId/playlist/:playlistId', protect_1.protect, FeedController_1.addPostToPlaylist);
 router.patch('/posts/:postId/not-interested', protect_1.protect, FeedController_1.toggleNotInterested);
 router.delete('/posts/:postId/playlist/:playlistId', protect_1.protect, FeedController_1.removePostFromPlaylist);
+// Not interested management
+router.patch('/posts/:postId/not-interested', protect_1.protect, FeedController_1.toggleNotInterested);
+// Channel blocking management
+router.delete('/channels/:channelId/unblock', protect_1.protect, FeedController_1.unblockChannel);
 router.get("/viral", protect_1.protect, FeedController_1.getViralPosts);
 router.post('/channels/:channelId/block', protect_1.protect, FeedController_1.blockChannel);
-router.delete('/channels/:channelId/block', protect_1.protect, FeedController_1.unblockChannel);
 exports.default = router;
