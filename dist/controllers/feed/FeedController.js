@@ -45,7 +45,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.unblockChannel = exports.removePostFromPlaylist = exports.blockChannel = exports.toggleNotInterested = exports.getViralPosts = exports.searchPosts = exports.addPostToPlaylist = exports.deletePost = exports.getUserFeeds = exports.getBookmarkedPosts = exports.bookmarkPost = exports.dislikePost = exports.deletePostComment = exports.commentOnPost = exports.getPostComments = exports.likeComment = exports.replyToComment = exports.getFeedNotificationsCount = exports.getFeedNotifications = exports.likePost = exports.getPostFeed = exports.editFeedPost = exports.uploadFeedPost = exports.getContacts = exports.getUserPublicUploadedFeeds = exports.getUserUploadedFeeds = exports.createCategoryFeeds = void 0;
+exports.unblockChannel = exports.removePostFromPlaylist = exports.blockChannel = exports.toggleNotInterested = exports.getViralPosts = exports.searchPosts = exports.addPostToPlaylist = exports.deletePost = exports.getUserFeeds = exports.getBookmarkedPosts = exports.bookmarkPost = exports.dislikePost = exports.deletePostComment = exports.commentOnPost = exports.getPostComments = exports.likeComment = exports.replyToComment = exports.getFeedNotificationsCount = exports.getFeedNotifications = exports.likePost = exports.getPostFeed = exports.editFeedPost = exports.uploadFeedPost = exports.getContacts = exports.getUserPublicUploadedFeeds = exports.addVideoViews = exports.getUserUploadedFeeds = exports.createCategoryFeeds = void 0;
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const Feed_1 = __importDefault(require("../../models/Feed/Feed"));
 const BaseResponseHandler_1 = __importDefault(require("../../messages/BaseResponseHandler"));
@@ -64,6 +64,7 @@ const commentService_1 = require("../../services/commentService");
 const NotInterested_1 = __importDefault(require("../../models/Feed/NotInterested"));
 const BlockedChannel_1 = __importDefault(require("../../models/Feed/BlockedChannel"));
 const NotificationEnums_1 = require("../../constants/enums/NotificationEnums");
+const VideoViews_1 = __importDefault(require("../../models/Feed/VideoViews"));
 // @desc    Add Category to user Feed
 // @route   POST /api/v1/feed/category
 // @access  Private
@@ -118,6 +119,32 @@ exports.getUserUploadedFeeds = (0, express_async_handler_1.default)((req, res, n
         statusCode: 200,
         success: true,
         data: postsTransformedData,
+    });
+}));
+// @desc     Get User Feed
+// @route   GET /api/v1/feed/:postId/views
+// @access  private
+exports.addVideoViews = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const user = yield (0, utils_1.getAuthUser)(req, next);
+    const { postId } = req.params;
+    const post = yield Post_1.default.findById(postId);
+    if (!post) {
+        return next(new ErrorResponse_1.default(`Post Not Found`, 404));
+    }
+    const video = yield VideoViews_1.default.findOne({ post: postId });
+    if (!video) {
+        VideoViews_1.default.create({ post: postId });
+    }
+    if (video && !video.views.includes(user._id)) {
+        video.views.push(user._id);
+        yield video.save();
+    }
+    (0, BaseResponseHandler_1.default)({
+        res,
+        statusCode: 200,
+        data: video,
+        success: true,
+        message: `Video Viewed successfully`
     });
 }));
 // @desc     Get User Feed
@@ -222,11 +249,9 @@ exports.uploadFeedPost = (0, express_async_handler_1.default)((req, res, next) =
 // @route    PATCH /api/v1/feed/upload/:postId
 // @access   Private
 exports.editFeedPost = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    console.log("editing post");
     const user = yield (0, utils_1.getAuthUser)(req, next);
     const { postId } = req.params;
     const post = yield Post_1.default.findById(postId);
-    console.log({ postId });
     if (!post) {
         return next(new ErrorResponse_1.default("Post not found", 404));
     }
@@ -861,6 +886,71 @@ exports.getBookmarkedPosts = (0, express_async_handler_1.default)((req, res, nex
 // @desc      Get User's Feed Posts
 // @route     GET /posts/feed
 // @access    Private
+// export const getUserFeeds = asyncHandler(async (req, res, next) => {
+//   const user = await getAuthUser(req, next);
+//   const { page, limit } = req.query;
+//   // Get posts IDs that user is not interested in
+//   const notInterestedPosts = await NotInterestedModel.find({ user: user._id })
+//     .select('post')
+//     .lean();
+//   const notInterestedPostIds = notInterestedPosts.map(item => item.post);
+//   const options = getPaginateOptions(page, limit, {
+//     populate: [
+//       {
+//         path: "user",
+//         select: "username firstName lastName profilePicture",
+//       },
+//     ],
+//   });
+//   // Add not interested filter to query
+//   const query = {
+//     _id: { $nin: notInterestedPostIds }
+//   };
+//   const posts = await Post.paginate(query, options);
+//   // Get user's bookmarks for these posts
+//   const bookmarks = await Bookmark.find({
+//     user: user._id,
+//     post: { $in: posts.docs.map((post) => (post as any)._id) },
+//   });
+//   const bookmarkedPostIds = new Set(bookmarks.map((b) => b.post.toString()));
+//   // Transform and clean up the response data
+//   const cleanPosts = {
+//     ...posts,
+//     docs: posts.docs.map((post) => {
+//       const postObj = (post as any).toObject();
+//       return {
+//         _id: postObj._id,
+//         user: {
+//           _id: postObj.user._id,
+//           username: postObj.user.username,
+//           firstName: postObj.user.firstName,
+//           lastName: postObj.user.lastName,
+//           profilePicture: postObj.user.profilePicture,
+//         },
+//         category: postObj.category,
+//         thumbnail: postObj.thumbnail,
+//         videoUrl: postObj.videoUrl,
+//         description: postObj.description,
+//         visibility: postObj.visibility,
+//         tags: postObj.tags,
+//         isCommentsAllowed: postObj.isCommentsAllowed,
+//         reactions: postObj.reactions,
+//         comments: postObj.comments,
+//         createdAt: postObj.createdAt,
+//         updatedAt: postObj.updatedAt,
+//         duration: postObj.duration,
+//         isBookmarked: bookmarkedPostIds.has(postObj._id.toString()),
+//       };
+//     }),
+//   };
+//   baseResponseHandler({
+//     message: `User Feeds Retrieved successfully`,
+//     res,
+//     statusCode: 200,
+//     success: true,
+//     data: transformPaginateResponse(cleanPosts),
+//   });
+// });
 exports.getUserFeeds = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const user = yield (0, utils_1.getAuthUser)(req, next);
     const { page, limit } = req.query;
@@ -877,20 +967,28 @@ exports.getUserFeeds = (0, express_async_handler_1.default)((req, res, next) => 
             },
         ],
     });
-    // Add not interested filter to query
+    // Filter out not interested posts
     const query = {
         _id: { $nin: notInterestedPostIds }
     };
     const posts = yield Post_1.default.paginate(query, options);
+    const postIds = posts.docs.map((post) => post._id);
     // Get user's bookmarks for these posts
     const bookmarks = yield Bookmark_1.default.find({
         user: user._id,
-        post: { $in: posts.docs.map((post) => post._id) },
+        post: { $in: postIds },
     });
     const bookmarkedPostIds = new Set(bookmarks.map((b) => b.post.toString()));
+    // Get views for all posts in one query
+    const videoViews = yield VideoViews_1.default.find({ post: { $in: postIds } }).lean();
+    const viewCountsMap = new Map();
+    videoViews.forEach((v) => {
+        viewCountsMap.set(v.post.toString(), v.views.length);
+    });
     // Transform and clean up the response data
     const cleanPosts = Object.assign(Object.assign({}, posts), { docs: posts.docs.map((post) => {
             const postObj = post.toObject();
+            const postIdStr = postObj._id.toString();
             return {
                 _id: postObj._id,
                 user: {
@@ -912,7 +1010,8 @@ exports.getUserFeeds = (0, express_async_handler_1.default)((req, res, next) => 
                 createdAt: postObj.createdAt,
                 updatedAt: postObj.updatedAt,
                 duration: postObj.duration,
-                isBookmarked: bookmarkedPostIds.has(postObj._id.toString()),
+                isBookmarked: bookmarkedPostIds.has(postIdStr),
+                views: viewCountsMap.get(postIdStr) || 0, // <-- Add views here
             };
         }) });
     (0, BaseResponseHandler_1.default)({

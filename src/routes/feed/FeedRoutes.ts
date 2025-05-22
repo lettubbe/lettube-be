@@ -2,7 +2,7 @@ import express from "express";
 import { protect } from "../../middleware/protect";
 import validateGetPhoneContacts, { validatePhoneContactsSchema } from "../../middleware/validation/feeds/phoneContactsValidationSchema";
 import validateAddCategoryFeedRequest, { validateAddCategoryFeedSchema } from "../../middleware/validation/feeds/categoryValidationSchema";
-import { addPostToPlaylist, blockChannel, getPostFeed, bookmarkPost, commentOnPost, createCategoryFeeds, deletePost, deletePostComment, dislikePost, getBookmarkedPosts, getContacts, getFeedNotifications, getPostComments, getUserFeeds, getUserPublicUploadedFeeds, getUserUploadedFeeds, getViralPosts, likeComment, likePost, removePostFromPlaylist, replyToComment, searchPosts, toggleNotInterested, unblockChannel, uploadFeedPost, editFeedPost } from "../../controllers/feed/FeedController";
+import { addPostToPlaylist, blockChannel, getPostFeed, bookmarkPost, commentOnPost, createCategoryFeeds, deletePost, deletePostComment, dislikePost, getBookmarkedPosts, getContacts, getFeedNotifications, getPostComments, getUserFeeds, getUserPublicUploadedFeeds, getUserUploadedFeeds, getViralPosts, likeComment, likePost, removePostFromPlaylist, replyToComment, searchPosts, toggleNotInterested, unblockChannel, uploadFeedPost, editFeedPost, addVideoViews } from "../../controllers/feed/FeedController";
 import upload from "../../middleware/multer";
 import validatePostComment, { validatePostCommentSchema } from "../../middleware/validation/feeds/commentOnPostValidationSchema";
 
@@ -20,6 +20,7 @@ router.get("/notifications", protect, getFeedNotifications);
 router.get("/upload/posts/:postId", protect, getPostFeed);
 
 router.delete("/posts/:postId", protect, deletePost);
+router.get("/posts/:postId/views", protect, addVideoViews);
 router.get("/posts/search", protect, searchPosts); 
 router.patch("/posts/:postId/like", protect, likePost);
 router.patch("/posts/:postId/dislike", protect, dislikePost);

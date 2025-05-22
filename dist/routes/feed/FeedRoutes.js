@@ -55,6 +55,7 @@ router.get("/bookmarks", protect_1.protect, FeedController_1.getBookmarkedPosts)
 router.get("/notifications", protect_1.protect, FeedController_1.getFeedNotifications);
 router.get("/upload/posts/:postId", protect_1.protect, FeedController_1.getPostFeed);
 router.delete("/posts/:postId", protect_1.protect, FeedController_1.deletePost);
+router.get("/posts/:postId/views", protect_1.protect, FeedController_1.addVideoViews);
 router.get("/posts/search", protect_1.protect, FeedController_1.searchPosts);
 router.patch("/posts/:postId/like", protect_1.protect, FeedController_1.likePost);
 router.patch("/posts/:postId/dislike", protect_1.protect, FeedController_1.dislikePost);
