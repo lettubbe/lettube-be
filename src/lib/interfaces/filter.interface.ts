@@ -1,0 +1,1 @@
+export type sortModeType = "most-popular" | "top" | "most-liked" | "newest" | "oldest" | "latest";
