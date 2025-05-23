@@ -65,6 +65,10 @@ const NotInterested_1 = __importDefault(require("../../models/Feed/NotInterested
 const BlockedChannel_1 = __importDefault(require("../../models/Feed/BlockedChannel"));
 const NotificationEnums_1 = require("../../constants/enums/NotificationEnums");
 const VideoViews_1 = __importDefault(require("../../models/Feed/VideoViews"));
+const feedService_1 = require("../../services/feedService");
+// @desc    Add Category to user Feed
+// @route   POST /api/v1/feed/category
+// @access  Private
 exports.createCategoryFeeds = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { categories = [], excludedCategories = [] } = req.body;
     const user = yield (0, utils_1.getAuthUser)(req, next);
@@ -107,7 +111,7 @@ exports.createCategoryFeeds = (0, express_async_handler_1.default)((req, res, ne
 exports.getUserUploadedFeeds = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const user = yield (0, utils_1.getAuthUser)(req, next);
     const { page = 1, limit = 10, search = "", mode = "latest", } = req.query;
-    const options = yield getPostsQuery({ page, search, mode, limit });
+    const options = yield (0, feedService_1.getPostsQuery)({ page, search, mode, limit });
     const posts = yield Post_1.default.paginate({ user: user._id }, options);
     const postsTransformedData = (0, paginate_1.transformPaginateResponse)(posts);
     (0, BaseResponseHandler_1.default)({
@@ -150,7 +154,7 @@ exports.addVideoViews = (0, express_async_handler_1.default)((req, res, next) =>
 exports.getUserPublicUploadedFeeds = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { userId } = req.query;
     const { page = 1, limit = 10, search = "", mode = "latest", } = req.query;
-    const options = yield getPostsQuery({ page, search, mode, limit });
+    const options = yield (0, feedService_1.getPostsQuery)({ page, search, mode, limit });
     const posts = yield Post_1.default.paginate({ user: userId }, options);
     const postsTransformedData = (0, paginate_1.transformPaginateResponse)(posts);
     (0, BaseResponseHandler_1.default)({

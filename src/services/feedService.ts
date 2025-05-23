@@ -19,9 +19,6 @@ export const getPostsQuery = async (
 
     const options = getPaginateOptions(page, limit);
 
-    // Add 
-    // 
-    // sorting based on mode
     switch (mode) {
         case 'most-popular':
             options.sort = {
