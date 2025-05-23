@@ -1190,8 +1190,6 @@ export const getBookmarkedPosts = asyncHandler(async (req, res, next) => {
 
 export const getUserFeeds = asyncHandler(async (req, res, next) => {
 
-  console.log("hitting post feed");
-
   const user = await getAuthUser(req, next);
   const { page, limit } = req.query;
 
@@ -1372,6 +1370,8 @@ export const searchPosts = asyncHandler(async (req, res, next) => {
   // Prepare list of OR filters
   const orFilters: any[] = [];
 
+  let matchingUsersAccounts;
+
   if (searchQuery) {
     // 1. Search for users whose names match the searchTerm
     const matchingUsers = await User.find({
@@ -1379,8 +1379,18 @@ export const searchPosts = asyncHandler(async (req, res, next) => {
         { firstName: { $regex: searchQuery, $options: "i" } },
         { lastName: { $regex: searchQuery, $options: "i" } },
         { username: { $regex: searchQuery, $options: "i" } },
+        { displayName: { $regex: searchQuery, $options: "i" } },
       ],
     }).select("_id");
+
+    matchingUsersAccounts = await User.find({
+      $or: [
+        { firstName: { $regex: searchQuery, $options: "i" } },
+        { lastName: { $regex: searchQuery, $options: "i" } },
+        { username: { $regex: searchQuery, $options: "i" } },
+        { displayName: { $regex: searchQuery, $options: "i" } },
+      ],
+    }).populate("firstName lastName username displayName").select("-password");
 
     const userIds = matchingUsers.map((user) => user._id);
 
@@ -1412,7 +1422,6 @@ export const searchPosts = asyncHandler(async (req, res, next) => {
         select: "username firstName lastName profilePicture",
       },
     ],
-    sort: { createdAt: -1 },
   });
 
   const postsData = await Post.paginate(filter, options);
@@ -1423,7 +1432,11 @@ export const searchPosts = asyncHandler(async (req, res, next) => {
     res,
     statusCode: 200,
     success: true,
-    data: posts,
+    // data: postsWithUserAccounts,
+    data: {
+      posts,
+      accounts: matchingUsersAccounts,
+    },
   });
 });
 

@@ -897,7 +897,6 @@ exports.getBookmarkedPosts = (0, express_async_handler_1.default)((req, res, nex
 // @route     GET /posts/feed
 // @access    Private
 exports.getUserFeeds = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    console.log("hitting post feed");
     const user = yield (0, utils_1.getAuthUser)(req, next);
     const { page, limit } = req.query;
     // Get posts IDs that user is not interested in
@@ -1034,6 +1033,7 @@ exports.searchPosts = (0, express_async_handler_1.default)((req, res, next) => _
     const filter = {};
     // Prepare list of OR filters
     const orFilters = [];
+    let matchingUsersAccounts;
     if (searchQuery) {
         // 1. Search for users whose names match the searchTerm
         const matchingUsers = yield User_1.default.find({
@@ -1041,8 +1041,17 @@ exports.searchPosts = (0, express_async_handler_1.default)((req, res, next) => _
                 { firstName: { $regex: searchQuery, $options: "i" } },
                 { lastName: { $regex: searchQuery, $options: "i" } },
                 { username: { $regex: searchQuery, $options: "i" } },
+                { displayName: { $regex: searchQuery, $options: "i" } },
             ],
         }).select("_id");
+        matchingUsersAccounts = yield User_1.default.find({
+            $or: [
+                { firstName: { $regex: searchQuery, $options: "i" } },
+                { lastName: { $regex: searchQuery, $options: "i" } },
+                { username: { $regex: searchQuery, $options: "i" } },
+                { displayName: { $regex: searchQuery, $options: "i" } },
+            ],
+        }).populate("firstName lastName username displayName").select("-password");
         const userIds = matchingUsers.map((user) => user._id);
         orFilters.push({ category: { $regex: searchQuery, $options: "i" } }, { description: { $regex: searchQuery, $options: "i" } }, { tags: { $in: [new RegExp(searchQuery, "i")] } }, { "comments.text": { $regex: searchQuery, $options: "i" } }, { "comments.replies.text": { $regex: searchQuery, $options: "i" } });
         // If there are matching users, include their IDs in the filter
@@ -1062,7 +1071,6 @@ exports.searchPosts = (0, express_async_handler_1.default)((req, res, next) => _
                 select: "username firstName lastName profilePicture",
             },
         ],
-        sort: { createdAt: -1 },
     });
     const postsData = yield Post_1.default.paginate(filter, options);
     const posts = (0, paginate_1.transformPaginateResponse)(postsData);
@@ -1071,7 +1079,11 @@ exports.searchPosts = (0, express_async_handler_1.default)((req, res, next) => _
         res,
         statusCode: 200,
         success: true,
-        data: posts,
+        // data: postsWithUserAccounts,
+        data: {
+            posts,
+            accounts: matchingUsersAccounts,
+        },
     });
 }));
 // @desc      Get Viral Posts
