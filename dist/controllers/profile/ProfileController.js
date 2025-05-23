@@ -128,7 +128,6 @@ exports.getUserProfile = (0, express_async_handler_1.default)((req, res, next) =
 // @desc    get User Profile
 // @access  Private
 exports.getUserPublicProfile = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    console.log("hitting public profile");
     const { userId } = req.params;
     const authUser = yield (0, utils_1.getAuthUser)(req, next);
     const user = yield User_1.default.findById(userId).select("-password");
@@ -139,19 +138,13 @@ exports.getUserPublicProfile = (0, express_async_handler_1.default)((req, res, n
     const subscriberCount = yield Subscription_1.default.countDocuments({
         subscribedTo: userId,
     });
-    // const isSubscribed = await Subscription.exists({
-    //   subscriber: authUser._id,
-    //   subscribedTo: userId,
-    // });
     const isSubscribed = !!(yield Subscription_1.default.exists({
         subscriber: authUser._id,
         subscribedTo: userId,
     }));
-    console.log("isSubscribed", isSubscribed);
     const userData = (0, utils_1.removeSensitiveFields)(user, ["password"]);
     // Add subscriber count to response
-    const responseData = Object.assign(Object.assign({}, userData), { isSubscribed,
-        subscriberCount });
+    const responseData = Object.assign(Object.assign({}, userData), { isSubscribed: Boolean(isSubscribed), subscriberCount });
     (0, BaseResponseHandler_1.default)({
         res,
         statusCode: 200,

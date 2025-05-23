@@ -10,6 +10,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getPostsQuery = void 0;
+exports.feedtransformedPostData = feedtransformedPostData;
 const paginate_1 = require("../lib/utils/paginate");
 const getPostsQuery = (_a) => __awaiter(void 0, [_a], void 0, function* ({ page = 1, limit = 10, search = "", mode = "latest" }) {
     const options = (0, paginate_1.getPaginateOptions)(page, limit);
@@ -45,3 +46,38 @@ const getPostsQuery = (_a) => __awaiter(void 0, [_a], void 0, function* ({ page 
     return options;
 });
 exports.getPostsQuery = getPostsQuery;
+function feedtransformedPostData(posts, { bookmarkedPostIds, viewCountsMap, }) {
+    return posts.map((post) => {
+        const postObj = post.toObject();
+        const postIdStr = postObj._id.toString();
+        const topLevelComments = postObj.comments || [];
+        const totalReplies = topLevelComments.reduce((sum, comment) => { var _a; return sum + (((_a = comment.replies) === null || _a === void 0 ? void 0 : _a.length) || 0); }, 0);
+        const commentCount = topLevelComments.length + totalReplies;
+        console.log("commentCount", commentCount);
+        return {
+            _id: postObj._id,
+            user: {
+                _id: postObj.user._id,
+                username: postObj.user.username,
+                firstName: postObj.user.firstName,
+                lastName: postObj.user.lastName,
+                profilePicture: postObj.user.profilePicture,
+            },
+            category: postObj.category,
+            thumbnail: postObj.thumbnail,
+            videoUrl: postObj.videoUrl,
+            description: postObj.description,
+            visibility: postObj.visibility,
+            tags: postObj.tags,
+            isCommentsAllowed: postObj.isCommentsAllowed,
+            reactions: postObj.reactions,
+            comments: postObj.comments,
+            createdAt: postObj.createdAt,
+            updatedAt: postObj.updatedAt,
+            duration: postObj.duration,
+            isBookmarked: bookmarkedPostIds.has(postIdStr),
+            views: viewCountsMap.get(postIdStr) || 0,
+            commentCount,
+        };
+    });
+}
