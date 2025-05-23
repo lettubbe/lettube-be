@@ -26,7 +26,10 @@ import { NotificationStatusEnum } from "../../constants/enums/NotificationEnums"
 import { IPushNotificationBody } from "../../lib/interfaces/notification.interface";
 import VideoView from "../../models/Feed/VideoViews";
 import { sortModeType } from "../../lib/interfaces/filter.interface";
-import { getPostsQuery } from "../../services/feedService";
+import {
+  feedtransformedPostData,
+  getPostsQuery,
+} from "../../services/feedService";
 
 // @desc    Add Category to user Feed
 // @route   POST /api/v1/feed/category
@@ -104,7 +107,7 @@ export const getUserUploadedFeeds = asyncHandler(async (req, res, next) => {
     mode: sortModeType;
   };
 
-  const options = await getPostsQuery({ page, search, mode, limit })
+  const options = await getPostsQuery({ page, search, mode, limit });
   const posts = await Post.paginate({ user: user._id }, options);
 
   const postsTransformedData = transformPaginateResponse(posts);
@@ -123,26 +126,25 @@ export const getUserUploadedFeeds = asyncHandler(async (req, res, next) => {
 // @access  private
 
 export const addVideoViews = asyncHandler(async (req, res, next) => {
-
   const user = await getAuthUser(req, next);
 
   const { postId } = req.params;
 
   const post = await Post.findById(postId);
 
-  if(!post){
+  if (!post) {
     return next(new ErrorResponse(`Post Not Found`, 404));
   }
 
   const video = await VideoView.findOne({ post: postId });
 
-  if(!video){
-    VideoView.create({ post: postId })
+  if (!video) {
+    VideoView.create({ post: postId });
   }
 
-  if(video && !video.views.includes(user._id)) {
-      video.views.push(user._id);
-      await video.save();
+  if (video && !video.views.includes(user._id)) {
+    video.views.push(user._id);
+    await video.save();
   }
 
   baseResponseHandler({
@@ -150,16 +152,16 @@ export const addVideoViews = asyncHandler(async (req, res, next) => {
     statusCode: 200,
     data: video,
     success: true,
-    message: `Video Viewed successfully`
-  })
-
+    message: `Video Viewed successfully`,
+  });
 });
 
 // @desc     Get User Feed
 // @route   GET /api/v1/feed/uploads/user/public
 // @access  private
 
-export const getUserPublicUploadedFeeds = asyncHandler(async (req, res, next) => {
+export const getUserPublicUploadedFeeds = asyncHandler(
+  async (req, res, next) => {
     const { userId } = req.query;
     const {
       page = 1,
@@ -173,7 +175,7 @@ export const getUserPublicUploadedFeeds = asyncHandler(async (req, res, next) =>
       mode: sortModeType;
     };
 
-    const options = await getPostsQuery({ page, search, mode, limit })
+    const options = await getPostsQuery({ page, search, mode, limit });
 
     const posts = await Post.paginate({ user: userId }, options);
 
@@ -334,7 +336,6 @@ export const uploadFeedPost = asyncHandler(async (req, res, next) => {
 // @access   Private
 
 export const editFeedPost = asyncHandler(async (req, res, next) => {
-
   const user = await getAuthUser(req, next);
   const { postId } = req.params;
 
@@ -349,8 +350,14 @@ export const editFeedPost = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("Not authorized to edit this post", 403));
   }
 
-  const { tags, category, description, visibility, isCommentsAllowed, playlistId } =
-    req.body;
+  const {
+    tags,
+    category,
+    description,
+    visibility,
+    isCommentsAllowed,
+    playlistId,
+  } = req.body;
 
   let tagsArray;
   if (tags) {
@@ -424,7 +431,6 @@ export const editFeedPost = asyncHandler(async (req, res, next) => {
 // @access   Private
 
 export const getPostFeed = asyncHandler(async (req, res, next) => {
-
   const { postId } = req.params;
 
   const post = await Post.findById(postId).select("-comments");
@@ -438,9 +444,8 @@ export const getPostFeed = asyncHandler(async (req, res, next) => {
     res,
     statusCode: 200,
     success: true,
-    data: post
+    data: post,
   });
-
 });
 
 // @desc     Get User Feed
@@ -464,12 +469,12 @@ export const likePost = asyncHandler(async (req, res, next) => {
 
   const update = hasLiked
     ? {
-      $pull: { "reactions.likes": userId },
-    }
+        $pull: { "reactions.likes": userId },
+      }
     : {
-      $addToSet: { "reactions.likes": userId },
-      $pull: { "reactions.dislikes": userId },
-    };
+        $addToSet: { "reactions.likes": userId },
+        $pull: { "reactions.dislikes": userId },
+      };
 
   const updatedPost = await Post.findByIdAndUpdate(postId, update, {
     new: true,
@@ -638,18 +643,17 @@ export const replyToComment = asyncHandler(async (req, res, next) => {
   comment.replies.push(newReply);
   await post.save();
 
-
   const commentNotificationPayload: IPushNotificationBody = {
     title: `Reply to your comment`,
     description: `${user.username} replied to your comment`,
-  }
+  };
 
   const now = new Date();
 
   const existingNotification = await Notification.findOne({
     userId: comment.user,
-    type: 'comment',
-    commentId: commentId
+    type: "comment",
+    commentId: commentId,
   });
 
   if (existingNotification) {
@@ -661,25 +665,38 @@ export const replyToComment = asyncHandler(async (req, res, next) => {
       const existingCommentNotificationPayload: IPushNotificationBody = {
         title: `Reply to your comment`,
         description: `${existingNotification.actorIds.length} replied to your comment`,
-      }
+      };
 
-      await NotificationService.sendNotification(comment.user as any, existingCommentNotificationPayload);
+      await NotificationService.sendNotification(
+        comment.user as any,
+        existingCommentNotificationPayload
+      );
     }
   } else {
     await Notification.create({
       userId: comment.user,
       actorIds: [user._id],
-      type: 'comment',
+      type: "comment",
       videoId: postId,
       commentId: commentId,
       read: false,
     });
 
-    await NotificationService.sendNotification(comment.user as any, commentNotificationPayload);
-
+    await NotificationService.sendNotification(
+      comment.user as any,
+      commentNotificationPayload
+    );
   }
 
-  await Notification.create({ userId: comment.user, actorIds: [user._id], post: postId, type: "comment", videoId: postId, createdAt: new Date(), read: false });
+  await Notification.create({
+    userId: comment.user,
+    actorIds: [user._id],
+    post: postId,
+    type: "comment",
+    videoId: postId,
+    createdAt: new Date(),
+    read: false,
+  });
   await Notification.create({
     userId: comment.user,
     actorIds: [user._id],
@@ -690,7 +707,6 @@ export const replyToComment = asyncHandler(async (req, res, next) => {
     read: false,
   });
   // await NotificationService.sendNotification(comment.user as any, {});
-
 
   baseResponseHandler({
     message: `Reply Done Successfully`,
@@ -743,13 +759,13 @@ export const likeComment = asyncHandler(async (req, res, next) => {
 
     const update = alreadyLiked
       ? {
-        $pull: { "comments.$[comment].replies.$[reply].likes": userObjectId },
-      }
+          $pull: { "comments.$[comment].replies.$[reply].likes": userObjectId },
+        }
       : {
-        $addToSet: {
-          "comments.$[comment].replies.$[reply].likes": userObjectId,
-        },
-      };
+          $addToSet: {
+            "comments.$[comment].replies.$[reply].likes": userObjectId,
+          },
+        };
 
     await Post.updateOne(
       {
@@ -986,8 +1002,9 @@ export const commentOnPost = asyncHandler(async (req, res, next) => {
   // Send push notification
   await NotificationService.sendNotification(post.user as any, {
     title: `${user.username} commented on your post`,
-    description: `${user.username} commented: ${text.substring(0, 50)}${text.length > 50 ? "..." : ""
-      }`,
+    description: `${user.username} commented: ${text.substring(0, 50)}${
+      text.length > 50 ? "..." : ""
+    }`,
   });
 
   baseResponseHandler({
@@ -1006,7 +1023,10 @@ export const commentOnPost = asyncHandler(async (req, res, next) => {
 export const deletePostComment = asyncHandler(async (req, res, next) => {
   const { commentId, postId } = req.params;
 
-  if (!mongoose.Types.ObjectId.isValid(commentId) || !mongoose.Types.ObjectId.isValid(postId)) {
+  if (
+    !mongoose.Types.ObjectId.isValid(commentId) ||
+    !mongoose.Types.ObjectId.isValid(postId)
+  ) {
     return next(new ErrorResponse("Invalid comment or post ID", 400));
   }
 
@@ -1033,11 +1053,9 @@ export const deletePostComment = asyncHandler(async (req, res, next) => {
     message: "Comment deleted successfully",
     success: true,
     data: post.comments,
-    statusCode: 200
-  })
-
+    statusCode: 200,
+  });
 });
-
 
 // @desc      Dislike A Post
 // @route     /posts/:postId/dislike
@@ -1058,14 +1076,14 @@ export const dislikePost = asyncHandler(async (req, res, next) => {
 
   const update = hasDisliked
     ? {
-      // User already disliked → remove from dislikes
-      $pull: { "reactions.dislikes": userId },
-    }
+        // User already disliked → remove from dislikes
+        $pull: { "reactions.dislikes": userId },
+      }
     : {
-      // User not disliked yet → add to dislikes
-      $addToSet: { "reactions.dislikes": userId },
-      $pull: { "reactions.likes": userId }, // Remove from likes if any
-    };
+        // User not disliked yet → add to dislikes
+        $addToSet: { "reactions.dislikes": userId },
+        $pull: { "reactions.likes": userId }, // Remove from likes if any
+      };
 
   const updatedPost = await Post.findByIdAndUpdate(postId, update, {
     new: true,
@@ -1143,7 +1161,7 @@ export const getBookmarkedPosts = asyncHandler(async (req, res, next) => {
         path: "user",
         select: "username firstName lastName profilePicture",
       },
-    }
+    },
   });
 
   const bookmarks = await Bookmark.paginate({ user: user._id }, options);
@@ -1170,89 +1188,18 @@ export const getBookmarkedPosts = asyncHandler(async (req, res, next) => {
 // @route     GET /posts/feed
 // @access    Private
 
-// export const getUserFeeds = asyncHandler(async (req, res, next) => {
-//   const user = await getAuthUser(req, next);
-//   const { page, limit } = req.query;
-
-//   // Get posts IDs that user is not interested in
-//   const notInterestedPosts = await NotInterestedModel.find({ user: user._id })
-//     .select('post')
-//     .lean();
-//   const notInterestedPostIds = notInterestedPosts.map(item => item.post);
-
-//   const options = getPaginateOptions(page, limit, {
-//     populate: [
-//       {
-//         path: "user",
-//         select: "username firstName lastName profilePicture",
-//       },
-//     ],
-//   });
-
-//   // Add not interested filter to query
-//   const query = {
-//     _id: { $nin: notInterestedPostIds }
-//   };
-
-//   const posts = await Post.paginate(query, options);
-
-//   // Get user's bookmarks for these posts
-//   const bookmarks = await Bookmark.find({
-//     user: user._id,
-//     post: { $in: posts.docs.map((post) => (post as any)._id) },
-//   });
-
-//   const bookmarkedPostIds = new Set(bookmarks.map((b) => b.post.toString()));
-
-//   // Transform and clean up the response data
-//   const cleanPosts = {
-//     ...posts,
-//     docs: posts.docs.map((post) => {
-//       const postObj = (post as any).toObject();
-//       return {
-//         _id: postObj._id,
-//         user: {
-//           _id: postObj.user._id,
-//           username: postObj.user.username,
-//           firstName: postObj.user.firstName,
-//           lastName: postObj.user.lastName,
-//           profilePicture: postObj.user.profilePicture,
-//         },
-//         category: postObj.category,
-//         thumbnail: postObj.thumbnail,
-//         videoUrl: postObj.videoUrl,
-//         description: postObj.description,
-//         visibility: postObj.visibility,
-//         tags: postObj.tags,
-//         isCommentsAllowed: postObj.isCommentsAllowed,
-//         reactions: postObj.reactions,
-//         comments: postObj.comments,
-//         createdAt: postObj.createdAt,
-//         updatedAt: postObj.updatedAt,
-//         duration: postObj.duration,
-//         isBookmarked: bookmarkedPostIds.has(postObj._id.toString()),
-//       };
-//     }),
-//   };
-
-//   baseResponseHandler({
-//     message: `User Feeds Retrieved successfully`,
-//     res,
-//     statusCode: 200,
-//     success: true,
-//     data: transformPaginateResponse(cleanPosts),
-//   });
-// });
-
 export const getUserFeeds = asyncHandler(async (req, res, next) => {
+
+  console.log("hitting post feed");
+
   const user = await getAuthUser(req, next);
   const { page, limit } = req.query;
 
   // Get posts IDs that user is not interested in
   const notInterestedPosts = await NotInterestedModel.find({ user: user._id })
-    .select('post')
+    .select("post")
     .lean();
-  const notInterestedPostIds = notInterestedPosts.map(item => item.post);
+  const notInterestedPostIds = notInterestedPosts.map((item) => item.post);
 
   const options = getPaginateOptions(page, limit, {
     populate: [
@@ -1265,7 +1212,7 @@ export const getUserFeeds = asyncHandler(async (req, res, next) => {
 
   // Filter out not interested posts
   const query = {
-    _id: { $nin: notInterestedPostIds }
+    _id: { $nin: notInterestedPostIds },
   };
 
   const posts = await Post.paginate(query, options);
@@ -1288,35 +1235,43 @@ export const getUserFeeds = asyncHandler(async (req, res, next) => {
   });
 
   // Transform and clean up the response data
+  // const cleanPosts = {
+  //   ...posts,
+  //   docs: posts.docs.map((post) => {
+  //     const postObj = (post as any).toObject();
+  //     const postIdStr = postObj._id.toString();
+  //     return {
+  //       _id: postObj._id,
+  //       user: {
+  //         _id: postObj.user._id,
+  //         username: postObj.user.username,
+  //         firstName: postObj.user.firstName,
+  //         lastName: postObj.user.lastName,
+  //         profilePicture: postObj.user.profilePicture,
+  //       },
+  //       category: postObj.category,
+  //       thumbnail: postObj.thumbnail,
+  //       videoUrl: postObj.videoUrl,
+  //       description: postObj.description,
+  //       visibility: postObj.visibility,
+  //       tags: postObj.tags,
+  //       isCommentsAllowed: postObj.isCommentsAllowed,
+  //       reactions: postObj.reactions,
+  //       comments: postObj.comments,
+  //       createdAt: postObj.createdAt,
+  //       updatedAt: postObj.updatedAt,
+  //       duration: postObj.duration,
+  //       isBookmarked: bookmarkedPostIds.has(postIdStr),
+  //       views: viewCountsMap.get(postIdStr) || 0,
+  //     };
+  //   }),
+  // };
+
   const cleanPosts = {
     ...posts,
-    docs: posts.docs.map((post) => {
-      const postObj = (post as any).toObject();
-      const postIdStr = postObj._id.toString();
-      return {
-        _id: postObj._id,
-        user: {
-          _id: postObj.user._id,
-          username: postObj.user.username,
-          firstName: postObj.user.firstName,
-          lastName: postObj.user.lastName,
-          profilePicture: postObj.user.profilePicture,
-        },
-        category: postObj.category,
-        thumbnail: postObj.thumbnail,
-        videoUrl: postObj.videoUrl,
-        description: postObj.description,
-        visibility: postObj.visibility,
-        tags: postObj.tags,
-        isCommentsAllowed: postObj.isCommentsAllowed,
-        reactions: postObj.reactions,
-        comments: postObj.comments,
-        createdAt: postObj.createdAt,
-        updatedAt: postObj.updatedAt,
-        duration: postObj.duration,
-        isBookmarked: bookmarkedPostIds.has(postIdStr),
-        views: viewCountsMap.get(postIdStr) || 0, // <-- Add views here
-      };
+    docs: feedtransformedPostData(posts.docs, {
+      bookmarkedPostIds,
+      viewCountsMap,
     }),
   };
 
@@ -1328,7 +1283,6 @@ export const getUserFeeds = asyncHandler(async (req, res, next) => {
     data: transformPaginateResponse(cleanPosts),
   });
 });
-
 
 // @desc      Get User's Feed Posts
 // @route     DELETE /posts/feed/:postId/
@@ -1373,27 +1327,27 @@ export const addPostToPlaylist = asyncHandler(async (req, res, next) => {
 
   const playlist = await Playlist.findOne({ _id: playlistId, user: user._id });
   if (!playlist) {
-    return next(new ErrorResponse('Playlist not found or unauthorized', 404));
+    return next(new ErrorResponse("Playlist not found or unauthorized", 404));
   }
 
   const post = await Post.findById(postId);
   if (!post) {
-    return next(new ErrorResponse('Post not found', 404));
+    return next(new ErrorResponse("Post not found", 404));
   }
 
   if (playlist.videos.includes(new Types.ObjectId(postId))) {
-    return next(new ErrorResponse('Post already in playlist', 400));
+    return next(new ErrorResponse("Post already in playlist", 400));
   }
 
   playlist.videos.push(new Types.ObjectId(postId));
   await playlist.save();
 
   baseResponseHandler({
-    message: 'Post added to playlist successfully',
+    message: "Post added to playlist successfully",
     res,
     statusCode: 200,
     success: true,
-    data: playlist
+    data: playlist,
   });
 });
 
@@ -1604,34 +1558,34 @@ export const toggleNotInterested = asyncHandler(async (req, res, next) => {
 
   const post = await Post.findById(postId);
   if (!post) {
-    return next(new ErrorResponse('Post not found', 404));
+    return next(new ErrorResponse("Post not found", 404));
   }
 
   const existingNotInterested = await NotInterestedModel.findOne({
     user: user._id,
-    post: postId
+    post: postId,
   });
 
   if (existingNotInterested) {
     await NotInterestedModel.deleteOne({ _id: existingNotInterested._id });
     baseResponseHandler({
-      message: 'Post removed from not interested',
+      message: "Post removed from not interested",
       res,
       statusCode: 200,
       success: true,
-      data: { status: 'removed' }
+      data: { status: "removed" },
     });
   } else {
     const notInterested = await NotInterestedModel.create({
       user: user._id,
-      post: postId
+      post: postId,
     });
     baseResponseHandler({
-      message: 'Post marked as not interested',
+      message: "Post marked as not interested",
       res,
       statusCode: 200,
       success: true,
-      data: { status: 'added', notInterested }
+      data: { status: "added", notInterested },
     });
   }
 });
@@ -1646,20 +1600,20 @@ export const blockChannel = asyncHandler(async (req, res, next) => {
 
   const channelUser = await User.findById(channelId);
   if (!channelUser) {
-    return next(new ErrorResponse('Channel not found', 404));
+    return next(new ErrorResponse("Channel not found", 404));
   }
 
   const blockedChannel = await BlockedChannel.create({
     user: user._id,
-    blockedUser: channelId
+    blockedUser: channelId,
   });
 
   baseResponseHandler({
-    message: 'Channel blocked from recommendations',
+    message: "Channel blocked from recommendations",
     res,
     statusCode: 200,
     success: true,
-    data: blockedChannel
+    data: blockedChannel,
   });
 });
 
@@ -1673,22 +1627,24 @@ export const removePostFromPlaylist = asyncHandler(async (req, res, next) => {
 
   const playlist = await Playlist.findOne({ _id: playlistId, user: user._id });
   if (!playlist) {
-    return next(new ErrorResponse('Playlist not found or unauthorized', 404));
+    return next(new ErrorResponse("Playlist not found or unauthorized", 404));
   }
 
   if (!playlist.videos.includes(new Types.ObjectId(postId))) {
-    return next(new ErrorResponse('Post not in playlist', 404));
+    return next(new ErrorResponse("Post not in playlist", 404));
   }
 
-  playlist.videos = playlist.videos.filter(videoId => videoId.toString() !== postId);
+  playlist.videos = playlist.videos.filter(
+    (videoId) => videoId.toString() !== postId
+  );
   await playlist.save();
 
   baseResponseHandler({
-    message: 'Post removed from playlist successfully',
+    message: "Post removed from playlist successfully",
     res,
     statusCode: 200,
     success: true,
-    data: playlist
+    data: playlist,
   });
 });
 
@@ -1702,20 +1658,20 @@ export const unblockChannel = asyncHandler(async (req, res, next) => {
 
   const blockedChannel = await BlockedChannel.findOne({
     user: user._id,
-    blockedUser: channelId
+    blockedUser: channelId,
   });
 
   if (!blockedChannel) {
-    return next(new ErrorResponse('Channel not blocked', 404));
+    return next(new ErrorResponse("Channel not blocked", 404));
   }
 
   await BlockedChannel.deleteOne({ _id: blockedChannel._id });
 
   baseResponseHandler({
-    message: 'Channel unblocked successfully',
+    message: "Channel unblocked successfully",
     res,
     statusCode: 200,
     success: true,
-    data: { status: 'unblocked' }
+    data: { status: "unblocked" },
   });
 });
