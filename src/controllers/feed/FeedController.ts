@@ -110,6 +110,30 @@ export const getUserUploadedFeeds = asyncHandler(async (req, res, next) => {
   const options = await getPostsQuery({ page, search, mode, limit });
   const posts = await Post.paginate({ user: user._id }, options);
 
+  const postIds = posts.docs.map((post) => (post as any)._id);
+
+  // Get user's bookmarks for these posts
+  const bookmarks = await Bookmark.find({
+    user: user._id,
+    post: { $in: postIds },
+  });
+
+  const bookmarkedPostIds = new Set(bookmarks.map((b) => b.post.toString()));
+
+  const videoViews = await VideoView.find({ post: { $in: postIds } }).lean();
+  const viewCountsMap = new Map<string, number>();
+  videoViews.forEach((v) => {
+    viewCountsMap.set(v.post.toString(), v.views.length);
+  });
+
+  const cleanPosts = {
+    ...posts,
+    docs: feedtransformedPostData(posts.docs, {
+      bookmarkedPostIds,
+      viewCountsMap,
+    }),
+  };
+
   const postsTransformedData = transformPaginateResponse(posts);
 
   baseResponseHandler({
@@ -117,7 +141,7 @@ export const getUserUploadedFeeds = asyncHandler(async (req, res, next) => {
     res,
     statusCode: 200,
     success: true,
-    data: postsTransformedData,
+    data: cleanPosts,
   });
 });
 
