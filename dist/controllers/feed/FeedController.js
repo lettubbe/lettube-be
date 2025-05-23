@@ -129,13 +129,13 @@ exports.getUserUploadedFeeds = (0, express_async_handler_1.default)((req, res, n
             bookmarkedPostIds,
             viewCountsMap,
         }) });
-    const postsTransformedData = (0, paginate_1.transformPaginateResponse)(posts);
+    const postsTransformedData = (0, paginate_1.transformPaginateResponse)(cleanPosts);
     (0, BaseResponseHandler_1.default)({
         message: `User Feeds Retrieved successfully`,
         res,
         statusCode: 200,
         success: true,
-        data: cleanPosts,
+        data: postsTransformedData,
     });
 }));
 // @desc     Get User Feed
@@ -194,7 +194,7 @@ exports.getUserPublicUploadedFeeds = (0, express_async_handler_1.default)((req, 
         res,
         statusCode: 200,
         success: true,
-        data: cleanPosts,
+        data: postsTransformedData,
     });
 }));
 // @desc     Get User Feed
