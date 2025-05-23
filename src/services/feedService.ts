@@ -52,3 +52,54 @@ export const getPostsQuery = async (
 
     return options
 }
+
+export function feedtransformedPostData(
+  posts: any[],
+  {
+    bookmarkedPostIds,
+    viewCountsMap,
+  }: {
+    bookmarkedPostIds: Set<string>;
+    viewCountsMap: Map<string, number>;
+  }
+) {
+  return posts.map((post) => {
+    const postObj = post.toObject();
+    const postIdStr = postObj._id.toString();
+
+    const topLevelComments = postObj.comments || [];
+    const totalReplies = topLevelComments.reduce(
+      (sum: number, comment: any) => sum + (comment.replies?.length || 0),
+      0
+    );
+    const commentCount = topLevelComments.length + totalReplies;
+
+    console.log("commentCount", commentCount);
+
+    return {
+      _id: postObj._id,
+      user: {
+        _id: postObj.user._id,
+        username: postObj.user.username,
+        firstName: postObj.user.firstName,
+        lastName: postObj.user.lastName,
+        profilePicture: postObj.user.profilePicture,
+      },
+      category: postObj.category,
+      thumbnail: postObj.thumbnail,
+      videoUrl: postObj.videoUrl,
+      description: postObj.description,
+      visibility: postObj.visibility,
+      tags: postObj.tags,
+      isCommentsAllowed: postObj.isCommentsAllowed,
+      reactions: postObj.reactions,
+      comments: postObj.comments,
+      createdAt: postObj.createdAt,
+      updatedAt: postObj.updatedAt,
+      duration: postObj.duration,
+      isBookmarked: bookmarkedPostIds.has(postIdStr),
+      views: viewCountsMap.get(postIdStr) || 0,
+      commentCount,
+    };
+  });
+}
