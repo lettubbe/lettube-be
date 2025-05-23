@@ -113,13 +113,29 @@ exports.getUserUploadedFeeds = (0, express_async_handler_1.default)((req, res, n
     const { page = 1, limit = 10, search = "", mode = "latest", } = req.query;
     const options = yield (0, feedService_1.getPostsQuery)({ page, search, mode, limit });
     const posts = yield Post_1.default.paginate({ user: user._id }, options);
+    const postIds = posts.docs.map((post) => post._id);
+    // Get user's bookmarks for these posts
+    const bookmarks = yield Bookmark_1.default.find({
+        user: user._id,
+        post: { $in: postIds },
+    });
+    const bookmarkedPostIds = new Set(bookmarks.map((b) => b.post.toString()));
+    const videoViews = yield VideoViews_1.default.find({ post: { $in: postIds } }).lean();
+    const viewCountsMap = new Map();
+    videoViews.forEach((v) => {
+        viewCountsMap.set(v.post.toString(), v.views.length);
+    });
+    const cleanPosts = Object.assign(Object.assign({}, posts), { docs: (0, feedService_1.feedtransformedPostData)(posts.docs, {
+            bookmarkedPostIds,
+            viewCountsMap,
+        }) });
     const postsTransformedData = (0, paginate_1.transformPaginateResponse)(posts);
     (0, BaseResponseHandler_1.default)({
         message: `User Feeds Retrieved successfully`,
         res,
         statusCode: 200,
         success: true,
-        data: postsTransformedData,
+        data: cleanPosts,
     });
 }));
 // @desc     Get User Feed
@@ -156,13 +172,29 @@ exports.getUserPublicUploadedFeeds = (0, express_async_handler_1.default)((req, 
     const { page = 1, limit = 10, search = "", mode = "latest", } = req.query;
     const options = yield (0, feedService_1.getPostsQuery)({ page, search, mode, limit });
     const posts = yield Post_1.default.paginate({ user: userId }, options);
+    const postIds = posts.docs.map((post) => post._id);
+    // Get user's bookmarks for these posts
+    const bookmarks = yield Bookmark_1.default.find({
+        user: userId,
+        post: { $in: postIds },
+    });
+    const bookmarkedPostIds = new Set(bookmarks.map((b) => b.post.toString()));
+    const videoViews = yield VideoViews_1.default.find({ post: { $in: postIds } }).lean();
+    const viewCountsMap = new Map();
+    videoViews.forEach((v) => {
+        viewCountsMap.set(v.post.toString(), v.views.length);
+    });
+    const cleanPosts = Object.assign(Object.assign({}, posts), { docs: (0, feedService_1.feedtransformedPostData)(posts.docs, {
+            bookmarkedPostIds,
+            viewCountsMap,
+        }) });
     const postsTransformedData = (0, paginate_1.transformPaginateResponse)(posts);
     (0, BaseResponseHandler_1.default)({
         message: `User Feeds Retrieved successfully`,
         res,
         statusCode: 200,
         success: true,
-        data: postsTransformedData,
+        data: cleanPosts,
     });
 }));
 // @desc     Get User Feed
@@ -1051,7 +1083,9 @@ exports.searchPosts = (0, express_async_handler_1.default)((req, res, next) => _
                 { username: { $regex: searchQuery, $options: "i" } },
                 { displayName: { $regex: searchQuery, $options: "i" } },
             ],
-        }).populate("firstName lastName username displayName").select("-password");
+        })
+            .populate("firstName lastName username displayName")
+            .select("-password");
         const userIds = matchingUsers.map((user) => user._id);
         orFilters.push({ category: { $regex: searchQuery, $options: "i" } }, { description: { $regex: searchQuery, $options: "i" } }, { tags: { $in: [new RegExp(searchQuery, "i")] } }, { "comments.text": { $regex: searchQuery, $options: "i" } }, { "comments.replies.text": { $regex: searchQuery, $options: "i" } });
         // If there are matching users, include their IDs in the filter

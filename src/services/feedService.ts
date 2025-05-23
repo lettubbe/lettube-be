@@ -74,8 +74,6 @@ export function feedtransformedPostData(
     );
     const commentCount = topLevelComments.length + totalReplies;
 
-    console.log("commentCount", commentCount);
-
     return {
       _id: postObj._id,
       user: {

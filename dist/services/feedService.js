@@ -53,7 +53,6 @@ function feedtransformedPostData(posts, { bookmarkedPostIds, viewCountsMap, }) {
         const topLevelComments = postObj.comments || [];
         const totalReplies = topLevelComments.reduce((sum, comment) => { var _a; return sum + (((_a = comment.replies) === null || _a === void 0 ? void 0 : _a.length) || 0); }, 0);
         const commentCount = topLevelComments.length + totalReplies;
-        console.log("commentCount", commentCount);
         return {
             _id: postObj._id,
             user: {
