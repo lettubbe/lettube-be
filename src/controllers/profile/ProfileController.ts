@@ -15,44 +15,44 @@ import baseResponseHandler from "../../messages/BaseResponseHandler";
 // @desc    Upload Profile Picture
 // @access  Private/public
 
-export const updateProfilePhoto = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
-  
-  const { email, phoneNumber } = req.body;
+export const updateProfilePhoto = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { email, phoneNumber } = req.body;
 
-  const authUser = await getAuthUser(req, next);
+    const authUser = await getAuthUser(req, next);
 
-  console.log("authUser", authUser);
+    console.log("authUser", authUser);
 
-  const query = buildUserAuthTypeQuery(email, phoneNumber, authUser._id);
+    const query = buildUserAuthTypeQuery(email, phoneNumber, authUser._id);
 
-  const user = await User.findOne(query);
+    const user = await User.findOne(query);
 
-  if (!user) {
-    return next(new ErrorResponse(`User Not Found`, 404));
+    if (!user) {
+      return next(new ErrorResponse(`User Not Found`, 404));
+    }
+
+    const picture = await uploadFile(req, next, `profilePicture/${user._id}`);
+
+    if (!picture) {
+      return next(new ErrorResponse(`Failed to upload profile picture`, 500));
+    }
+
+    user.profilePicture = picture;
+
+    await user.save();
+
+    const userData: Partial<typeof user> = removeSensitiveFields(user, [
+      "password",
+    ]);
+
+    baseResponseHandler({
+      res,
+      statusCode: 200,
+      message: `Profile Picture Uploaded Successfully`,
+      success: true,
+      data: userData,
+    });
   }
-
-  const picture = await uploadFile(req, next, `profilePicture/${user._id}`);
-
-  if (!picture) {
-    return next(new ErrorResponse(`Failed to upload profile picture`, 500));
-  }
-
-  user.profilePicture = picture;
-
-  await user.save();
-
-  const userData: Partial<typeof user> = removeSensitiveFields(user, [
-    "password",
-  ]);
-
-  baseResponseHandler({
-    res,
-    statusCode: 200,
-    message: `Profile Picture Uploaded Successfully`,
-    success: true,
-    data: userData,
-  });
-}
 );
 
 // @route   /api/v1/profile/upload/coverPhoto
@@ -96,7 +96,14 @@ export const uploadCoverPhoto = asyncHandler(async (req, res, next) => {
 // @access  Private
 
 export const updateProfileDetails = asyncHandler(async (req, res, next) => {
-  const { description, firstName, lastName, displayName, username, websiteLink } = req.body;
+  const {
+    description,
+    firstName,
+    lastName,
+    displayName,
+    username,
+    websiteLink,
+  } = req.body;
 
   const user = await getAuthUser(req, next);
 
@@ -113,8 +120,6 @@ export const updateProfileDetails = asyncHandler(async (req, res, next) => {
   if (displayName) profile.displayName = displayName;
   if (username) profile.username = username;
 
-
-
   await profile.save();
 
   const updatedUser = await User.findById(user._id).select("-password");
@@ -129,32 +134,35 @@ export const updateProfileDetails = asyncHandler(async (req, res, next) => {
 });
 
 // @route   /api/v1/profile/me/
-// @desc    get User Profile 
+// @desc    get User Profile
 // @access  Private
 
 export const getUserProfile = asyncHandler(async (req, res, next) => {
-
   const user = await getAuthUser(req, next);
 
   const userData = removeSensitiveFields(user, ["password"]);
-  const subscriberCount = await Subscription.countDocuments({ subscribedTo: user._id });
+  const subscriberCount = await Subscription.countDocuments({
+    subscribedTo: user._id,
+  });
 
   baseResponseHandler({
     res,
     statusCode: 200,
     message: `User Profile retrived Successfully`,
     success: true,
-    data: { ...userData, subscriberCount }
-  })
-
+    data: { ...userData, subscriberCount },
+  });
 });
 
 // @route   /api/v1/profile/:userId/userProfile
-// @desc    get User Profile 
+// @desc    get User Profile
 // @access  Private
 
 export const getUserPublicProfile = asyncHandler(async (req, res, next) => {
+
   const { userId } = req.params;
+
+  const authUser = await getAuthUser(req, next);
 
   const user = await User.findById(userId).select("-password");
 
@@ -163,14 +171,22 @@ export const getUserPublicProfile = asyncHandler(async (req, res, next) => {
   }
 
   // Get subscriber count
-  const subscriberCount = await Subscription.countDocuments({ subscribedTo: userId });
+  const subscriberCount = await Subscription.countDocuments({
+    subscribedTo: userId,
+  });
+
+  const isSubscribed = !!(await Subscription.exists({
+    subscriber: authUser._id,
+    subscribedTo: userId,
+  }));
 
   const userData = removeSensitiveFields(user, ["password"]);
 
   // Add subscriber count to response
   const responseData = {
     ...userData,
-    subscriberCount
+    isSubscribed: Boolean(isSubscribed),
+    subscriberCount,
   };
 
   baseResponseHandler({
@@ -178,6 +194,6 @@ export const getUserPublicProfile = asyncHandler(async (req, res, next) => {
     statusCode: 200,
     message: `User Profile retrived Successfully`,
     success: true,
-    data: responseData
+    data: responseData,
   });
 });
