@@ -159,8 +159,7 @@ export const addVideoViews = asyncHandler(async (req, res, next) => {
 // @route   GET /api/v1/feed/uploads/user/public
 // @access  private
 
-export const getUserPublicUploadedFeeds = asyncHandler(
-  async (req, res, next) => {
+export const getUserPublicUploadedFeeds = asyncHandler(async (req, res, next) => {
     const { userId } = req.query;
     const {
       page = 1,
