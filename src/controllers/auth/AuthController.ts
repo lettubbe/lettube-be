@@ -31,7 +31,7 @@ export const loginUser = asyncHandler(async (req, res, next) => {
 
   const { email, phoneNumber, password } = req.body;
 
-  const query = buildUserAuthTypeQuery(email, phoneNumber);
+  const query = buildUserAuthTypeQuery({ email, phoneNumber });
 
   // Find user by email or phone
   const user = await User.findOne(query);
@@ -105,7 +105,7 @@ export const loginUser = asyncHandler(async (req, res, next) => {
 export const resendOTP = asyncHandler(async (req, res, next) => {
   const { email, phoneNumber } = req.body;
 
-  const query = buildUserAuthTypeQuery(email, phoneNumber);
+  const query = buildUserAuthTypeQuery({ email, phoneNumber });
 
   const user = await User.findOne(query);
 
@@ -124,8 +124,8 @@ export const resendOTP = asyncHandler(async (req, res, next) => {
   const token = email
     ? verificationCode
     : config.isDevelopment
-    ? "12345"
-    : verificationCode;
+      ? "12345"
+      : verificationCode;
 
   const expiresAt = new Date(otpTokenExpiry(5 * 60) * 1000);
 
@@ -169,7 +169,7 @@ export const resendOTP = asyncHandler(async (req, res, next) => {
 // @access  Public
 
 export const sendVerificationEmail = asyncHandler(async (req, res, next) => {
-  
+
   const { email, phoneNumber, type } = req.body;
 
   // const query = buildUserAuthTypeQuery(email, phoneNumber);
@@ -295,7 +295,7 @@ export const sendVerificationEmail = asyncHandler(async (req, res, next) => {
 export const createUserPassword = asyncHandler(async (req, res, next) => {
   const { email, phoneNumber, type, password } = req.body;
 
-  const query = buildUserAuthTypeQuery(email, phoneNumber);
+  const query = buildUserAuthTypeQuery({ email, phoneNumber });
 
   const user = await User.findOne(query);
 
@@ -411,7 +411,7 @@ export const createUserDetails = asyncHandler(async (req, res, next) => {
 
   let jwtToken;
 
-  const query = buildUserAuthTypeQuery(email, phoneNumber);
+  const query = buildUserAuthTypeQuery({ email, phoneNumber });
 
   const user = await User.findOne(query);
 
@@ -484,9 +484,11 @@ export const createUserDetails = asyncHandler(async (req, res, next) => {
 // @access  Public
 
 export const suggestUsername = asyncHandler(async (req, res, next) => {
-  const { email, phoneNumber } = req.query;
+  const { email, phoneNumber } = req.query as {
+    email: string, phoneNumber: string
+  };
 
-  const query = buildUserAuthTypeQuery(email as string, phoneNumber as string);
+  const query = buildUserAuthTypeQuery({ email, phoneNumber });
   const user = await User.findOne(query);
 
   if (!user) {
@@ -542,12 +544,14 @@ export const suggestUsername = asyncHandler(async (req, res, next) => {
 
 export const getAuthVerificationStatus = asyncHandler(
   async (req, res, next) => {
-    const { email, phoneNumber, type } = req.query;
+    const { email, phoneNumber, type } = req.query as {
+      email: string, phoneNumber: string, type: string
+    };
 
-    const query = buildUserAuthTypeQuery(
-      email as string,
-      phoneNumber as string
-    );
+    const query = buildUserAuthTypeQuery({
+      email,
+      phoneNumber
+    });
 
     const user = await User.findOne(query);
 
@@ -629,7 +633,7 @@ export const forgetPassword = asyncHandler(async (req, res, next) => {
 
   const emailLowerCase = email.toLowerCase();
 
-  const query = buildUserAuthTypeQuery(emailLowerCase, phoneNumber);
+  const query = buildUserAuthTypeQuery({ email: emailLowerCase, phoneNumber });
 
   const user = await User.findOne(query);
 
@@ -696,7 +700,7 @@ export const resetPassword = asyncHandler(async (req, res, next) => {
 
   // console.log({ password, token, email, phoneNumber });
 
-  const query = buildUserAuthTypeQuery(email, phoneNumber);
+  const query = buildUserAuthTypeQuery({ email, phoneNumber });
 
   // const authUser = await Auth.findOne({ verificationCode: token });
   const user = await User.findOne(query);
