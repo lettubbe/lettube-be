@@ -135,14 +135,14 @@ export const getUserUploadedFeeds = asyncHandler(async (req, res, next) => {
     }),
   };
 
-  const postsTransformedData = transformPaginateResponse(posts);
+  const postsTransformedData = transformPaginateResponse(cleanPosts);
 
   baseResponseHandler({
     message: `User Feeds Retrieved successfully`,
     res,
     statusCode: 200,
     success: true,
-    data: cleanPosts,
+    data: postsTransformedData,
   });
 });
 
@@ -234,7 +234,7 @@ export const getUserPublicUploadedFeeds = asyncHandler(async (req, res, next) =>
     res,
     statusCode: 200,
     success: true,
-    data: cleanPosts,
+    data: postsTransformedData,
   });
 }
 );
