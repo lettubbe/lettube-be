@@ -108,6 +108,7 @@ export const getUserUploadedFeeds = asyncHandler(async (req, res, next) => {
   };
 
   const options = await getPostsQuery({ page, search, mode, limit });
+
   const posts = await Post.paginate({ user: user._id }, options);
 
   const postIds = posts.docs.map((post) => (post as any)._id);
@@ -479,7 +480,12 @@ export const editFeedPost = asyncHandler(async (req, res, next) => {
 export const getPostFeed = asyncHandler(async (req, res, next) => {
   const { postId } = req.params;
 
-  const post = await Post.findById(postId).select("-comments");
+  const post = await Post.findById(postId)
+    .select("-comments")
+    .populate({
+      path: "reactions.likes",
+      select: "username firstName lastName profilePicture"
+    });
 
   if (!postId) {
     return next(new ErrorResponse(`Post Not Found`, 404));
@@ -1200,13 +1206,21 @@ export const getBookmarkedPosts = asyncHandler(async (req, res, next) => {
   const { page, limit, searchTerm } = req.query;
 
   const options = getPaginateOptions(page, limit, {
-    populate: {
-      path: "post",
-      populate: {
-        path: "user",
-        select: "username firstName lastName profilePicture",
-      },
-    },
+    populate: [
+      {
+        path: "post",
+        populate: [
+          {
+            path: "user",
+            select: "username firstName lastName profilePicture",
+          },
+          {
+            path: "reactions.likes",
+            select: "username firstName lastName profilePicture"
+          }
+        ]
+      }
+    ]
   });
 
   const bookmarks = await Bookmark.paginate({ user: user._id }, options);
@@ -1249,6 +1263,10 @@ export const getUserFeeds = asyncHandler(async (req, res, next) => {
         path: "user",
         select: "username firstName lastName profilePicture",
       },
+      {
+        path: "reactions.likes",
+        select: "username firstName lastName profilePicture"
+      }
     ],
   });
 
@@ -1467,6 +1485,10 @@ export const searchPosts = asyncHandler(async (req, res, next) => {
         path: "user",
         select: "username firstName lastName profilePicture",
       },
+      {
+        path: "reactions.likes",
+        select: "username firstName lastName profilePicture"
+      }
     ],
   });
 
@@ -1517,6 +1539,14 @@ export const getViralPosts = asyncHandler(async (req, res, next) => {
     },
 
     {
+      $lookup: {
+        from: "users",
+        localField: "reactions.likes",
+        foreignField: "_id",
+        as: "likedByUsers"
+      }
+    },
+    {
       $addFields: {
         likesCount: { $size: "$reactions.likes" },
         commentsCount: { $size: "$comments" },
@@ -1526,6 +1556,19 @@ export const getViralPosts = asyncHandler(async (req, res, next) => {
           lastName: "$user.lastName",
           profilePicture: "$user.profilePicture",
         },
+        likedByUsers: {
+          $map: {
+            input: "$likedByUsers",
+            as: "user",
+            in: {
+              _id: "$$user._id",
+              username: "$$user.username",
+              firstName: "$$user.firstName",
+              lastName: "$$user.lastName",
+              profilePicture: "$$user.profilePicture"
+            }
+          }
+        }
       },
     },
     {
@@ -1542,6 +1585,10 @@ export const getViralPosts = asyncHandler(async (req, res, next) => {
         path: "user",
         select: "username firstName lastName profilePicture",
       },
+      {
+        path: "reactions.likes",
+        select: "username firstName lastName profilePicture"
+      }
     ],
   });
 
