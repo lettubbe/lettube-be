@@ -108,6 +108,7 @@ export const getUserUploadedFeeds = asyncHandler(async (req, res, next) => {
   };
 
   const options = await getPostsQuery({ page, search, mode, limit });
+
   const posts = await Post.paginate({ user: user._id }, options);
 
   const postIds = posts.docs.map((post) => (post as any)._id);
@@ -185,57 +186,57 @@ export const addVideoViews = asyncHandler(async (req, res, next) => {
 // @access  private
 
 export const getUserPublicUploadedFeeds = asyncHandler(async (req, res, next) => {
-    const { userId } = req.query;
-    const {
-      page = 1,
-      limit = 10,
-      search = "",
-      mode = "latest",
-    } = req.query as unknown as {
-      page: number;
-      limit: number;
-      search: string;
-      mode: sortModeType;
-    };
+  const { userId } = req.query;
+  const {
+    page = 1,
+    limit = 10,
+    search = "",
+    mode = "latest",
+  } = req.query as unknown as {
+    page: number;
+    limit: number;
+    search: string;
+    mode: sortModeType;
+  };
 
-    const options = await getPostsQuery({ page, search, mode, limit });
+  const options = await getPostsQuery({ page, search, mode, limit });
 
-    const posts = await Post.paginate({ user: userId }, options);
+  const posts = await Post.paginate({ user: userId }, options);
 
-    const postIds = posts.docs.map((post) => (post as any)._id);
+  const postIds = posts.docs.map((post) => (post as any)._id);
 
-    // Get user's bookmarks for these posts
-    const bookmarks = await Bookmark.find({
-      user: userId,
-      post: { $in: postIds },
-    });
+  // Get user's bookmarks for these posts
+  const bookmarks = await Bookmark.find({
+    user: userId,
+    post: { $in: postIds },
+  });
 
-    const bookmarkedPostIds = new Set(bookmarks.map((b) => b.post.toString()));
+  const bookmarkedPostIds = new Set(bookmarks.map((b) => b.post.toString()));
 
-    const videoViews = await VideoView.find({ post: { $in: postIds } }).lean();
-    const viewCountsMap = new Map<string, number>();
-    videoViews.forEach((v) => {
-      viewCountsMap.set(v.post.toString(), v.views.length);
-    });
+  const videoViews = await VideoView.find({ post: { $in: postIds } }).lean();
+  const viewCountsMap = new Map<string, number>();
+  videoViews.forEach((v) => {
+    viewCountsMap.set(v.post.toString(), v.views.length);
+  });
 
-    const cleanPosts = {
-      ...posts,
-      docs: feedtransformedPostData(posts.docs, {
-        bookmarkedPostIds,
-        viewCountsMap,
-      }),
-    };
+  const cleanPosts = {
+    ...posts,
+    docs: feedtransformedPostData(posts.docs, {
+      bookmarkedPostIds,
+      viewCountsMap,
+    }),
+  };
 
-    const postsTransformedData = transformPaginateResponse(posts);
+  const postsTransformedData = transformPaginateResponse(posts);
 
-    baseResponseHandler({
-      message: `User Feeds Retrieved successfully`,
-      res,
-      statusCode: 200,
-      success: true,
-      data: postsTransformedData,
-    });
-  }
+  baseResponseHandler({
+    message: `User Feeds Retrieved successfully`,
+    res,
+    statusCode: 200,
+    success: true,
+    data: postsTransformedData,
+  });
+}
 );
 
 // @desc     Get User Feed
@@ -427,8 +428,8 @@ export const editFeedPost = asyncHandler(async (req, res, next) => {
     req,
     next,
     `feedThumbnail/${user._id}/thumbnails`,
-    "thumbnailImage",
-    true
+    "thumbnailImage"
+
   );
   if (newThumbnail) {
     post.thumbnail = newThumbnail;
@@ -439,8 +440,7 @@ export const editFeedPost = asyncHandler(async (req, res, next) => {
     req,
     next,
     `feedVideos/${user._id}/videos`,
-    "postVideo",
-    true
+    "postVideo"
   );
 
   if (newVideo) {
@@ -480,7 +480,12 @@ export const editFeedPost = asyncHandler(async (req, res, next) => {
 export const getPostFeed = asyncHandler(async (req, res, next) => {
   const { postId } = req.params;
 
-  const post = await Post.findById(postId).select("-comments");
+  const post = await Post.findById(postId)
+    .select("-comments")
+    .populate({
+      path: "reactions.likes",
+      select: "username firstName lastName profilePicture"
+    });
 
   if (!postId) {
     return next(new ErrorResponse(`Post Not Found`, 404));
@@ -516,12 +521,12 @@ export const likePost = asyncHandler(async (req, res, next) => {
 
   const update = hasLiked
     ? {
-        $pull: { "reactions.likes": userId },
-      }
+      $pull: { "reactions.likes": userId },
+    }
     : {
-        $addToSet: { "reactions.likes": userId },
-        $pull: { "reactions.dislikes": userId },
-      };
+      $addToSet: { "reactions.likes": userId },
+      $pull: { "reactions.dislikes": userId },
+    };
 
   const updatedPost = await Post.findByIdAndUpdate(postId, update, {
     new: true,
@@ -806,13 +811,13 @@ export const likeComment = asyncHandler(async (req, res, next) => {
 
     const update = alreadyLiked
       ? {
-          $pull: { "comments.$[comment].replies.$[reply].likes": userObjectId },
-        }
+        $pull: { "comments.$[comment].replies.$[reply].likes": userObjectId },
+      }
       : {
-          $addToSet: {
-            "comments.$[comment].replies.$[reply].likes": userObjectId,
-          },
-        };
+        $addToSet: {
+          "comments.$[comment].replies.$[reply].likes": userObjectId,
+        },
+      };
 
     await Post.updateOne(
       {
@@ -1049,9 +1054,8 @@ export const commentOnPost = asyncHandler(async (req, res, next) => {
   // Send push notification
   await NotificationService.sendNotification(post.user as any, {
     title: `${user.username} commented on your post`,
-    description: `${user.username} commented: ${text.substring(0, 50)}${
-      text.length > 50 ? "..." : ""
-    }`,
+    description: `${user.username} commented: ${text.substring(0, 50)}${text.length > 50 ? "..." : ""
+      }`,
   });
 
   baseResponseHandler({
@@ -1123,14 +1127,14 @@ export const dislikePost = asyncHandler(async (req, res, next) => {
 
   const update = hasDisliked
     ? {
-        // User already disliked → remove from dislikes
-        $pull: { "reactions.dislikes": userId },
-      }
+      // User already disliked → remove from dislikes
+      $pull: { "reactions.dislikes": userId },
+    }
     : {
-        // User not disliked yet → add to dislikes
-        $addToSet: { "reactions.dislikes": userId },
-        $pull: { "reactions.likes": userId }, // Remove from likes if any
-      };
+      // User not disliked yet → add to dislikes
+      $addToSet: { "reactions.dislikes": userId },
+      $pull: { "reactions.likes": userId }, // Remove from likes if any
+    };
 
   const updatedPost = await Post.findByIdAndUpdate(postId, update, {
     new: true,
@@ -1202,13 +1206,21 @@ export const getBookmarkedPosts = asyncHandler(async (req, res, next) => {
   const { page, limit, searchTerm } = req.query;
 
   const options = getPaginateOptions(page, limit, {
-    populate: {
-      path: "post",
-      populate: {
-        path: "user",
-        select: "username firstName lastName profilePicture",
-      },
-    },
+    populate: [
+      {
+        path: "post",
+        populate: [
+          {
+            path: "user",
+            select: "username firstName lastName profilePicture",
+          },
+          {
+            path: "reactions.likes",
+            select: "username firstName lastName profilePicture"
+          }
+        ]
+      }
+    ]
   });
 
   const bookmarks = await Bookmark.paginate({ user: user._id }, options);
@@ -1251,6 +1263,10 @@ export const getUserFeeds = asyncHandler(async (req, res, next) => {
         path: "user",
         select: "username firstName lastName profilePicture",
       },
+      {
+        path: "reactions.likes",
+        select: "username firstName lastName profilePicture"
+      }
     ],
   });
 
@@ -1469,6 +1485,10 @@ export const searchPosts = asyncHandler(async (req, res, next) => {
         path: "user",
         select: "username firstName lastName profilePicture",
       },
+      {
+        path: "reactions.likes",
+        select: "username firstName lastName profilePicture"
+      }
     ],
   });
 
@@ -1519,6 +1539,14 @@ export const getViralPosts = asyncHandler(async (req, res, next) => {
     },
 
     {
+      $lookup: {
+        from: "users",
+        localField: "reactions.likes",
+        foreignField: "_id",
+        as: "likedByUsers"
+      }
+    },
+    {
       $addFields: {
         likesCount: { $size: "$reactions.likes" },
         commentsCount: { $size: "$comments" },
@@ -1528,6 +1556,19 @@ export const getViralPosts = asyncHandler(async (req, res, next) => {
           lastName: "$user.lastName",
           profilePicture: "$user.profilePicture",
         },
+        likedByUsers: {
+          $map: {
+            input: "$likedByUsers",
+            as: "user",
+            in: {
+              _id: "$$user._id",
+              username: "$$user.username",
+              firstName: "$$user.firstName",
+              lastName: "$$user.lastName",
+              profilePicture: "$$user.profilePicture"
+            }
+          }
+        }
       },
     },
     {
@@ -1544,6 +1585,10 @@ export const getViralPosts = asyncHandler(async (req, res, next) => {
         path: "user",
         select: "username firstName lastName profilePicture",
       },
+      {
+        path: "reactions.likes",
+        select: "username firstName lastName profilePicture"
+      }
     ],
   });
 
