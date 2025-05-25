@@ -278,6 +278,9 @@ export const getContacts = asyncHandler(async (req, res, next) => {
 // @access   Private
 
 export const uploadFeedPost = asyncHandler(async (req, res, next) => {
+
+  console.log("hiting upload feed post");
+
   const user = await getAuthUser(req, next);
 
   let tagsArray;

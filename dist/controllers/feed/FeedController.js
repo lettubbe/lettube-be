@@ -225,6 +225,7 @@ exports.getContacts = (0, express_async_handler_1.default)((req, res, next) => _
 // @route    GET /api/v1/feed/upload
 // @access   Private
 exports.uploadFeedPost = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    console.log("hiting upload feed post");
     const user = yield (0, utils_1.getAuthUser)(req, next);
     let tagsArray;
     console.log("body", req.body);
