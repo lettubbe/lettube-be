@@ -3,54 +3,63 @@ import { getPaginateOptions } from "../lib/utils/paginate";
 import Post from "../models/Feed/Post";
 
 export const getPostsQuery = async (
-    {
-        page = 1,
-        limit = 10,
-        search = "",
-        mode = "latest"
-    }: {
-        page: number;
-        limit: number;
-        search: string;
-        mode: sortModeType;
-    }) => {
+  {
+    page = 1,
+    limit = 10,
+    search = "",
+    mode = "latest"
+  }: {
+    page: number;
+    limit: number;
+    search: string;
+    mode: sortModeType;
+  }) => {
 
 
 
-    const options = getPaginateOptions(page, limit);
+  const options = getPaginateOptions(page, limit);
 
-    switch (mode) {
-        case 'most-popular':
-            options.sort = {
-                views: -1,
-                likes: -1,
-                createdAt: -1
-            };
-            break;
-        case 'most-liked':
-            options.sort = {
-                likes: -1,
-                createdAt: -1
-            };
-            break;
-        case 'oldest':
-            options.sort = { createdAt: 1 };
-            break;
-        case 'latest':
-        default:
-            options.sort = { createdAt: -1 };
-            break;
-    }
 
-    if (search) {
-        options.or([
-            { description: { $regex: search, $options: 'i' } },
-            { tags: { $regex: search, $options: 'i' } },
-            { category: { $regex: search, $options: 'i' } }
-        ]);
-    }
+  switch (mode) {
+    case 'most-popular':
+      options.sort = {
+        views: -1,
+        likes: -1,
+        createdAt: -1
+      };
+      break;
+    case 'most-liked':
+      options.sort = {
+        likes: -1,
+        createdAt: -1
+      };
+      break;
+    case 'oldest':
+      options.sort = { createdAt: 1 };
+      break;
+    case 'latest':
+    default:
+      options.sort = { createdAt: -1 };
+      break;
+  }
 
-    return options
+  if (search) {
+    options.or([
+      { description: { $regex: search, $options: 'i' } },
+      { tags: { $regex: search, $options: 'i' } },
+      { category: { $regex: search, $options: 'i' } }
+    ]);
+  }
+
+  // options.populate = [
+  //   ...(options.populate || []),
+  //   {
+  //     path: "reactions.likes",
+  //     select: "username firstName lastName profilePicture"
+  //   }
+  // ];
+
+  return options
 }
 
 export function feedtransformedPostData(

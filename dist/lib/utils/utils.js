@@ -45,7 +45,7 @@ const removeSensitiveFields = (user, fields = ["password"]) => {
     return userData;
 };
 exports.removeSensitiveFields = removeSensitiveFields;
-const buildUserAuthTypeQuery = (email, phoneNumber, userId) => {
+const buildUserAuthTypeQuery = ({ email, phoneNumber, userId }) => {
     const query = {};
     if (email)
         query.email = email.toLowerCase();
