@@ -43,6 +43,13 @@ const getPostsQuery = (_a) => __awaiter(void 0, [_a], void 0, function* ({ page 
             { category: { $regex: search, $options: 'i' } }
         ]);
     }
+    // options.populate = [
+    //   ...(options.populate || []),
+    //   {
+    //     path: "reactions.likes",
+    //     select: "username firstName lastName profilePicture"
+    //   }
+    // ];
     return options;
 });
 exports.getPostsQuery = getPostsQuery;

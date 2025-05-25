@@ -30,7 +30,7 @@ const Auth_1 = __importDefault(require("../../models/Auth/Auth"));
 exports.loginUser = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     console.log("hitting login user");
     const { email, phoneNumber, password } = req.body;
-    const query = (0, utils_1.buildUserAuthTypeQuery)(email, phoneNumber);
+    const query = (0, utils_1.buildUserAuthTypeQuery)({ email, phoneNumber });
     // Find user by email or phone
     const user = yield User_1.default.findOne(query);
     if (!user) {
@@ -82,7 +82,7 @@ exports.loginUser = (0, express_async_handler_1.default)((req, res, next) => __a
 // @access  Public
 exports.resendOTP = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { email, phoneNumber } = req.body;
-    const query = (0, utils_1.buildUserAuthTypeQuery)(email, phoneNumber);
+    const query = (0, utils_1.buildUserAuthTypeQuery)({ email, phoneNumber });
     const user = yield User_1.default.findOne(query);
     if (!user) {
         return next(new ErrorResponse_1.default(`User Not Found`, 404));
@@ -226,7 +226,7 @@ exports.sendVerificationEmail = (0, express_async_handler_1.default)((req, res, 
 // @access  Public
 exports.createUserPassword = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { email, phoneNumber, type, password } = req.body;
-    const query = (0, utils_1.buildUserAuthTypeQuery)(email, phoneNumber);
+    const query = (0, utils_1.buildUserAuthTypeQuery)({ email, phoneNumber });
     const user = yield User_1.default.findOne(query);
     if (!user) {
         return next(new ErrorResponse_1.default(`${type ? type : "User"} Not Found`, 404));
@@ -309,7 +309,7 @@ exports.createUserDetails = (0, express_async_handler_1.default)((req, res, next
     const { email, firstName, lastName, phoneNumber, dob, age, username } = req.body;
     console.log({ reqBody: req.body });
     let jwtToken;
-    const query = (0, utils_1.buildUserAuthTypeQuery)(email, phoneNumber);
+    const query = (0, utils_1.buildUserAuthTypeQuery)({ email, phoneNumber });
     const user = yield User_1.default.findOne(query);
     if (!user) {
         return next(new ErrorResponse_1.default(`User Not Found`, 404));
@@ -362,7 +362,7 @@ exports.createUserDetails = (0, express_async_handler_1.default)((req, res, next
 // @access  Public
 exports.suggestUsername = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { email, phoneNumber } = req.query;
-    const query = (0, utils_1.buildUserAuthTypeQuery)(email, phoneNumber);
+    const query = (0, utils_1.buildUserAuthTypeQuery)({ email, phoneNumber });
     const user = yield User_1.default.findOne(query);
     if (!user) {
         return next(new ErrorResponse_1.default(`Provided User was not found`, 404));
@@ -404,7 +404,10 @@ exports.suggestUsername = (0, express_async_handler_1.default)((req, res, next) 
 // @access  Public
 exports.getAuthVerificationStatus = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { email, phoneNumber, type } = req.query;
-    const query = (0, utils_1.buildUserAuthTypeQuery)(email, phoneNumber);
+    const query = (0, utils_1.buildUserAuthTypeQuery)({
+        email,
+        phoneNumber
+    });
     const user = yield User_1.default.findOne(query);
     if (!user) {
         return next(new ErrorResponse_1.default(`User With The Provided ${type} Not Found`, 404));
@@ -461,7 +464,7 @@ exports.verifyOTP = (0, express_async_handler_1.default)((req, res, next) => __a
 exports.forgetPassword = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { email, phoneNumber, type } = req.body;
     const emailLowerCase = email.toLowerCase();
-    const query = (0, utils_1.buildUserAuthTypeQuery)(emailLowerCase, phoneNumber);
+    const query = (0, utils_1.buildUserAuthTypeQuery)({ email: emailLowerCase, phoneNumber });
     const user = yield User_1.default.findOne(query);
     console.log("user", user);
     if (!user) {
@@ -509,7 +512,7 @@ exports.forgetPassword = (0, express_async_handler_1.default)((req, res, next) =
 exports.resetPassword = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { password, email, phoneNumber } = req.body;
     // console.log({ password, token, email, phoneNumber });
-    const query = (0, utils_1.buildUserAuthTypeQuery)(email, phoneNumber);
+    const query = (0, utils_1.buildUserAuthTypeQuery)({ email, phoneNumber });
     // const authUser = await Auth.findOne({ verificationCode: token });
     const user = yield User_1.default.findOne(query);
     // console.log({ authUser, user });

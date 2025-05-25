@@ -10,20 +10,20 @@ import {
 } from "../../lib/utils/utils";
 import Subscription from "../../models/Feed/Subscription";
 import baseResponseHandler from "../../messages/BaseResponseHandler";
+import BlockedChannel from "../../models/Feed/BlockedChannel";
 
 // @route   /api/v1/profile/upload/profilePhoto
 // @desc    Upload Profile Picture
 // @access  Private/public
 
-export const updateProfilePhoto = asyncHandler(
-  async (req: Request, res: Response, next: NextFunction) => {
+export const updateProfilePhoto = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
     const { email, phoneNumber } = req.body;
 
     const authUser = await getAuthUser(req, next);
 
     console.log("authUser", authUser);
 
-    const query = buildUserAuthTypeQuery(email, phoneNumber, authUser._id);
+    const query = buildUserAuthTypeQuery({ email, phoneNumber, userId: authUser._id });
 
     const user = await User.findOne(query);
 
@@ -159,7 +159,6 @@ export const getUserProfile = asyncHandler(async (req, res, next) => {
 // @access  Private
 
 export const getUserPublicProfile = asyncHandler(async (req, res, next) => {
-
   const { userId } = req.params;
 
   const authUser = await getAuthUser(req, next);
@@ -180,12 +179,18 @@ export const getUserPublicProfile = asyncHandler(async (req, res, next) => {
     subscribedTo: userId,
   }));
 
+  const isBlocked = !!(await BlockedChannel.exists({
+    user: authUser._id,
+    blockedUser: userId,
+  }));
+
   const userData = removeSensitiveFields(user, ["password"]);
 
-  // Add subscriber count to response
+  // Add subscriber count and blocking status to response
   const responseData = {
     ...userData,
     isSubscribed: Boolean(isSubscribed),
+    isBlocked: Boolean(isBlocked),
     subscriberCount,
   };
 

@@ -45,7 +45,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.unblockChannel = exports.removePostFromPlaylist = exports.blockChannel = exports.toggleNotInterested = exports.getViralPosts = exports.searchPosts = exports.addPostToPlaylist = exports.deletePost = exports.getUserFeeds = exports.getBookmarkedPosts = exports.bookmarkPost = exports.dislikePost = exports.deletePostComment = exports.commentOnPost = exports.getPostComments = exports.likeComment = exports.replyToComment = exports.getFeedNotificationsCount = exports.getFeedNotifications = exports.likePost = exports.getPostFeed = exports.editFeedPost = exports.uploadFeedPost = exports.getContacts = exports.getUserPublicUploadedFeeds = exports.addVideoViews = exports.getUserUploadedFeeds = exports.createCategoryFeeds = void 0;
+exports.getPostLikes = exports.unblockChannel = exports.removePostFromPlaylist = exports.blockChannel = exports.toggleNotInterested = exports.getViralPosts = exports.searchPosts = exports.addPostToPlaylist = exports.deletePost = exports.getUserFeeds = exports.getBookmarkedPosts = exports.bookmarkPost = exports.dislikePost = exports.deletePostComment = exports.commentOnPost = exports.getPostComments = exports.likeComment = exports.replyToComment = exports.getFeedNotificationsCount = exports.getFeedNotifications = exports.likePost = exports.getPostFeed = exports.editFeedPost = exports.uploadFeedPost = exports.getContacts = exports.getUserPublicUploadedFeeds = exports.addVideoViews = exports.getUserUploadedFeeds = exports.createCategoryFeeds = void 0;
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const Feed_1 = __importDefault(require("../../models/Feed/Feed"));
 const BaseResponseHandler_1 = __importDefault(require("../../messages/BaseResponseHandler"));
@@ -225,6 +225,7 @@ exports.getContacts = (0, express_async_handler_1.default)((req, res, next) => _
 // @route    GET /api/v1/feed/upload
 // @access   Private
 exports.uploadFeedPost = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    console.log("hiting upload feed post");
     const user = yield (0, utils_1.getAuthUser)(req, next);
     let tagsArray;
     console.log("body", req.body);
@@ -311,12 +312,12 @@ exports.editFeedPost = (0, express_async_handler_1.default)((req, res, next) => 
         post.isCommentsAllowed = String(isCommentsAllowed).toLowerCase() === "true";
     }
     // Replace thumbnail if provided
-    const newThumbnail = yield (0, fileUpload_1.uploadFileFromFields)(req, next, `feedThumbnail/${user._id}/thumbnails`, "thumbnailImage", true);
+    const newThumbnail = yield (0, fileUpload_1.uploadFileFromFields)(req, next, `feedThumbnail/${user._id}/thumbnails`, "thumbnailImage");
     if (newThumbnail) {
         post.thumbnail = newThumbnail;
     }
     // Replace video if provided
-    const newVideo = yield (0, fileUpload_1.uploadFileFromFields)(req, next, `feedVideos/${user._id}/videos`, "postVideo", true);
+    const newVideo = yield (0, fileUpload_1.uploadFileFromFields)(req, next, `feedVideos/${user._id}/videos`, "postVideo");
     if (newVideo) {
         post.videoUrl = newVideo;
         post.duration = yield (0, utils_1.getRemoteVideoDuration)(newVideo);
@@ -346,7 +347,8 @@ exports.editFeedPost = (0, express_async_handler_1.default)((req, res, next) => 
 // @access   Private
 exports.getPostFeed = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { postId } = req.params;
-    const post = yield Post_1.default.findById(postId).select("-comments");
+    const post = yield Post_1.default.findById(postId)
+        .select("-comments");
     if (!postId) {
         return next(new ErrorResponse_1.default(`Post Not Found`, 404));
     }
@@ -903,13 +905,17 @@ exports.getBookmarkedPosts = (0, express_async_handler_1.default)((req, res, nex
     const user = yield (0, utils_1.getAuthUser)(req, next);
     const { page, limit, searchTerm } = req.query;
     const options = (0, paginate_1.getPaginateOptions)(page, limit, {
-        populate: {
-            path: "post",
-            populate: {
-                path: "user",
-                select: "username firstName lastName profilePicture",
-            },
-        },
+        populate: [
+            {
+                path: "post",
+                populate: [
+                    {
+                        path: "user",
+                        select: "username firstName lastName profilePicture",
+                    }
+                ]
+            }
+        ]
     });
     const bookmarks = yield Bookmark_1.default.paginate({ user: user._id }, options);
     // Transform the response to return posts with isBookmarked flag
@@ -941,7 +947,7 @@ exports.getUserFeeds = (0, express_async_handler_1.default)((req, res, next) => 
             {
                 path: "user",
                 select: "username firstName lastName profilePicture",
-            },
+            }
         ],
     });
     // Filter out not interested posts
@@ -962,38 +968,6 @@ exports.getUserFeeds = (0, express_async_handler_1.default)((req, res, next) => 
     videoViews.forEach((v) => {
         viewCountsMap.set(v.post.toString(), v.views.length);
     });
-    // Transform and clean up the response data
-    // const cleanPosts = {
-    //   ...posts,
-    //   docs: posts.docs.map((post) => {
-    //     const postObj = (post as any).toObject();
-    //     const postIdStr = postObj._id.toString();
-    //     return {
-    //       _id: postObj._id,
-    //       user: {
-    //         _id: postObj.user._id,
-    //         username: postObj.user.username,
-    //         firstName: postObj.user.firstName,
-    //         lastName: postObj.user.lastName,
-    //         profilePicture: postObj.user.profilePicture,
-    //       },
-    //       category: postObj.category,
-    //       thumbnail: postObj.thumbnail,
-    //       videoUrl: postObj.videoUrl,
-    //       description: postObj.description,
-    //       visibility: postObj.visibility,
-    //       tags: postObj.tags,
-    //       isCommentsAllowed: postObj.isCommentsAllowed,
-    //       reactions: postObj.reactions,
-    //       comments: postObj.comments,
-    //       createdAt: postObj.createdAt,
-    //       updatedAt: postObj.updatedAt,
-    //       duration: postObj.duration,
-    //       isBookmarked: bookmarkedPostIds.has(postIdStr),
-    //       views: viewCountsMap.get(postIdStr) || 0,
-    //     };
-    //   }),
-    // };
     const cleanPosts = Object.assign(Object.assign({}, posts), { docs: (0, feedService_1.feedtransformedPostData)(posts.docs, {
             bookmarkedPostIds,
             viewCountsMap,
@@ -1147,6 +1121,14 @@ exports.getViralPosts = (0, express_async_handler_1.default)((req, res, next) =>
             $unwind: "$user",
         },
         {
+            $lookup: {
+                from: "users",
+                localField: "reactions.likes",
+                foreignField: "_id",
+                as: "likedByUsers"
+            }
+        },
+        {
             $addFields: {
                 likesCount: { $size: "$reactions.likes" },
                 commentsCount: { $size: "$comments" },
@@ -1156,6 +1138,19 @@ exports.getViralPosts = (0, express_async_handler_1.default)((req, res, next) =>
                     lastName: "$user.lastName",
                     profilePicture: "$user.profilePicture",
                 },
+                likedByUsers: {
+                    $map: {
+                        input: "$likedByUsers",
+                        as: "user",
+                        in: {
+                            _id: "$$user._id",
+                            username: "$$user.username",
+                            firstName: "$$user.firstName",
+                            lastName: "$$user.lastName",
+                            profilePicture: "$$user.profilePicture"
+                        }
+                    }
+                }
             },
         },
         {
@@ -1331,5 +1326,41 @@ exports.unblockChannel = (0, express_async_handler_1.default)((req, res, next) =
         statusCode: 200,
         success: true,
         data: { status: "unblocked" },
+    });
+}));
+// @desc    Get post likes with user details
+// @route   GET /api/v1/feed/posts/:postId/likes
+// @access  Private
+exports.getPostLikes = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const { postId } = req.params;
+    const { page = 1, limit = 10 } = req.query;
+    const post = yield Post_1.default.findById(postId)
+        .select("reactions.likes")
+        .populate({
+        path: "reactions.likes",
+        select: "username firstName lastName profilePicture",
+        options: {
+            skip: (page - 1) * limit,
+            limit: limit
+        }
+    });
+    if (!post) {
+        return next(new ErrorResponse_1.default(`Post Not Found`, 404));
+    }
+    // Get total count of likes
+    const totalLikes = post.reactions.likes.length;
+    const paginatedResponse = {
+        likes: post.reactions.likes,
+        totalLikes,
+        page: Number(page),
+        limit: Number(limit),
+        totalPages: Math.ceil(totalLikes / Number(limit))
+    };
+    (0, BaseResponseHandler_1.default)({
+        message: `Post Likes Retrieved Successfully`,
+        res,
+        statusCode: 200,
+        success: true,
+        data: paginatedResponse
     });
 }));
