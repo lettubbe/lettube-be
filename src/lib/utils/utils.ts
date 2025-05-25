@@ -11,7 +11,7 @@ ffmpeg.setFfprobePath(ffprobeStatic.path);
 
 export const getAuthUser = async (req: any, next: NextFunction): Promise<any> => {
 
- const userId = req.user.id;
+  const userId = req.user.id;
 
   // console.log("user 123", req.user);
 
@@ -35,23 +35,23 @@ export const formatCurrency = (amount: number): string => {
 };
 
 export const removeSensitiveFields = <T extends Record<string, any>>(user: T, fields: string[] = ["password"]): Omit<T, "password"> => {
-  const userData = { ...user.toObject() }; 
-  fields.forEach((field) => delete userData[field]); 
+  const userData = { ...user.toObject() };
+  fields.forEach((field) => delete userData[field]);
   return userData;
 };
 
-export const buildUserAuthTypeQuery = (email?: string, phoneNumber?: string, userId?: string) => {
+export const buildUserAuthTypeQuery = ({ email, phoneNumber, userId }: { email?: string; phoneNumber?: string; userId?: string }) => {
   const query: Partial<{ email: string; phoneNumber: string, _id: string }> = {};
 
   if (email) query.email = email.toLowerCase();
   if (phoneNumber) query.phoneNumber = phoneNumber;
-  if(userId) query._id = userId;
+  if (userId) query._id = userId;
 
   return query;
 };
 
 export const normalizePhoneNumber = (phoneNumber: string) => {
-  return phoneNumber.replace(/\D/g, '').slice(-10); 
+  return phoneNumber.replace(/\D/g, '').slice(-10);
 };
 
 export const getRemoteVideoDuration = async (url: string): Promise<number> => {

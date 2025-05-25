@@ -482,10 +482,7 @@ export const getPostFeed = asyncHandler(async (req, res, next) => {
 
   const post = await Post.findById(postId)
     .select("-comments")
-    .populate({
-      path: "reactions.likes",
-      select: "username firstName lastName profilePicture"
-    });
+
 
   if (!postId) {
     return next(new ErrorResponse(`Post Not Found`, 404));
@@ -1213,10 +1210,6 @@ export const getBookmarkedPosts = asyncHandler(async (req, res, next) => {
           {
             path: "user",
             select: "username firstName lastName profilePicture",
-          },
-          {
-            path: "reactions.likes",
-            select: "username firstName lastName profilePicture"
           }
         ]
       }
@@ -1262,10 +1255,6 @@ export const getUserFeeds = asyncHandler(async (req, res, next) => {
       {
         path: "user",
         select: "username firstName lastName profilePicture",
-      },
-      {
-        path: "reactions.likes",
-        select: "username firstName lastName profilePicture"
       }
     ],
   });
@@ -1485,10 +1474,7 @@ export const searchPosts = asyncHandler(async (req, res, next) => {
         path: "user",
         select: "username firstName lastName profilePicture",
       },
-      {
-        path: "reactions.likes",
-        select: "username firstName lastName profilePicture"
-      }
+
     ],
   });
 
@@ -1585,10 +1571,7 @@ export const getViralPosts = asyncHandler(async (req, res, next) => {
         path: "user",
         select: "username firstName lastName profilePicture",
       },
-      {
-        path: "reactions.likes",
-        select: "username firstName lastName profilePicture"
-      }
+
     ],
   });
 
@@ -1779,5 +1762,48 @@ export const unblockChannel = asyncHandler(async (req, res, next) => {
     statusCode: 200,
     success: true,
     data: { status: "unblocked" },
+  });
+});
+
+// @desc    Get post likes with user details
+// @route   GET /api/v1/feed/posts/:postId/likes
+// @access  Private
+
+export const getPostLikes = asyncHandler(async (req, res, next) => {
+  const { postId } = req.params;
+  const { page = 1, limit = 10 } = req.query as { page?: number; limit?: number };
+
+  const post = await Post.findById(postId)
+    .select("reactions.likes")
+    .populate({
+      path: "reactions.likes",
+      select: "username firstName lastName profilePicture",
+      options: {
+        skip: (page - 1) * limit,
+        limit: limit
+      }
+    });
+
+  if (!post) {
+    return next(new ErrorResponse(`Post Not Found`, 404));
+  }
+
+  // Get total count of likes
+  const totalLikes = post.reactions.likes.length;
+
+  const paginatedResponse = {
+    likes: post.reactions.likes,
+    totalLikes,
+    page: Number(page),
+    limit: Number(limit),
+    totalPages: Math.ceil(totalLikes / Number(limit))
+  };
+
+  baseResponseHandler({
+    message: `Post Likes Retrieved Successfully`,
+    res,
+    statusCode: 200,
+    success: true,
+    data: paginatedResponse
   });
 });

@@ -24,7 +24,7 @@ export const updateProfilePhoto = asyncHandler(
 
     console.log("authUser", authUser);
 
-    const query = buildUserAuthTypeQuery(email, phoneNumber, authUser._id);
+    const query = buildUserAuthTypeQuery({ email, phoneNumber, userId: authUser._id });
 
     const user = await User.findOne(query);
 

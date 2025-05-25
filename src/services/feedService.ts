@@ -51,13 +51,13 @@ export const getPostsQuery = async (
     ]);
   }
 
-  options.populate = [
-    ...(options.populate || []),
-    {
-      path: "reactions.likes",
-      select: "username firstName lastName profilePicture"
-    }
-  ];
+  // options.populate = [
+  //   ...(options.populate || []),
+  //   {
+  //     path: "reactions.likes",
+  //     select: "username firstName lastName profilePicture"
+  //   }
+  // ];
 
   return options
 }
