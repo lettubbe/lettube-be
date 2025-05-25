@@ -225,6 +225,7 @@ exports.getContacts = (0, express_async_handler_1.default)((req, res, next) => _
 // @route    GET /api/v1/feed/upload
 // @access   Private
 exports.uploadFeedPost = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    console.log("hiting upload feed post");
     const user = yield (0, utils_1.getAuthUser)(req, next);
     let tagsArray;
     console.log("body", req.body);
@@ -967,38 +968,6 @@ exports.getUserFeeds = (0, express_async_handler_1.default)((req, res, next) => 
     videoViews.forEach((v) => {
         viewCountsMap.set(v.post.toString(), v.views.length);
     });
-    // Transform and clean up the response data
-    // const cleanPosts = {
-    //   ...posts,
-    //   docs: posts.docs.map((post) => {
-    //     const postObj = (post as any).toObject();
-    //     const postIdStr = postObj._id.toString();
-    //     return {
-    //       _id: postObj._id,
-    //       user: {
-    //         _id: postObj.user._id,
-    //         username: postObj.user.username,
-    //         firstName: postObj.user.firstName,
-    //         lastName: postObj.user.lastName,
-    //         profilePicture: postObj.user.profilePicture,
-    //       },
-    //       category: postObj.category,
-    //       thumbnail: postObj.thumbnail,
-    //       videoUrl: postObj.videoUrl,
-    //       description: postObj.description,
-    //       visibility: postObj.visibility,
-    //       tags: postObj.tags,
-    //       isCommentsAllowed: postObj.isCommentsAllowed,
-    //       reactions: postObj.reactions,
-    //       comments: postObj.comments,
-    //       createdAt: postObj.createdAt,
-    //       updatedAt: postObj.updatedAt,
-    //       duration: postObj.duration,
-    //       isBookmarked: bookmarkedPostIds.has(postIdStr),
-    //       views: viewCountsMap.get(postIdStr) || 0,
-    //     };
-    //   }),
-    // };
     const cleanPosts = Object.assign(Object.assign({}, posts), { docs: (0, feedService_1.feedtransformedPostData)(posts.docs, {
             bookmarkedPostIds,
             viewCountsMap,

@@ -278,6 +278,9 @@ export const getContacts = asyncHandler(async (req, res, next) => {
 // @access   Private
 
 export const uploadFeedPost = asyncHandler(async (req, res, next) => {
+
+  console.log("hiting upload feed post");
+
   const user = await getAuthUser(req, next);
 
   let tagsArray;
@@ -1282,39 +1285,6 @@ export const getUserFeeds = asyncHandler(async (req, res, next) => {
   videoViews.forEach((v) => {
     viewCountsMap.set(v.post.toString(), v.views.length);
   });
-
-  // Transform and clean up the response data
-  // const cleanPosts = {
-  //   ...posts,
-  //   docs: posts.docs.map((post) => {
-  //     const postObj = (post as any).toObject();
-  //     const postIdStr = postObj._id.toString();
-  //     return {
-  //       _id: postObj._id,
-  //       user: {
-  //         _id: postObj.user._id,
-  //         username: postObj.user.username,
-  //         firstName: postObj.user.firstName,
-  //         lastName: postObj.user.lastName,
-  //         profilePicture: postObj.user.profilePicture,
-  //       },
-  //       category: postObj.category,
-  //       thumbnail: postObj.thumbnail,
-  //       videoUrl: postObj.videoUrl,
-  //       description: postObj.description,
-  //       visibility: postObj.visibility,
-  //       tags: postObj.tags,
-  //       isCommentsAllowed: postObj.isCommentsAllowed,
-  //       reactions: postObj.reactions,
-  //       comments: postObj.comments,
-  //       createdAt: postObj.createdAt,
-  //       updatedAt: postObj.updatedAt,
-  //       duration: postObj.duration,
-  //       isBookmarked: bookmarkedPostIds.has(postIdStr),
-  //       views: viewCountsMap.get(postIdStr) || 0,
-  //     };
-  //   }),
-  // };
 
   const cleanPosts = {
     ...posts,

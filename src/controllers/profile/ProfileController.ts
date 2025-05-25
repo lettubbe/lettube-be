@@ -16,8 +16,7 @@ import BlockedChannel from "../../models/Feed/BlockedChannel";
 // @desc    Upload Profile Picture
 // @access  Private/public
 
-export const updateProfilePhoto = asyncHandler(
-  async (req: Request, res: Response, next: NextFunction) => {
+export const updateProfilePhoto = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
     const { email, phoneNumber } = req.body;
 
     const authUser = await getAuthUser(req, next);
