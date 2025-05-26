@@ -1,6 +1,7 @@
 import asyncHandler from "express-async-handler";
 import { Message } from "../../models/chats/Conversations";
 import ErrorResponse from "../../messages/ErrorResponse";
+import baseResponseHandler from "../../messages/BaseResponseHandler";
 
 export const deleteChatMessage = asyncHandler(async (req, res, next) => {
   const { messageId } = req.params;
@@ -13,7 +14,7 @@ export const deleteChatMessage = asyncHandler(async (req, res, next) => {
   // Find and update the message
   const message = await Message.findByIdAndUpdate(
     messageId,
-    { isDeleted: true }, // Optionally, update text
+    { isDeleted: true },
     { new: true }
   );
 
@@ -22,5 +23,12 @@ export const deleteChatMessage = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse(`Message is required`, 404));
   }
 
-  res.status(200).json({ message: "Message deleted successfully", data: message });
+  baseResponseHandler({
+    message: `Message deleted successfully`,
+    res,
+    statusCode: 201,
+    success: true,
+    data: message
+  });
+
 });

@@ -74,5 +74,6 @@ router.patch('/posts/:postId/not-interested', protect_1.protect, FeedController_
 // Channel blocking management
 router.delete('/channels/:channelId/unblock', protect_1.protect, FeedController_1.unblockChannel);
 router.get("/viral", protect_1.protect, FeedController_1.getViralPosts);
-router.post('/channels/:channelId/block', protect_1.protect, FeedController_1.blockChannel);
+router.post('/channels/:channelId/block', protect_1.protect, FeedController_1.blockChannel); // Add this new route
+router.get("/posts/:postId/likes", protect_1.protect, FeedController_1.getPostLikes);
 exports.default = router;

@@ -20,6 +20,7 @@ const ErrorResponse_1 = __importDefault(require("../../messages/ErrorResponse"))
 const utils_1 = require("../../lib/utils/utils");
 const Subscription_1 = __importDefault(require("../../models/Feed/Subscription"));
 const BaseResponseHandler_1 = __importDefault(require("../../messages/BaseResponseHandler"));
+const BlockedChannel_1 = __importDefault(require("../../models/Feed/BlockedChannel"));
 // @route   /api/v1/profile/upload/profilePhoto
 // @desc    Upload Profile Picture
 // @access  Private/public
@@ -27,7 +28,7 @@ exports.updateProfilePhoto = (0, express_async_handler_1.default)((req, res, nex
     const { email, phoneNumber } = req.body;
     const authUser = yield (0, utils_1.getAuthUser)(req, next);
     console.log("authUser", authUser);
-    const query = (0, utils_1.buildUserAuthTypeQuery)(email, phoneNumber, authUser._id);
+    const query = (0, utils_1.buildUserAuthTypeQuery)({ email, phoneNumber, userId: authUser._id });
     const user = yield User_1.default.findOne(query);
     if (!user) {
         return next(new ErrorResponse_1.default(`User Not Found`, 404));
@@ -142,9 +143,13 @@ exports.getUserPublicProfile = (0, express_async_handler_1.default)((req, res, n
         subscriber: authUser._id,
         subscribedTo: userId,
     }));
+    const isBlocked = !!(yield BlockedChannel_1.default.exists({
+        user: authUser._id,
+        blockedUser: userId,
+    }));
     const userData = (0, utils_1.removeSensitiveFields)(user, ["password"]);
-    // Add subscriber count to response
-    const responseData = Object.assign(Object.assign({}, userData), { isSubscribed: Boolean(isSubscribed), subscriberCount });
+    // Add subscriber count and blocking status to response
+    const responseData = Object.assign(Object.assign({}, userData), { isSubscribed: Boolean(isSubscribed), isBlocked: Boolean(isBlocked), subscriberCount });
     (0, BaseResponseHandler_1.default)({
         res,
         statusCode: 200,
