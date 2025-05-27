@@ -237,7 +237,20 @@ export const updatePlaylistCoverPhoto = asyncHandler(async (req, res, next) => {
 export const getPlaylistVideos = asyncHandler(async (req, res, next) => {
   const { playlistId } = req.params;
 
-  const playlist = await Playlist.findById(playlistId).populate('videos');
+  const playlist = await Playlist.findById(playlistId)
+    .populate([
+      {
+        path: 'videos',
+        populate: {
+          path: 'user',
+          select: 'username firstName lastName profilePicture'
+        }
+      },
+      {
+        path: 'user',
+        select: 'username firstName lastName profilePicture'
+      }
+    ]);
 
   if (!playlist) {
     return next(new ErrorResponse(`No Playlist found`, 404));
