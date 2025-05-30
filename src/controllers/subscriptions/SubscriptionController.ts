@@ -6,6 +6,7 @@ import baseResponseHandler from "../../messages/BaseResponseHandler";
 import NotificationService from "../../services/notificationService";
 import User from "../../models/Auth/User";
 import Notification from "../../models/Notifications";
+import { getPaginateOptions, transformPaginateResponse } from "../../lib/utils/paginate";
 
 // @desc    Subscribe to a channel
 // @route   /api/v1/subscription/subscribe
@@ -25,7 +26,8 @@ export const subscribe = asyncHandler(async (req, res, next) => {
   });
 
   const subscribedUser = await User.findById(userId).select(
-    "firstName lastName username profilePicture");
+    "firstName lastName username profilePicture"
+  );
 
   if (!subscribedUser) {
     return next(new ErrorResponse("Subscribed user not found", 404));
@@ -36,10 +38,10 @@ export const subscribe = asyncHandler(async (req, res, next) => {
     description: `${user.username} Just Subscribed Your Channel`,
   });
 
-  Notification.create({ 
+  Notification.create({
     userId,
     type: "subscription",
-    read: false, 
+    read: false,
   });
 
   baseResponseHandler({
@@ -82,33 +84,76 @@ export const unsubscribe = asyncHandler(async (req, res, next) => {
 // @access  Private
 
 export const getSubscribers = asyncHandler(async (req, res, next) => {
-  const { userId } = req.params;
+  
+  const user = await getAuthUser(req, next);
 
-  const subscribers = await Subscription.find({
-    subscribedTo: userId,
-  }).populate("subscriber", "firstName lastName username");
+  const userId = user._id;
 
-  res.status(200).json({
-    success: true,
-    data: subscribers,
+  const { page = 1, limit = 10 } = req.query;
+
+  const options = getPaginateOptions(page, limit, {
+    paginate: [
+       {
+        path: "subscriber",
+        select: "username firstName lastName profilePicture",
+      } 
+    ]
   });
+
+  const subscribers = await Subscription.paginate({ subscribedTo: userId }, options)
+
+  // const subscribers = await Subscription.find({
+  //   subscribedTo: userId,
+  // }).populate("subscriber", "firstName lastName username");
+
+  const subsribersData = transformPaginateResponse(subscribers);
+
+  baseResponseHandler({
+    message: `Subscribers Retrieved Successfully`,
+    res,
+    statusCode: 200,
+    success: true,
+    data: subsribersData
+  });
+
 });
 
 // @desc    Get User Subscribers
-// @route   /api/v1/subscription/subscribedTo 
+// @route   /api/v1/subscription/subscribedTo
 // @access  Private
 
 export const getSubscribedTo = asyncHandler(async (req, res, next) => {
-  const subscriberId = req.user.id;
+  const user = await getAuthUser(req, next);
 
-  const subscriptions = await Subscription.find({
-    subscriber: subscriberId,
-  }).populate("subscribedTo", "firstName lastName username");
+  const subscriberId = user._id;
 
-  res.status(200).json({
-    success: true,
-    data: subscriptions,
+  const { limit = 10, page = 1 } = req.query;
+
+  // const subscriptions = await Subscription.find({
+  //   subscriber: subscriberId,
+  // }).populate("subscribedTo", "firstName lastName username");
+
+  const options = getPaginateOptions(page, limit, {
+    populate: [
+      {
+        path: "subscribedTo",
+        select: "username firstName lastName profilePicture",
+      }
+    ],
   });
+
+  const subscriptions =  await Subscription.paginate({subscriber: subscriberId}, options);
+
+  const subscriptionsData = transformPaginateResponse(subscriptions);
+
+  baseResponseHandler({
+    message: `Subscribed To Retrieved Successfully`,
+    res,
+    statusCode: 200,
+    success: true,
+    data: subscriptionsData,
+  });
+
 });
 
 // @desc    Bulk Subscribe Users
@@ -147,5 +192,4 @@ export const bulkSubscribe = asyncHandler(async (req, res, next) => {
     success: true,
     data: `Bulk subscription successful`,
   });
-
 });

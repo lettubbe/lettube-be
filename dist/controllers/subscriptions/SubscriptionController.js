@@ -21,6 +21,7 @@ const BaseResponseHandler_1 = __importDefault(require("../../messages/BaseRespon
 const notificationService_1 = __importDefault(require("../../services/notificationService"));
 const User_1 = __importDefault(require("../../models/Auth/User"));
 const Notifications_1 = __importDefault(require("../../models/Notifications"));
+const paginate_1 = require("../../lib/utils/paginate");
 // @desc    Subscribe to a channel
 // @route   /api/v1/subscription/subscribe
 // @access  Private
@@ -80,26 +81,56 @@ exports.unsubscribe = (0, express_async_handler_1.default)((req, res, next) => _
 // @route   /api/v1/subscription/subscribers
 // @access  Private
 exports.getSubscribers = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    const { userId } = req.params;
-    const subscribers = yield Subscription_1.default.find({
-        subscribedTo: userId,
-    }).populate("subscriber", "firstName lastName username");
-    res.status(200).json({
+    const user = yield (0, utils_1.getAuthUser)(req, next);
+    const userId = user._id;
+    const { page = 1, limit = 10 } = req.query;
+    const options = (0, paginate_1.getPaginateOptions)(page, limit, {
+        paginate: [
+            {
+                path: "subscriber",
+                select: "username firstName lastName profilePicture",
+            }
+        ]
+    });
+    const subscribers = yield Subscription_1.default.paginate({ subscribedTo: userId }, options);
+    // const subscribers = await Subscription.find({
+    //   subscribedTo: userId,
+    // }).populate("subscriber", "firstName lastName username");
+    const subsribersData = (0, paginate_1.transformPaginateResponse)(subscribers);
+    (0, BaseResponseHandler_1.default)({
+        message: `Subscribers Retrieved Successfully`,
+        res,
+        statusCode: 200,
         success: true,
-        data: subscribers,
+        data: subsribersData
     });
 }));
 // @desc    Get User Subscribers
-// @route   /api/v1/subscription/subscribedTo 
+// @route   /api/v1/subscription/subscribedTo
 // @access  Private
 exports.getSubscribedTo = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    const subscriberId = req.user.id;
-    const subscriptions = yield Subscription_1.default.find({
-        subscriber: subscriberId,
-    }).populate("subscribedTo", "firstName lastName username");
-    res.status(200).json({
+    const user = yield (0, utils_1.getAuthUser)(req, next);
+    const subscriberId = user._id;
+    const { limit = 10, page = 1 } = req.query;
+    // const subscriptions = await Subscription.find({
+    //   subscriber: subscriberId,
+    // }).populate("subscribedTo", "firstName lastName username");
+    const options = (0, paginate_1.getPaginateOptions)(page, limit, {
+        populate: [
+            {
+                path: "subscribedTo",
+                select: "username firstName lastName profilePicture",
+            }
+        ],
+    });
+    const subscriptions = yield Subscription_1.default.paginate({ subscriber: subscriberId }, options);
+    const subscriptionsData = (0, paginate_1.transformPaginateResponse)(subscriptions);
+    (0, BaseResponseHandler_1.default)({
+        message: `Subscribed To Retrieved Successfully`,
+        res,
+        statusCode: 200,
         success: true,
-        data: subscriptions,
+        data: subscriptionsData,
     });
 }));
 // @desc    Bulk Subscribe Users
