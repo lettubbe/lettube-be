@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deletePlaylist = exports.getPlaylistVideos = exports.updatePlaylistCoverPhoto = exports.updatePlaylist = exports.uploadVideoToPlaylist = exports.getPlaylist = exports.getPlaylists = exports.createPlaylist = void 0;
+exports.deletePlaylist = exports.getPlaylistVideos = exports.updatePlaylistCoverPhoto = exports.updatePlaylist = exports.uploadVideoToPlaylist = exports.getPlaylist = exports.getUserPublicPlaylists = exports.getPlaylists = exports.createPlaylist = void 0;
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const fileUpload_1 = require("../../lib/utils/fileUpload");
 const ErrorResponse_1 = __importDefault(require("../../messages/ErrorResponse"));
@@ -51,8 +51,8 @@ exports.createPlaylist = (0, express_async_handler_1.default)((req, res, next) =
 // @access  Private
 exports.getPlaylists = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const user = yield (0, utils_1.getAuthUser)(req, next);
-    const { limit = 10, page = 1 } = req.params;
-    const { search = "" } = req.query;
+    // const { limit = 10, page = 1 } = req.params;
+    const { search = "", limit = 10, page = 1 } = req.query;
     const options = (0, paginate_1.getPaginateOptions)(page, limit);
     const query = Object.assign({ user: user._id }, (search && {
         name: { $regex: search, $options: "i" },
@@ -61,6 +61,27 @@ exports.getPlaylists = (0, express_async_handler_1.default)((req, res, next) => 
     const playlistData = (0, paginate_1.transformPaginateResponse)(playlists);
     (0, BaseResponseHandler_1.default)({
         message: `Playlists Retrieved Successfully`,
+        res,
+        statusCode: 200,
+        success: true,
+        data: playlistData,
+    });
+}));
+// @route   GET /api/v1/playlist/:userId/public
+// @desc    get users Playlists
+// @access  Private
+exports.getUserPublicPlaylists = (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const user = yield (0, utils_1.getAuthUser)(req, next);
+    const { userId } = req.params;
+    const { search = "", limit = 10, page = 1 } = req.query;
+    const options = (0, paginate_1.getPaginateOptions)(page, limit);
+    const query = Object.assign({ user: userId }, (search && {
+        name: { $regex: search, $options: "i" },
+    }));
+    const playlists = yield Playlist_1.default.paginate(query, options);
+    const playlistData = (0, paginate_1.transformPaginateResponse)(playlists);
+    (0, BaseResponseHandler_1.default)({
+        message: `Public Playlists Retrieved Successfully`,
         res,
         statusCode: 200,
         success: true,
