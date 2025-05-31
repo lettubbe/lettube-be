@@ -54,8 +54,8 @@ export const createPlaylist = asyncHandler(async (req, res, next) => {
 export const getPlaylists = asyncHandler(async (req, res, next) => {
   const user = await getAuthUser(req, next);
 
-  const { limit = 10, page = 1 } = req.params;
-  const { search = "" } = req.query;
+  // const { limit = 10, page = 1 } = req.params;
+  const { search = "", limit = 10, page = 1 } = req.query;
 
   const options = getPaginateOptions(page, limit);
 
@@ -72,6 +72,38 @@ export const getPlaylists = asyncHandler(async (req, res, next) => {
 
   baseResponseHandler({
     message: `Playlists Retrieved Successfully`,
+    res,
+    statusCode: 200,
+    success: true,
+    data: playlistData,
+  });
+});
+
+// @route   GET /api/v1/playlist/:userId/public
+// @desc    get users Playlists
+// @access  Private
+
+export const getUserPublicPlaylists = asyncHandler(async (req, res, next) => {
+  const user = await getAuthUser(req, next);
+
+  const { userId } = req.params;
+  const { search = "", limit = 10, page = 1  } = req.query;
+
+  const options = getPaginateOptions(page, limit);
+
+  const query = {
+    user: userId,
+    ...(search && {
+      name: { $regex: search, $options: "i" },
+    }),
+  };
+
+  const playlists = await Playlist.paginate(query, options);
+
+  const playlistData = transformPaginateResponse(playlists);
+
+  baseResponseHandler({
+    message: `Public Playlists Retrieved Successfully`,
     res,
     statusCode: 200,
     success: true,
@@ -268,6 +300,7 @@ export const getPlaylistVideos = asyncHandler(async (req, res, next) => {
 // @route   DELETE /api/v1/playlist/:playlistId
 // @desc    Delete a playlist
 // @access  Private
+
 export const deletePlaylist = asyncHandler(async (req, res, next) => {
   const { playlistId } = req.params;
   const user = await getAuthUser(req, next);
